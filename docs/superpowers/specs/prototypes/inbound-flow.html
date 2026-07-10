@@ -1,0 +1,71 @@
+<style>
+  .steps { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0; }
+  .step-card { position:relative; padding:15px; border:1px solid #bfdbfe; background:#eff6ff; border-radius:14px; min-height:145px; }
+  .step-no { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; color:white; background:#2563eb; font-weight:700; margin-bottom:10px; }
+  .step-card h3 { font-size:14px; margin:0 0 7px; }
+  .step-card p { color:#64748b; font-size:12px; line-height:1.55; }
+  .step-card:not(:last-child)::after { content:'›'; position:absolute; right:-10px; top:58px; color:#60a5fa; font-size:24px; z-index:2; }
+  .decision { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:20px; }
+  .choice-card { border:2px solid #e2e8f0; border-radius:16px; padding:16px; background:white; cursor:pointer; }
+  .choice-card:hover { border-color:#60a5fa; }
+  .choice-card h3 { margin-bottom:6px; }
+  .choice-card p { font-size:12px; color:#64748b; line-height:1.55; }
+  .tag { display:inline-block; font-size:10px; font-weight:700; padding:4px 8px; border-radius:999px; background:#dcfce7; color:#166534; margin-bottom:9px; }
+  .tag.warn { background:#ffedd5; color:#9a3412; }
+  .state-list { margin:12px 0 0; display:grid; gap:7px; }
+  .state { display:flex; gap:8px; align-items:flex-start; padding:8px; border-radius:9px; background:#f8fafc; font-size:11px; color:#475569; }
+  .check { color:#16a34a; font-weight:800; }
+  .cross { color:#dc2626; font-weight:800; }
+  .integrity { margin-top:20px; padding:16px; border-radius:14px; background:#fff7ed; border:1px solid #fdba74; }
+  .integrity h3 { margin:0 0 10px; color:#9a3412; }
+  .integrity-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .guard { background:white; border-radius:10px; padding:11px; font-size:11px; color:#64748b; }
+  .guard strong { display:block; color:#7c2d12; margin-bottom:4px; }
+  @media (max-width:850px) { .steps,.decision,.integrity-grid { grid-template-columns:1fr; } .step-card:not(:last-child)::after { display:none; } }
+</style>
+
+<h2>关键流程：扫码与快捷入库</h2>
+<p class="subtitle">目标：普通成员在手机上用少量步骤完成一次可靠入库，同时避免重复提交和错误库存</p>
+
+<div class="steps">
+  <div class="step-card"><div class="step-no">1</div><h3>扫描或搜索</h3><p>扫描商品条码、位置二维码，或输入名称搜索已有物品档案。</p></div>
+  <div class="step-card"><div class="step-no">2</div><h3>匹配物品</h3><p>命中档案后复用品牌、规格、单位和保质期；未命中时快速新建档案。</p></div>
+  <div class="step-card"><div class="step-no">3</div><h3>填写本次入库</h3><p>选择批次或独立资产，填写数量、位置、日期、批次号或序列号。</p></div>
+  <div class="step-card"><div class="step-no">4</div><h3>确认并提交</h3><p>预览到期时间和库存变化；提交后生成库存流水、提醒计划与审计记录。</p></div>
+</div>
+
+<h3>请选择第一版的离线策略</h3>
+<div class="decision">
+  <div class="choice-card" data-choice="draft-offline" onclick="toggleSelect(this)">
+    <span class="tag">推荐</span>
+    <h3>A. 离线草稿，联网后提交</h3>
+    <p>应用外壳和最近使用的数据可离线打开；表单、照片和扫码结果保存在浏览器草稿中，但库存变更必须联网提交。</p>
+    <div class="state-list">
+      <div class="state"><span class="check">✓</span><span>离线时可继续填写并自动恢复草稿</span></div>
+      <div class="state"><span class="check">✓</span><span>提交前由服务器重新校验库存和位置</span></div>
+      <div class="state"><span class="check">✓</span><span>实现和冲突处理相对简单</span></div>
+      <div class="state"><span class="cross">×</span><span>完全离线时不能最终完成入库或领用</span></div>
+    </div>
+  </div>
+
+  <div class="choice-card" data-choice="full-offline" onclick="toggleSelect(this)">
+    <span class="tag warn">复杂度较高</span>
+    <h3>B. 完整离线库存队列</h3>
+    <p>入库、领用和转移均可离线完成，联网后按队列同步，需要解决多成员同时操作导致的冲突与负库存。</p>
+    <div class="state-list">
+      <div class="state"><span class="check">✓</span><span>断网环境仍能完成所有库存操作</span></div>
+      <div class="state"><span class="cross">×</span><span>需要冲突合并、重放和失败人工处理</span></div>
+      <div class="state"><span class="cross">×</span><span>可能出现本地成功但服务器拒绝的体验</span></div>
+      <div class="state"><span class="cross">×</span><span>显著扩大第一版测试范围</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="integrity">
+  <h3>无论选择哪种策略，提交端都执行三层保护</h3>
+  <div class="integrity-grid">
+    <div class="guard"><strong>幂等键</strong>一次表单提交生成唯一请求 ID，网络重试不会重复入库。</div>
+    <div class="guard"><strong>事务与锁</strong>锁定库存单元，写入流水、更新快照、生成 Outbox 事件后统一提交。</div>
+    <div class="guard"><strong>冲突反馈</strong>位置被归档、条码冲突或库存不足时返回可操作的业务错误，不静默覆盖。</div>
+  </div>
+</div>

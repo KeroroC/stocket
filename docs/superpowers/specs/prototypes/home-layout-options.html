@@ -1,0 +1,109 @@
+<style>
+  .compare { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .design-card { border:2px solid #e2e8f0; border-radius:18px; padding:16px; background:#fff; cursor:pointer; transition:.15s; }
+  .design-card:hover { border-color:#60a5fa; transform:translateY(-1px); }
+  .design-card.selected { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+  .design-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .badge { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:#2563eb; color:white; font-weight:700; }
+  .recommended { margin-left:auto; padding:4px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-size:11px; font-weight:700; }
+  .phone { width:100%; max-width:340px; margin:auto; border:8px solid #1e293b; border-radius:28px; background:#f8fafc; overflow:hidden; box-shadow:0 12px 30px rgba(15,23,42,.16); }
+  .status { height:24px; background:#fff; padding:6px 13px; font-size:9px; color:#475569; display:flex; justify-content:space-between; }
+  .app { min-height:570px; padding:14px 14px 72px; position:relative; }
+  .hello { display:flex; justify-content:space-between; align-items:center; }
+  .hello h4 { font-size:18px; margin:0; color:#0f172a; }
+  .hello small { color:#64748b; }
+  .avatar { width:34px; height:34px; border-radius:50%; background:#dbeafe; display:grid; place-items:center; color:#1d4ed8; font-weight:700; }
+  .search { margin:14px 0; padding:11px 12px; background:white; border:1px solid #e2e8f0; border-radius:12px; color:#94a3b8; font-size:12px; }
+  .hero-action { background:linear-gradient(135deg,#2563eb,#0ea5e9); color:white; border-radius:16px; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+  .hero-action b { display:block; font-size:15px; }
+  .hero-action small { opacity:.8; }
+  .scan { width:44px; height:44px; background:rgba(255,255,255,.2); border-radius:13px; display:grid; place-items:center; font-size:21px; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
+  .stat { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 8px; }
+  .stat strong { display:block; font-size:18px; color:#0f172a; }
+  .stat span { font-size:10px; color:#64748b; }
+  .orange strong { color:#ea580c; } .red strong { color:#dc2626; } .green strong { color:#16a34a; }
+  .section-title { display:flex; justify-content:space-between; margin:16px 1px 8px; font-size:12px; font-weight:700; color:#334155; }
+  .list { display:grid; gap:8px; }
+  .item { display:flex; gap:10px; align-items:center; padding:10px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; }
+  .icon { width:36px; height:36px; border-radius:10px; background:#fef3c7; display:grid; place-items:center; }
+  .item b { display:block; font-size:12px; color:#1e293b; }
+  .item small { color:#64748b; font-size:10px; }
+  .due { margin-left:auto; color:#dc2626; font-size:10px; font-weight:700; }
+  .chips { display:flex; gap:6px; overflow:hidden; margin-bottom:10px; }
+  .chip { white-space:nowrap; padding:7px 9px; border-radius:999px; background:#e2e8f0; font-size:10px; color:#475569; }
+  .chip.active { background:#dbeafe; color:#1d4ed8; font-weight:700; }
+  .tree { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:10px; display:grid; gap:7px; }
+  .tree-row { display:flex; align-items:center; gap:8px; font-size:11px; color:#334155; padding:7px; border-radius:8px; }
+  .tree-row.active { background:#eff6ff; color:#1d4ed8; font-weight:700; }
+  .indent { margin-left:18px; }
+  .bottom { position:absolute; left:0; right:0; bottom:0; height:58px; background:white; border-top:1px solid #e2e8f0; display:grid; grid-template-columns:repeat(5,1fr); align-items:center; }
+  .nav { text-align:center; font-size:9px; color:#64748b; }
+  .nav i { display:block; font-style:normal; font-size:17px; margin-bottom:2px; }
+  .nav.active { color:#2563eb; font-weight:700; }
+  .center-add { width:45px; height:45px; margin:-18px auto 0; border-radius:15px; display:grid; place-items:center; background:#2563eb; color:white; font-size:24px; box-shadow:0 7px 16px rgba(37,99,235,.3); }
+  .reason { margin-top:13px; color:#64748b; font-size:12px; line-height:1.55; }
+  @media (max-width:850px) { .compare { grid-template-columns:1fr; } }
+</style>
+
+<h2>移动端首页：哪种信息组织更符合家庭使用？</h2>
+<p class="subtitle">两种方案都保留底部导航和中央快捷入库，差别在首页的第一关注点</p>
+
+<div class="compare">
+  <div class="design-card" data-choice="task-home" onclick="toggleSelect(this)">
+    <div class="design-head"><span class="badge">A</span><div><h3>任务与提醒型首页</h3></div><span class="recommended">推荐</span></div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>● ● ▰</span></div>
+      <div class="app">
+        <div class="hello"><div><small>晚上好</small><h4>我的家庭</h4></div><div class="avatar">王</div></div>
+        <div class="search">⌕ 搜索物品、位置、条码</div>
+        <div class="hero-action"><div><b>快速入库</b><small>扫码或搜索已有物品</small></div><div class="scan">▦</div></div>
+        <div class="stats">
+          <div class="stat orange"><strong>6</strong><span>30 天内到期</span></div>
+          <div class="stat red"><strong>2</strong><span>已经过期</span></div>
+          <div class="stat green"><strong>4</strong><span>库存不足</span></div>
+        </div>
+        <div class="section-title"><span>需要处理</span><span style="color:#2563eb">查看全部</span></div>
+        <div class="list">
+          <div class="item"><div class="icon">🥛</div><div><b>全脂牛奶</b><small>厨房冰箱 · 余 3 盒</small></div><span class="due">3 天到期</span></div>
+          <div class="item"><div class="icon" style="background:#fee2e2">💊</div><div><b>维生素片</b><small>卧室药箱 · 余 1 瓶</small></div><span class="due">库存不足</span></div>
+          <div class="item"><div class="icon" style="background:#dbeafe">🔋</div><div><b>5 号电池</b><small>储物间二层 · 余 8 节</small></div><span class="due" style="color:#64748b">正常</span></div>
+        </div>
+        <div class="bottom">
+          <div class="nav active"><i>⌂</i>首页</div><div class="nav"><i>▤</i>物品</div><div class="nav"><div class="center-add">＋</div>入库</div><div class="nav"><i>◷</i>提醒</div><div class="nav"><i>⚙</i>我的</div>
+        </div>
+      </div>
+    </div>
+    <p class="reason">适合日常高频使用：打开应用立即看到需要处理的事项，并能一键扫码入库。</p>
+  </div>
+
+  <div class="design-card" data-choice="inventory-home" onclick="toggleSelect(this)">
+    <div class="design-head"><span class="badge">B</span><div><h3>库存浏览型首页</h3></div></div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>● ● ▰</span></div>
+      <div class="app">
+        <div class="hello"><div><small>家庭库存</small><h4>127 种 · 346 件</h4></div><div class="avatar">王</div></div>
+        <div class="search">⌕ 搜索当前库存</div>
+        <div class="chips"><span class="chip active">全部</span><span class="chip">食品</span><span class="chip">日用品</span><span class="chip">电子设备</span></div>
+        <div class="section-title"><span>按位置浏览</span><span style="color:#2563eb">管理位置</span></div>
+        <div class="tree">
+          <div class="tree-row">⌄ 🏠 我的家 <span style="margin-left:auto">346</span></div>
+          <div class="tree-row indent active">⌄ 🍳 厨房 <span style="margin-left:auto">86</span></div>
+          <div class="tree-row indent" style="margin-left:36px">▣ 冰箱 <span style="margin-left:auto">34</span></div>
+          <div class="tree-row indent" style="margin-left:36px">▣ 吊柜 <span style="margin-left:auto">29</span></div>
+          <div class="tree-row indent">› 🛏 卧室 <span style="margin-left:auto">61</span></div>
+          <div class="tree-row indent">› 📦 储物间 <span style="margin-left:auto">118</span></div>
+        </div>
+        <div class="section-title"><span>最近查看</span><span style="color:#2563eb">全部物品</span></div>
+        <div class="list">
+          <div class="item"><div class="icon">🥛</div><div><b>全脂牛奶</b><small>3 个批次 · 合计 8 盒</small></div></div>
+          <div class="item"><div class="icon" style="background:#dbeafe">💻</div><div><b>ThinkPad X1</b><small>书房 · 在用</small></div></div>
+        </div>
+        <div class="bottom">
+          <div class="nav active"><i>⌂</i>库存</div><div class="nav"><i>⌕</i>搜索</div><div class="nav"><div class="center-add">＋</div>入库</div><div class="nav"><i>◷</i>提醒</div><div class="nav"><i>⚙</i>我的</div>
+        </div>
+      </div>
+    </div>
+    <p class="reason">适合经常盘点和按空间浏览，但到期提醒和待办事项不够突出。</p>
+  </div>
+</div>

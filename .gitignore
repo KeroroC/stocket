@@ -1,0 +1,28 @@
+# IDE and operating system
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Java and Maven
+target/
+*.class
+*.log
+
+# Frontend
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Runtime configuration and data
+.env
+.env.*
+!.env.example
+data/
+backups/
+logs/
+
+# Local brainstorming session state
+.superpowers/
+

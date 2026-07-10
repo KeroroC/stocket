@@ -1,0 +1,101 @@
+<style>
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin:12px 0 18px; font-size:12px; color:#64748b; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; }
+  .model { display:grid; grid-template-columns:1fr 54px 1.2fr 54px 1fr; gap:8px; align-items:center; }
+  .stack { display:grid; gap:12px; }
+  .entity { border:1px solid #cbd5e1; border-radius:14px; padding:13px; background:#fff; box-shadow:0 2px 8px rgba(15,23,42,.04); }
+  .entity h3 { margin:0 0 7px; font-size:15px; }
+  .entity ul { margin:0; padding-left:17px; color:#64748b; font-size:12px; line-height:1.55; }
+  .master { border-color:#93c5fd; background:#eff6ff; }
+  .stock { border-color:#86efac; background:#ecfdf5; }
+  .ledger { border-color:#fdba74; background:#fff7ed; }
+  .support { border-color:#d8b4fe; background:#faf5ff; }
+  .relation { text-align:center; color:#64748b; font-size:12px; line-height:1.35; }
+  .relation b { display:block; font-size:21px; color:#94a3b8; }
+  .rules { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:18px; }
+  .rule { padding:13px; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0; }
+  .rule strong { display:block; margin-bottom:5px; color:#0f172a; }
+  .rule span { font-size:12px; color:#64748b; line-height:1.5; }
+  .type-split { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:10px; }
+  .subtype { padding:9px; border-radius:9px; background:#fff; border:1px dashed #86efac; font-size:12px; }
+  @media (max-width:850px) {
+    .model { grid-template-columns:1fr; }
+    .relation { transform:none; padding:2px; }
+    .rules { grid-template-columns:1fr; }
+  }
+</style>
+
+<h2>核心数据模型：档案与库存分离</h2>
+<p class="subtitle">一个物品档案可以对应多个库存持有单元；批次和独立资产共享统一的移动流水</p>
+
+<div class="legend">
+  <span><i class="dot" style="background:#60a5fa"></i>档案与配置</span>
+  <span><i class="dot" style="background:#4ade80"></i>当前库存</span>
+  <span><i class="dot" style="background:#fb923c"></i>不可变流水</span>
+  <span><i class="dot" style="background:#c084fc"></i>支撑能力</span>
+</div>
+
+<div class="model">
+  <div class="stack">
+    <div class="entity master">
+      <h3>分类 Category</h3>
+      <ul><li>树形层级</li><li>分类属性模板 JSONB</li><li>批次/资产默认类型</li></ul>
+    </div>
+    <div class="entity master">
+      <h3>物品档案 Item Definition</h3>
+      <ul><li>名称、品牌、型号、规格、单位</li><li>条码、标签、默认保质期</li><li>核心字段 + 经模板校验的 JSONB 属性</li></ul>
+    </div>
+  </div>
+
+  <div class="relation">一个档案<b>→</b>多个库存单元</div>
+
+  <div class="stack">
+    <div class="entity stock">
+      <h3>库存单元 Inventory Entry</h3>
+      <ul><li>类型：BATCH / ASSET</li><li>当前位置、可用数量、入库时间</li><li>生产日期、过期日期、状态、版本号</li></ul>
+      <div class="type-split">
+        <div class="subtype"><strong>批次详情</strong><br>批次号、数量可大于 1、保质期</div>
+        <div class="subtype"><strong>资产详情</strong><br>资产号、序列号、保修期、数量恒为 1</div>
+      </div>
+    </div>
+    <div class="entity support">
+      <h3>位置 Location</h3>
+      <ul><li>房屋 → 房间 → 柜子 → 层板</li><li>无限层级，自引用父节点</li><li>可生成二维码用于扫码定位</li></ul>
+    </div>
+  </div>
+
+  <div class="relation">每次变化<b>→</b>追加流水</div>
+
+  <div class="stack">
+    <div class="entity ledger">
+      <h3>库存流水 Inventory Movement</h3>
+      <ul><li>IN / OUT / TRANSFER / ADJUST / DISCARD</li><li>变动数量、变动前后快照</li><li>来源位置、目标位置、操作人、原因</li><li>幂等键，防止重复提交</li></ul>
+    </div>
+    <div class="entity support">
+      <h3>Outbox / Reminder / Audit</h3>
+      <ul><li>事务内写入业务事件</li><li>异步生成临期提醒与通知任务</li><li>保留关键配置及权限操作审计</li></ul>
+    </div>
+  </div>
+</div>
+
+<div class="rules">
+  <div class="rule"><strong>流水是历史事实</strong><span>流水只追加、不修改；错误通过一条反向调整流水纠正。</span></div>
+  <div class="rule"><strong>库存快照用于快速查询</strong><span>Inventory Entry 保存当前数量，但只能由库存服务在同一数据库事务中更新。</span></div>
+  <div class="rule"><strong>并发不允许出现负库存</strong><span>变动时锁定库存单元，校验余额，写流水并更新快照；版本号用于冲突检测。</span></div>
+  <div class="rule"><strong>已发生流水的档案不硬删除</strong><span>使用归档状态保留历史关联；分类、位置被引用时也不能直接删除。</span></div>
+  <div class="rule"><strong>日期类型语义明确</strong><span>生产日、过期日使用 date；入库、操作、通知时间使用带时区时间戳。</span></div>
+  <div class="rule"><strong>支持小数数量</strong><span>数量使用高精度数值，可表达 2 件、1.5 千克、0.75 升等库存。</span></div>
+</div>
+
+<h3 style="margin-top:20px">请选择</h3>
+<div class="options">
+  <div class="option" data-choice="confirm-data-model" onclick="toggleSelect(this)">
+    <div class="letter">A</div><div class="content"><h3>确认数据模型</h3><p>档案、库存单元和流水的分层符合预期。</p></div>
+  </div>
+  <div class="option" data-choice="adjust-attributes" onclick="toggleSelect(this)">
+    <div class="letter">B</div><div class="content"><h3>调整属性模型</h3><p>希望修改分类模板或自定义字段方案。</p></div>
+  </div>
+  <div class="option" data-choice="adjust-ledger" onclick="toggleSelect(this)">
+    <div class="letter">C</div><div class="content"><h3>调整库存流水</h3><p>希望改变数量、位置或历史记录方式。</p></div>
+  </div>
+</div>

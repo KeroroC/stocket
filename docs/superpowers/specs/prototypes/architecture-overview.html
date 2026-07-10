@@ -1,0 +1,99 @@
+<style>
+  .arch-grid { display:grid; gap:18px; }
+  .layer { border:1px solid #d8dee9; border-radius:16px; padding:16px; background:#fff; }
+  .layer-title { font-size:12px; font-weight:700; letter-spacing:.08em; color:#64748b; text-transform:uppercase; margin-bottom:12px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:stretch; }
+  .node { flex:1; min-width:170px; border-radius:12px; padding:14px; background:#f8fafc; border:1px solid #e2e8f0; }
+  .node strong { display:block; color:#0f172a; margin-bottom:5px; }
+  .node small { color:#64748b; line-height:1.5; }
+  .primary { background:#eff6ff; border-color:#93c5fd; }
+  .native { background:#ecfdf5; border-color:#86efac; }
+  .data { background:#fff7ed; border-color:#fdba74; }
+  .external { background:#faf5ff; border-color:#d8b4fe; }
+  .arrow { text-align:center; color:#64748b; font-size:22px; line-height:1; }
+  .modules { display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)); gap:10px; margin-top:12px; }
+  .module { padding:11px 9px; text-align:center; background:white; border:1px solid #bbf7d0; border-radius:10px; font-size:13px; font-weight:600; color:#166534; }
+  .flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .step { padding:8px 10px; border-radius:999px; background:#f1f5f9; color:#334155; font-size:12px; }
+  .flow-arrow { color:#94a3b8; }
+  @media (max-width:760px) { .modules { grid-template-columns:repeat(2,1fr); } }
+</style>
+
+<h2>家庭资产管理系统 · 模块化单体架构</h2>
+<p class="subtitle">Java 21 LTS + Spring Boot 4 + GraalVM Native Image；一个后端进程，保持清晰模块边界</p>
+
+<div class="arch-grid">
+  <div class="layer">
+    <div class="layer-title">访问端</div>
+    <div class="row">
+      <div class="node primary"><strong>手机 PWA</strong><small>扫码、入库、查询、提醒、快速库存操作</small></div>
+      <div class="node primary"><strong>桌面浏览器</strong><small>批量管理、分类模板、成员权限、统计与配置</small></div>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <div class="layer">
+    <div class="layer-title">入口与前端</div>
+    <div class="row">
+      <div class="node"><strong>Nginx / HTTPS</strong><small>TLS、静态资源、API 反向代理、压缩与缓存</small></div>
+      <div class="node primary"><strong>Vue 3 PWA</strong><small>TypeScript、Vite、Element Plus、Service Worker</small></div>
+    </div>
+  </div>
+
+  <div class="arrow">↓ REST/JSON</div>
+
+  <div class="layer native">
+    <div class="layer-title">单个 Spring Boot Native 后端</div>
+    <div class="node native">
+      <strong>Java 21 LTS 原生可执行文件</strong>
+      <small>Spring AOT + GraalVM Native Image；同一事务内保证库存流水、数量快照与业务事件一致</small>
+      <div class="modules">
+        <div class="module">身份与成员</div>
+        <div class="module">分类与属性</div>
+        <div class="module">物品档案</div>
+        <div class="module">批次与资产</div>
+        <div class="module">位置管理</div>
+        <div class="module">库存流水</div>
+        <div class="module">提醒与通知</div>
+        <div class="module">附件与审计</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <div class="layer">
+    <div class="layer-title">数据与外部通道</div>
+    <div class="row">
+      <div class="node data"><strong>PostgreSQL</strong><small>业务数据、库存流水、通知任务、Outbox 事件、审计记录</small></div>
+      <div class="node data"><strong>附件目录</strong><small>物品图片、发票、保修凭证；数据库只保存元数据与路径</small></div>
+      <div class="node external"><strong>通知适配器</strong><small>Web Push、邮件、企业微信/钉钉/飞书等通用 Webhook</small></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>典型入库数据流</h3>
+  <div class="flow">
+    <span class="step">扫码或搜索</span><span class="flow-arrow">→</span>
+    <span class="step">匹配物品档案</span><span class="flow-arrow">→</span>
+    <span class="step">创建批次/资产</span><span class="flow-arrow">→</span>
+    <span class="step">记录入库流水</span><span class="flow-arrow">→</span>
+    <span class="step">生成到期计划</span><span class="flow-arrow">→</span>
+    <span class="step">提交事务</span>
+  </div>
+</div>
+
+<h3>这套边界是否符合你的预期？</h3>
+<div class="options">
+  <div class="option" data-choice="confirm" onclick="toggleSelect(this)">
+    <div class="letter">A</div><div class="content"><h3>确认，继续</h3><p>保持一个后端进程与清晰模块边界。</p></div>
+  </div>
+  <div class="option" data-choice="simplify" onclick="toggleSelect(this)">
+    <div class="letter">B</div><div class="content"><h3>希望更简单</h3><p>减少模块或第一版能力。</p></div>
+  </div>
+  <div class="option" data-choice="adjust" onclick="toggleSelect(this)">
+    <div class="letter">C</div><div class="content"><h3>需要调整</h3><p>修改数据存储、通知或部署关系。</p></div>
+  </div>
+</div>
