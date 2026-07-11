@@ -26,3 +26,5 @@ logs/
 # Local brainstorming session state
 .superpowers/
 
+# Local Git worktrees
+.worktrees/
