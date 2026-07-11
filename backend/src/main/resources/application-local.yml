@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: ${STOCKET_DB_URL:jdbc:postgresql://localhost:5432/stocket}
+    username: ${STOCKET_DB_USER:stocket}
+    password: ${STOCKET_DB_PASSWORD:stocket}
