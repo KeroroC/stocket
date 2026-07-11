@@ -56,6 +56,10 @@ docker compose --env-file .env -f deploy/compose.yml up --build
 
 启动完成后，通过 `.env` 中的 `STOCKET_PORT` 访问 Stocket，默认地址为 `http://localhost:8088`。
 
+## 阶段一完成
+
+JVM 测试套件、前端测试/构建、Spring AOT 处理、PostgreSQL 迁移测试、GraalVM 原生测试和原生 Docker 冒烟测试均已为工程基础通过。
+
 ## 文档
 
 - [产品与技术设计规格](docs/superpowers/specs/2026-07-10-stocket-design.md)
