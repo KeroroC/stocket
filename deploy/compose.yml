@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:17.5-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-stocket}
+      POSTGRES_USER: ${POSTGRES_USER:-stocket}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stocket-local-dev}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/app/Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      STOCKET_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-stocket}
+      STOCKET_DB_USER: ${POSTGRES_USER:-stocket}
+      STOCKET_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://localhost:8080/actuator/health/readiness
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/frontend/Dockerfile
+    ports:
+      - "${STOCKET_PORT:-8088}:8080"
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
