@@ -1,4 +1,4 @@
-# Family Assets 家庭资产管理系统设计规格
+# Stocket 家庭资产管理系统设计规格
 
 - 日期：2026-07-10
 - 状态：已批准，可进入实施计划与执行
@@ -7,7 +7,7 @@
 
 ## 1. 产品目标
 
-Family Assets 用于管理家庭中的日常消耗品和耐用电子设备。第一版首先解决四个问题：
+Stocket 用于管理家庭中的日常消耗品和耐用电子设备。第一版首先解决四个问题：
 
 1. 家里有哪些物品；
 2. 物品目前放在哪里；
@@ -406,7 +406,7 @@ flowchart TD
 ## 16. 初始仓库结构
 
 ```text
-family-assets/
+stocket/
 ├── backend/                 # Java 21 / Spring Boot / Maven
 ├── frontend/                # Vue 3 / TypeScript / Vite
 ├── deploy/                  # Docker Compose、网关和备份脚本

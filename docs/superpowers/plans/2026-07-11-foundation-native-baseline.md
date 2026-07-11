@@ -1,36 +1,36 @@
-# Family Assets Engineering Foundation Implementation Plan
+# 家庭资产工程基础实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **致智能体工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实施本计划。步骤使用复选框（`- [ ]`）语法进行跟踪。
 
-**Goal:** Create a production-shaped Family Assets repository that runs a Java 21/Spring Boot 4 modular monolith and Vue 3 frontend, connects to PostgreSQL, starts through Docker Compose, and passes JVM, AOT, and GraalVM native smoke tests.
+**目标：** 创建一个具备生产形态的家庭资产仓库，运行 Java 21/Spring Boot 4 模块化单体应用和 Vue 3 前端，连接 PostgreSQL，通过 Docker Compose 启动，并通过 JVM、AOT 和 GraalVM 原生冒烟测试。
 
-**Architecture:** The backend is one Spring Boot application split into eight Spring Modulith packages. Phase 1 contains infrastructure and explicit module shells only; business entities remain for later plans. The frontend is an independently built Vue application served by Nginx in deployment, with `/api` reverse-proxied to the native backend.
+**架构：** 后端是一个 Spring Boot 应用，划分为八个 Spring Modulith 包。阶段一只包含基础设施和显式模块外壳；业务实体留给后续计划。前端是一个独立构建的 Vue 应用，在部署中由 Nginx 提供服务，`/api` 反向代理到原生后端。
 
-**Tech Stack:** Java 21 LTS, Spring Boot 4.0.3, Spring Modulith 2.0.5, Maven 3.9.x, Flyway, PostgreSQL 17, Testcontainers, GraalVM Native Build Tools, Vue 3.5.20, TypeScript 5.9.3, Vite 8.0.16, Element Plus 2.11.0, Vitest, Docker Compose
+**技术栈：** Java 21 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven 3.9.x、Flyway、PostgreSQL 17、Testcontainers、GraalVM Native Build Tools、Vue 3.5.20、TypeScript 5.9.3、Vite 8.0.16、Element Plus 2.11.0、Vitest、Docker Compose
 
 ---
 
-## Scope Guard
+## 范围边界
 
-This plan establishes only the executable foundation. It deliberately does not implement users, sessions, categories, locations, item records, inventory, notifications, attachments, PWA offline behavior, or business APIs. Those belong to later roadmap phases.
+本计划仅建立可执行的基础。它刻意不实现用户、会话、分类、位置、物品记录、库存、通知、附件、PWA 离线行为或业务 API。这些属于后续路线图阶段。
 
-## Target File Map
+## 目标文件映射
 
 ```text
-family-assets/
-├── .github/workflows/ci.yml                    # JVM, frontend, AOT, native-test CI
-├── .env.example                                # Non-secret deployment contract
-├── Makefile                                    # Stable developer entry points
-├── README.md                                   # Setup and verification commands
+stocket/
+├── .github/workflows/ci.yml                    # JVM、前端、AOT、原生测试 CI
+├── .env.example                                # 非密钥部署契约
+├── Makefile                                    # 稳定的开发者入口
+├── README.md                                   # 设置和验证命令
 ├── backend/
-│   ├── .mvn/wrapper/maven-wrapper.properties   # Maven wrapper version
-│   ├── mvnw, mvnw.cmd                          # Reproducible Maven entry points
-│   ├── pom.xml                                 # Java, Boot, Modulith, native dependencies
+│   ├── .mvn/wrapper/maven-wrapper.properties   # Maven 包装器版本
+│   ├── mvnw, mvnw.cmd                          # 可复现的 Maven 入口
+│   ├── pom.xml                                 # Java、Boot、Modulith、原生依赖
 │   └── src/
 │       ├── main/java/com/familyassets/
-│       │   ├── FamilyAssetsApplication.java    # Application and @Modulithic root
-│       │   ├── system/                         # Foundation-only system API
-│       │   ├── identity/package-info.java      # Module declaration
+│       │   ├── StocketApplication.java    # 应用程序和 @Modulithic 根
+│       │   ├── system/                         # 仅基础的系统 API
+│       │   ├── identity/package-info.java      # 模块声明
 │       │   ├── catalog/package-info.java
 │       │   ├── location/package-info.java
 │       │   ├── inventory/package-info.java
@@ -39,43 +39,43 @@ family-assets/
 │       │   ├── attachment/package-info.java
 │       │   └── audit/package-info.java
 │       ├── main/resources/
-│       │   ├── application.yml                 # Common typed configuration
-│       │   ├── application-local.yml           # Local developer defaults
-│       │   └── db/migration/V1__baseline.sql   # Extensions and schema marker
+│       │   ├── application.yml                 # 通用类型化配置
+│       │   ├── application-local.yml           # 本地开发者默认配置
+│       │   └── db/migration/V1__baseline.sql   # 扩展和模式标记
 │       └── test/java/com/familyassets/
-│           ├── FamilyAssetsApplicationTests.java
+│           ├── StocketApplicationTests.java
 │           ├── ArchitectureTest.java
 │           ├── DatabaseMigrationTest.java
 │           └── system/SystemApiTest.java
 ├── frontend/
-│   ├── package.json, package-lock.json          # Pinned JS dependency graph
+│   ├── package.json, package-lock.json          # 固定的 JS 依赖图
 │   ├── index.html, tsconfig*.json, vite.config.ts
 │   └── src/
-│       ├── App.vue                             # Responsive shell
-│       ├── main.ts                             # Vue/Element bootstrap
-│       ├── api/system.ts                       # Typed system API client
-│       ├── styles/main.css                     # Mobile-first global styles
-│       └── test/App.spec.ts                    # Shell/API status test
+│       ├── App.vue                             # 响应式外壳
+│       ├── main.ts                             # Vue/Element 启动引导
+│       ├── api/system.ts                       # 类型化系统 API 客户端
+│       ├── styles/main.css                     # 移动优先全局样式
+│       └── test/App.spec.ts                    # 外壳/API 状态测试
 └── deploy/
-    ├── compose.yml                             # gateway, native app, PostgreSQL
-    ├── app/Dockerfile                          # Native build and runtime image
-    ├── frontend/Dockerfile                     # Vite build and Nginx image
-    └── gateway/default.conf                    # SPA fallback and API proxy
+    ├── compose.yml                             # 网关、原生应用、PostgreSQL
+    ├── app/Dockerfile                          # 原生构建和运行时镜像
+    ├── frontend/Dockerfile                     # Vite 构建和 Nginx 镜像
+    └── gateway/default.conf                    # SPA 回退和 API 代理
 ```
 
-### Task 1: Bootstrap the Java 21 Maven Application
+### 任务一：引导 Java 21 Maven 应用程序
 
-**Files:**
-- Create: `backend/pom.xml`
-- Create: `backend/.mvn/wrapper/maven-wrapper.properties`
-- Create: `backend/mvnw`
-- Create: `backend/mvnw.cmd`
-- Create: `backend/src/main/java/com/familyassets/FamilyAssetsApplication.java`
-- Create: `backend/src/test/java/com/familyassets/FamilyAssetsApplicationTests.java`
+**文件：**
+- 创建：`backend/pom.xml`
+- 创建：`backend/.mvn/wrapper/maven-wrapper.properties`
+- 创建：`backend/mvnw`
+- 创建：`backend/mvnw.cmd`
+- 创建：`backend/src/main/java/com/familyassets/StocketApplication.java`
+- 创建：`backend/src/test/java/com/familyassets/StocketApplicationTests.java`
 
-- [ ] **Step 1: Add the Maven build descriptor**
+- [ ] **步骤 1：添加 Maven 构建描述符**
 
-Create `backend/pom.xml`:
+创建 `backend/pom.xml`：
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -92,10 +92,10 @@ Create `backend/pom.xml`:
   </parent>
 
   <groupId>com.familyassets</groupId>
-  <artifactId>family-assets-backend</artifactId>
+  <artifactId>stocket-backend</artifactId>
   <version>0.1.0-SNAPSHOT</version>
-  <name>family-assets-backend</name>
-  <description>Family Assets modular monolith backend</description>
+  <name>stocket-backend</name>
+  <description>Stocket modular monolith backend</description>
 
   <properties>
     <java.version>21</java.version>
@@ -198,19 +198,19 @@ Create `backend/pom.xml`:
 </project>
 ```
 
-- [ ] **Step 2: Generate the Maven wrapper**
+- [ ] **步骤 2：生成 Maven 包装器**
 
-Run from `backend/`:
+在 `backend/` 目录下运行：
 
 ```bash
 mvn -N wrapper:wrapper -Dmaven=3.9.12
 ```
 
-Expected: `mvnw`, `mvnw.cmd`, and `.mvn/wrapper/maven-wrapper.properties` exist; the properties file points to Maven 3.9.12.
+预期：`mvnw`、`mvnw.cmd` 和 `.mvn/wrapper/maven-wrapper.properties` 文件存在；属性文件指向 Maven 3.9.12。
 
-- [ ] **Step 3: Write the failing application-root test**
+- [ ] **步骤 3：编写失败的应用程序根测试**
 
-Create `backend/src/test/java/com/familyassets/FamilyAssetsApplicationTests.java`:
+创建 `backend/src/test/java/com/familyassets/StocketApplicationTests.java`：
 
 ```java
 package com.familyassets;
@@ -221,30 +221,30 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.modulith.Modulithic;
 
-class FamilyAssetsApplicationTests {
+class StocketApplicationTests {
 
     @Test
     void applicationRootDeclaresBootAndModulith() {
-        assertThat(FamilyAssetsApplication.class)
+        assertThat(StocketApplication.class)
             .hasAnnotation(SpringBootApplication.class)
             .hasAnnotation(Modulithic.class);
     }
 }
 ```
 
-- [ ] **Step 4: Run the test and verify the application root is missing**
+- [ ] **步骤 4：运行测试并验证应用程序根缺失**
 
-Run:
+运行：
 
 ```bash
 ./mvnw -q test
 ```
 
-Expected: FAIL to compile because `FamilyAssetsApplication` does not exist.
+预期：编译失败，因为 `StocketApplication` 不存在。
 
-- [ ] **Step 5: Add the application root**
+- [ ] **步骤 5：添加应用程序根**
 
-Create `backend/src/main/java/com/familyassets/FamilyAssetsApplication.java`:
+创建 `backend/src/main/java/com/familyassets/StocketApplication.java`：
 
 ```java
 package com.familyassets;
@@ -255,47 +255,47 @@ import org.springframework.modulith.Modulithic;
 
 @Modulithic
 @SpringBootApplication
-public class FamilyAssetsApplication {
+public class StocketApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(FamilyAssetsApplication.class, args);
+        SpringApplication.run(StocketApplication.class, args);
     }
 }
 ```
 
-- [ ] **Step 6: Run the application-root test**
+- [ ] **步骤 6：运行应用程序根测试**
 
-Run:
+运行：
 
 ```bash
 ./mvnw -q test
 ```
 
-Expected: PASS with one test and Java 21; the test verifies the two required application annotations without starting infrastructure.
+预期：通过，包含一个测试和 Java 21；测试验证两个必需的应用程序注解而不启动基础设施。
 
-- [ ] **Step 7: Commit the backend bootstrap**
+- [ ] **步骤 7：提交后端引导**
 
 ```bash
 git add backend
 git commit -m "build: bootstrap Java 21 Spring Boot backend"
 ```
 
-### Task 2: Enforce Modular Monolith Boundaries
+### 任务二：强制执行模块化单体边界
 
-**Files:**
-- Create: `backend/src/main/java/com/familyassets/identity/package-info.java`
-- Create: `backend/src/main/java/com/familyassets/catalog/package-info.java`
-- Create: `backend/src/main/java/com/familyassets/location/package-info.java`
-- Create: `backend/src/main/java/com/familyassets/inventory/package-info.java`
-- Create: `backend/src/main/java/com/familyassets/reminder/package-info.java`
-- Create: `backend/src/main/java/com/familyassets/notification/package-info.java`
-- Create: `backend/src/main/java/com/familyassets/attachment/package-info.java`
-- Create: `backend/src/main/java/com/familyassets/audit/package-info.java`
-- Create: `backend/src/test/java/com/familyassets/ArchitectureTest.java`
+**文件：**
+- 创建：`backend/src/main/java/com/familyassets/identity/package-info.java`
+- 创建：`backend/src/main/java/com/familyassets/catalog/package-info.java`
+- 创建：`backend/src/main/java/com/familyassets/location/package-info.java`
+- 创建：`backend/src/main/java/com/familyassets/inventory/package-info.java`
+- 创建：`backend/src/main/java/com/familyassets/reminder/package-info.java`
+- 创建：`backend/src/main/java/com/familyassets/notification/package-info.java`
+- 创建：`backend/src/main/java/com/familyassets/attachment/package-info.java`
+- 创建：`backend/src/main/java/com/familyassets/audit/package-info.java`
+- 创建：`backend/src/test/java/com/familyassets/ArchitectureTest.java`
 
-- [ ] **Step 1: Write the failing architecture test**
+- [ ] **步骤 1：编写失败的架构测试**
 
-Create `backend/src/test/java/com/familyassets/ArchitectureTest.java`:
+创建 `backend/src/test/java/com/familyassets/ArchitectureTest.java`：
 
 ```java
 package com.familyassets;
@@ -311,7 +311,7 @@ import org.springframework.test.context.aot.DisabledInAotMode;
 @DisabledInAotMode
 class ArchitectureTest {
 
-    private final ApplicationModules modules = ApplicationModules.of(FamilyAssetsApplication.class);
+    private final ApplicationModules modules = ApplicationModules.of(StocketApplication.class);
 
     @Test
     void moduleDependenciesAreValid() {
@@ -331,19 +331,19 @@ class ArchitectureTest {
 }
 ```
 
-- [ ] **Step 2: Run the architecture test**
+- [ ] **步骤 2：运行架构测试**
 
-Run:
+运行：
 
 ```bash
 ./mvnw -q -Dtest=ArchitectureTest test
 ```
 
-Expected: FAIL because no application module packages exist.
+预期：失败，因为没有应用程序模块包存在。
 
-- [ ] **Step 3: Declare the eight business modules**
+- [ ] **步骤 3：声明八个业务模块**
 
-Create the eight files with these exact contents:
+创建以下八个文件，内容如下：
 
 ```java
 // backend/src/main/java/com/familyassets/identity/package-info.java
@@ -379,33 +379,33 @@ package com.familyassets.attachment;
 package com.familyassets.audit;
 ```
 
-- [ ] **Step 4: Re-run module verification**
+- [ ] **步骤 4：重新运行模块验证**
 
-Run:
+运行：
 
 ```bash
 ./mvnw -q -Dtest=ArchitectureTest test
 ```
 
-Expected: FAIL only because the `system` foundation module has not been created; the eight declared modules are discovered and have no cycles.
+预期：仅因 `system` 基础模块尚未创建而失败；已声明的八个模块被发现且无循环依赖。
 
-- [ ] **Step 5: Commit the module boundary skeleton**
+- [ ] **步骤 5：提交模块边界骨架**
 
-Do not commit while the test is red. Continue directly to Task 3, which creates `system`; Tasks 2 and 3 share one green commit because `system` is intentionally part of the approved module set.
+不要在测试失败时提交。直接继续任务三，它创建 `system`；任务二和任务三共享一个绿色提交，因为 `system` 是已批准模块集的一部分。
 
-### Task 3: Add the System API and Common Error Contract
+### 任务三：添加系统 API 和通用错误契约
 
-**Files:**
-- Create: `backend/src/main/java/com/familyassets/system/package-info.java`
-- Create: `backend/src/main/java/com/familyassets/system/SystemController.java`
-- Create: `backend/src/main/java/com/familyassets/system/SystemStatus.java`
-- Create: `backend/src/main/java/com/familyassets/system/ApiExceptionHandler.java`
-- Create: `backend/src/main/resources/application.yml`
-- Test: `backend/src/test/java/com/familyassets/system/SystemApiTest.java`
+**文件：**
+- 创建：`backend/src/main/java/com/familyassets/system/package-info.java`
+- 创建：`backend/src/main/java/com/familyassets/system/SystemController.java`
+- 创建：`backend/src/main/java/com/familyassets/system/SystemStatus.java`
+- 创建：`backend/src/main/java/com/familyassets/system/ApiExceptionHandler.java`
+- 创建：`backend/src/main/resources/application.yml`
+- 测试：`backend/src/test/java/com/familyassets/system/SystemApiTest.java`
 
-- [ ] **Step 1: Write the failing system API test**
+- [ ] **步骤 1：编写失败的系统 API 测试**
 
-Create `backend/src/test/java/com/familyassets/system/SystemApiTest.java`:
+创建 `backend/src/test/java/com/familyassets/system/SystemApiTest.java`：
 
 ```java
 package com.familyassets.system;
@@ -443,7 +443,7 @@ class SystemApiTest {
     void returnsStableBuildInformation() throws Exception {
         mvc.perform(get("/api/v1/system"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("family-assets"))
+            .andExpect(jsonPath("$.name").value("stocket"))
             .andExpect(jsonPath("$.version").isString());
     }
 
@@ -473,26 +473,26 @@ class SystemApiTest {
 }
 ```
 
-- [ ] **Step 2: Verify the system API test fails**
+- [ ] **步骤 2：验证系统 API 测试失败**
 
-Run:
+运行：
 
 ```bash
 ./mvnw -q -Dtest=SystemApiTest test
 ```
 
-Expected: FAIL because `SystemController` does not exist.
+预期：失败，因为 `SystemController` 不存在。
 
-- [ ] **Step 3: Declare and implement the system module**
+- [ ] **步骤 3：声明并实现系统模块**
 
-Create `backend/src/main/java/com/familyassets/system/package-info.java`:
+创建 `backend/src/main/java/com/familyassets/system/package-info.java`：
 
 ```java
 @org.springframework.modulith.ApplicationModule(displayName = "System")
 package com.familyassets.system;
 ```
 
-Create `backend/src/main/java/com/familyassets/system/SystemStatus.java`:
+创建 `backend/src/main/java/com/familyassets/system/SystemStatus.java`：
 
 ```java
 package com.familyassets.system;
@@ -501,7 +501,7 @@ public record SystemStatus(String name, String version) {
 }
 ```
 
-Create `backend/src/main/java/com/familyassets/system/SystemController.java`:
+创建 `backend/src/main/java/com/familyassets/system/SystemController.java`：
 
 ```java
 package com.familyassets.system;
@@ -523,12 +523,12 @@ class SystemController {
 
     @GetMapping
     SystemStatus status() {
-        return new SystemStatus("family-assets", version);
+        return new SystemStatus("stocket", version);
     }
 }
 ```
 
-Create `backend/src/main/java/com/familyassets/system/ApiExceptionHandler.java`:
+创建 `backend/src/main/java/com/familyassets/system/ApiExceptionHandler.java`：
 
 ```java
 package com.familyassets.system;
@@ -558,14 +558,14 @@ class ApiExceptionHandler {
 }
 ```
 
-- [ ] **Step 4: Add common application configuration**
+- [ ] **步骤 4：添加通用应用程序配置**
 
-Create `backend/src/main/resources/application.yml`:
+创建 `backend/src/main/resources/application.yml`：
 
 ```yaml
 spring:
   application:
-    name: family-assets
+    name: stocket
   threads:
     virtual:
       enabled: true
@@ -594,9 +594,9 @@ management:
           include: readinessState,db
 ```
 
-- [ ] **Step 5: Make build properties available in tests**
+- [ ] **步骤 5：在测试中使构建属性可用**
 
-Add this test configuration inside `SystemApiTest`, immediately before its closing brace:
+在 `SystemApiTest` 内、闭合大括号之前添加此测试配置：
 
 ```java
     @org.springframework.boot.test.context.TestConfiguration
@@ -610,35 +610,35 @@ Add this test configuration inside `SystemApiTest`, immediately before its closi
     }
 ```
 
-The `@Import` already present on `SystemApiTest` loads this build configuration, the validation probe, and the production exception handler.
+`SystemApiTest` 上已有的 `@Import` 会加载此构建配置、验证探测器和生产异常处理器。
 
-- [ ] **Step 6: Run system and architecture tests**
+- [ ] **步骤 6：运行系统和架构测试**
 
-Run:
+运行：
 
 ```bash
 ./mvnw -q -Dtest=SystemApiTest,ArchitectureTest test
 ```
 
-Expected: PASS; all nine modules are present and `/api/v1/system` returns build information.
+预期：通过；所有九个模块均存在，`/api/v1/system` 返回构建信息。
 
-- [ ] **Step 7: Commit module boundaries and system API**
+- [ ] **步骤 7：提交模块边界和系统 API**
 
 ```bash
 git add backend/src backend/pom.xml
 git commit -m "feat: establish modular system API foundation"
 ```
 
-### Task 4: Establish PostgreSQL and Flyway Baseline
+### 任务四：建立 PostgreSQL 和 Flyway 基线
 
-**Files:**
-- Create: `backend/src/main/resources/application-local.yml`
-- Create: `backend/src/main/resources/db/migration/V1__baseline.sql`
-- Create: `backend/src/test/java/com/familyassets/DatabaseMigrationTest.java`
+**文件：**
+- 创建：`backend/src/main/resources/application-local.yml`
+- 创建：`backend/src/main/resources/db/migration/V1__baseline.sql`
+- 创建：`backend/src/test/java/com/familyassets/DatabaseMigrationTest.java`
 
-- [ ] **Step 1: Write the failing database migration test**
+- [ ] **步骤 1：编写失败的数据库迁移测试**
 
-Create `backend/src/test/java/com/familyassets/DatabaseMigrationTest.java`:
+创建 `backend/src/test/java/com/familyassets/DatabaseMigrationTest.java`：
 
 ```java
 package com.familyassets;
@@ -682,19 +682,19 @@ class DatabaseMigrationTest {
 }
 ```
 
-- [ ] **Step 2: Run the database test**
+- [ ] **步骤 2：运行数据库测试**
 
-Run with Docker available:
+在 Docker 可用的情况下运行：
 
 ```bash
 ./mvnw -q -Dtest=DatabaseMigrationTest test
 ```
 
-Expected: FAIL because `V1__baseline.sql` does not exist. If Docker is unavailable, record that environment blocker and run this test in CI before marking the task complete.
+预期：失败，因为 `V1__baseline.sql` 不存在。如果 Docker 不可用，记录该环境阻塞项，并在标记任务完成前在 CI 中运行此测试。
 
-- [ ] **Step 3: Add the baseline migration**
+- [ ] **步骤 3：添加基线迁移**
 
-Create `backend/src/main/resources/db/migration/V1__baseline.sql`:
+创建 `backend/src/main/resources/db/migration/V1__baseline.sql`：
 
 ```sql
 create extension if not exists pg_trgm;
@@ -707,58 +707,58 @@ create table app_schema_marker (
 insert into app_schema_marker (version) values (1);
 ```
 
-- [ ] **Step 4: Add local database defaults**
+- [ ] **步骤 4：添加本地数据库默认配置**
 
-Create `backend/src/main/resources/application-local.yml`:
+创建 `backend/src/main/resources/application-local.yml`：
 
 ```yaml
 spring:
   datasource:
-    url: ${FAMILY_ASSETS_DB_URL:jdbc:postgresql://localhost:5432/family_assets}
-    username: ${FAMILY_ASSETS_DB_USER:family_assets}
-    password: ${FAMILY_ASSETS_DB_PASSWORD:family_assets}
+    url: ${STOCKET_DB_URL:jdbc:postgresql://localhost:5432/stocket}
+    username: ${STOCKET_DB_USER:stocket}
+    password: ${STOCKET_DB_PASSWORD:stocket}
 ```
 
-- [ ] **Step 5: Run migration and full backend tests**
+- [ ] **步骤 5：运行迁移和完整后端测试**
 
-Run:
+运行：
 
 ```bash
 ./mvnw test
 ```
 
-Expected: PASS; Testcontainers applies Flyway migration version 1 and Hibernate validates the empty business schema without generating DDL.
+预期：通过；Testcontainers 应用 Flyway 迁移版本 1，Hibernate 验证空的业务模式而不生成 DDL。
 
-- [ ] **Step 6: Commit the database baseline**
+- [ ] **步骤 6：提交数据库基线**
 
 ```bash
 git add backend/src/main/resources backend/src/test/java/com/familyassets/DatabaseMigrationTest.java
 git commit -m "feat: add PostgreSQL migration baseline"
 ```
 
-### Task 5: Bootstrap the Vue and Element Plus Shell
+### 任务五：引导 Vue 和 Element Plus 外壳
 
-**Files:**
-- Create: `frontend/package.json`
-- Create: `frontend/package-lock.json`
-- Create: `frontend/index.html`
-- Create: `frontend/tsconfig.json`
-- Create: `frontend/tsconfig.app.json`
-- Create: `frontend/vite.config.ts`
-- Create: `frontend/src/env.d.ts`
-- Create: `frontend/src/main.ts`
-- Create: `frontend/src/App.vue`
-- Create: `frontend/src/styles/main.css`
-- Create: `frontend/src/test/setup.ts`
-- Test: `frontend/src/test/App.spec.ts`
+**文件：**
+- 创建：`frontend/package.json`
+- 创建：`frontend/package-lock.json`
+- 创建：`frontend/index.html`
+- 创建：`frontend/tsconfig.json`
+- 创建：`frontend/tsconfig.app.json`
+- 创建：`frontend/vite.config.ts`
+- 创建：`frontend/src/env.d.ts`
+- 创建：`frontend/src/main.ts`
+- 创建：`frontend/src/App.vue`
+- 创建：`frontend/src/styles/main.css`
+- 创建：`frontend/src/test/setup.ts`
+- 测试：`frontend/src/test/App.spec.ts`
 
-- [ ] **Step 1: Add the pinned frontend manifest**
+- [ ] **步骤 1：添加固定的前端清单**
 
-Create `frontend/package.json`:
+创建 `frontend/package.json`：
 
 ```json
 {
-  "name": "family-assets-frontend",
+  "name": "stocket-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -789,17 +789,17 @@ Create `frontend/package.json`:
 }
 ```
 
-Run:
+运行：
 
 ```bash
 npm install
 ```
 
-Expected: `package-lock.json` is generated and `npm audit` has no unresolved critical vulnerability. Commit the lock file; never replace exact versions with ranges.
+预期：`package-lock.json` 被生成，`npm audit` 无未解决的严重漏洞。提交锁定文件；永远不要用范围版本替换精确版本。
 
-- [ ] **Step 2: Write the failing shell test**
+- [ ] **步骤 2：编写失败的外壳测试**
 
-Create `frontend/src/test/setup.ts`:
+创建 `frontend/src/test/setup.ts`：
 
 ```typescript
 import '@testing-library/jest-dom/vitest'
@@ -809,7 +809,7 @@ import { config } from '@vue/test-utils'
 config.global.plugins = [ElementPlus]
 ```
 
-Create `frontend/src/test/App.spec.ts`:
+创建 `frontend/src/test/App.spec.ts`：
 
 ```typescript
 import { render, screen } from '@testing-library/vue'
@@ -825,9 +825,9 @@ describe('App', () => {
 })
 ```
 
-- [ ] **Step 3: Configure TypeScript and Vitest**
+- [ ] **步骤 3：配置 TypeScript 和 Vitest**
 
-Create `frontend/tsconfig.json`:
+创建 `frontend/tsconfig.json`：
 
 ```json
 {
@@ -836,7 +836,7 @@ Create `frontend/tsconfig.json`:
 }
 ```
 
-Create `frontend/tsconfig.app.json`:
+创建 `frontend/tsconfig.app.json`：
 
 ```json
 {
@@ -850,7 +850,7 @@ Create `frontend/tsconfig.app.json`:
 }
 ```
 
-Create `frontend/vite.config.ts`:
+创建 `frontend/vite.config.ts`：
 
 ```typescript
 import vue from '@vitejs/plugin-vue'
@@ -868,25 +868,25 @@ export default defineConfig({
 })
 ```
 
-Create `frontend/src/env.d.ts`:
+创建 `frontend/src/env.d.ts`：
 
 ```typescript
 /// <reference types="vite/client" />
 ```
 
-- [ ] **Step 4: Run the test and verify it fails**
+- [ ] **步骤 4：运行测试并验证其失败**
 
-Run:
+运行：
 
 ```bash
 npm test
 ```
 
-Expected: FAIL because `src/App.vue` does not exist.
+预期：失败，因为 `src/App.vue` 不存在。
 
-- [ ] **Step 5: Implement the frontend shell**
+- [ ] **步骤 5：实现前端外壳**
 
-Create `frontend/index.html`:
+创建 `frontend/index.html`：
 
 ```html
 <!doctype html>
@@ -904,7 +904,7 @@ Create `frontend/index.html`:
 </html>
 ```
 
-Create `frontend/src/main.ts`:
+创建 `frontend/src/main.ts`：
 
 ```typescript
 import { createApp } from 'vue'
@@ -916,7 +916,7 @@ import App from './App.vue'
 createApp(App).use(ElementPlus).mount('#app')
 ```
 
-Create `frontend/src/App.vue`:
+创建 `frontend/src/App.vue`：
 
 ```vue
 <script setup lang="ts">
@@ -938,7 +938,7 @@ import { Box, CircleCheck } from '@element-plus/icons-vue'
 </template>
 ```
 
-Create `frontend/src/styles/main.css`:
+创建 `frontend/src/styles/main.css`：
 
 ```css
 :root {
@@ -971,9 +971,9 @@ body { margin: 0; min-width: 320px; min-height: 100vh; }
 .foundation-card p { margin: 0 0 20px; color: #64748b; }
 ```
 
-- [ ] **Step 6: Run frontend tests and production build**
+- [ ] **步骤 6：运行前端测试和生产构建**
 
-Run:
+运行：
 
 ```bash
 npm test
@@ -981,25 +981,25 @@ npm run typecheck
 npm run build
 ```
 
-Expected: all commands PASS and `frontend/dist/index.html` exists.
+预期：所有命令通过，`frontend/dist/index.html` 存在。
 
-- [ ] **Step 7: Commit the frontend shell**
+- [ ] **步骤 7：提交前端外壳**
 
 ```bash
 git add frontend
 git commit -m "feat: add Vue Element Plus application shell"
 ```
 
-### Task 6: Connect the Frontend Shell to the System API
+### 任务六：将前端外壳连接到系统 API
 
-**Files:**
-- Create: `frontend/src/api/system.ts`
-- Modify: `frontend/src/App.vue`
-- Modify: `frontend/src/test/App.spec.ts`
+**文件：**
+- 创建：`frontend/src/api/system.ts`
+- 修改：`frontend/src/App.vue`
+- 修改：`frontend/src/test/App.spec.ts`
 
-- [ ] **Step 1: Replace the shell test with an API status test**
+- [ ] **步骤 1：用 API 状态测试替换外壳测试**
 
-Replace `frontend/src/test/App.spec.ts` with:
+用以下内容替换 `frontend/src/test/App.spec.ts`：
 
 ```typescript
 import { render, screen } from '@testing-library/vue'
@@ -1010,7 +1010,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ name: 'family-assets', version: '0.1.0-test' }),
+      json: async () => ({ name: 'stocket', version: '0.1.0-test' }),
     }))
   })
 
@@ -1022,19 +1022,19 @@ describe('App', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [ ] **步骤 2：运行测试并验证其失败**
 
-Run:
+运行：
 
 ```bash
 npm test
 ```
 
-Expected: FAIL because the current shell never calls `/api/v1/system`.
+预期：失败，因为当前外壳从未调用 `/api/v1/system`。
 
-- [ ] **Step 3: Add the typed system client**
+- [ ] **步骤 3：添加类型化系统客户端**
 
-Create `frontend/src/api/system.ts`:
+创建 `frontend/src/api/system.ts`：
 
 ```typescript
 export interface SystemStatus {
@@ -1049,9 +1049,9 @@ export async function getSystemStatus(): Promise<SystemStatus> {
 }
 ```
 
-- [ ] **Step 4: Update the shell to show connection state**
+- [ ] **步骤 4：更新外壳以显示连接状态**
 
-Replace the script block in `frontend/src/App.vue` with:
+用以下内容替换 `frontend/src/App.vue` 中的脚本块：
 
 ```vue
 <script setup lang="ts">
@@ -1074,7 +1074,7 @@ onMounted(async () => {
 </script>
 ```
 
-Replace the existing `el-tag` in the template with:
+用以下内容替换模板中现有的 `el-tag`：
 
 ```vue
 <el-tag :type="connected ? 'success' : 'warning'" effect="light">
@@ -1083,9 +1083,9 @@ Replace the existing `el-tag` in the template with:
 </el-tag>
 ```
 
-- [ ] **Step 5: Run frontend verification**
+- [ ] **步骤 5：运行前端验证**
 
-Run:
+运行：
 
 ```bash
 npm test
@@ -1093,39 +1093,39 @@ npm run typecheck
 npm run build
 ```
 
-Expected: PASS; the test observes the exact same-origin API request and rendered backend version.
+预期：通过；测试观察到完全相同的同源 API 请求和渲染的后端版本。
 
-- [ ] **Step 6: Commit API integration**
+- [ ] **步骤 6：提交 API 集成**
 
 ```bash
 git add frontend/src
 git commit -m "feat: display backend health in frontend shell"
 ```
 
-### Task 7: Add Native Docker Compose Deployment
+### 任务七：添加原生 Docker Compose 部署
 
-**Files:**
-- Create: `.env.example`
-- Create: `deploy/compose.yml`
-- Create: `deploy/app/Dockerfile`
-- Create: `deploy/frontend/Dockerfile`
-- Create: `deploy/gateway/default.conf`
+**文件：**
+- 创建：`.env.example`
+- 创建：`deploy/compose.yml`
+- 创建：`deploy/app/Dockerfile`
+- 创建：`deploy/frontend/Dockerfile`
+- 创建：`deploy/gateway/default.conf`
 
-- [ ] **Step 1: Add the deployment environment contract**
+- [ ] **步骤 1：添加部署环境契约**
 
-Create `.env.example`:
+创建 `.env.example`：
 
 ```dotenv
-POSTGRES_DB=family_assets
-POSTGRES_USER=family_assets
-POSTGRES_PASSWORD=family-assets-local-dev
-FAMILY_ASSETS_PORT=8088
-FAMILY_ASSETS_DB_PASSWORD=family-assets-local-dev
+POSTGRES_DB=stocket
+POSTGRES_USER=stocket
+POSTGRES_PASSWORD=stocket-local-dev
+STOCKET_PORT=8088
+STOCKET_DB_PASSWORD=stocket-local-dev
 ```
 
-- [ ] **Step 2: Add the native backend image**
+- [ ] **步骤 2：添加原生后端镜像**
 
-Create `deploy/app/Dockerfile`:
+创建 `deploy/app/Dockerfile`：
 
 ```dockerfile
 FROM ghcr.io/graalvm/native-image-community:21 AS build
@@ -1141,15 +1141,15 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 --create-home app
 WORKDIR /app
-COPY --from=build /workspace/target/family-assets-backend ./family-assets
+COPY --from=build /workspace/target/stocket-backend ./stocket
 USER 10001
 EXPOSE 8080
-ENTRYPOINT ["/app/family-assets"]
+ENTRYPOINT ["/app/stocket"]
 ```
 
-- [ ] **Step 3: Add the frontend image and gateway configuration**
+- [ ] **步骤 3：添加前端镜像和网关配置**
 
-Create `deploy/frontend/Dockerfile`:
+创建 `deploy/frontend/Dockerfile`：
 
 ```dockerfile
 FROM node:24-alpine AS build
@@ -1165,7 +1165,7 @@ COPY --from=build /workspace/dist /usr/share/nginx/html
 EXPOSE 8080
 ```
 
-Create `deploy/gateway/default.conf`:
+创建 `deploy/gateway/default.conf`：
 
 ```nginx
 server {
@@ -1190,9 +1190,9 @@ server {
 }
 ```
 
-- [ ] **Step 4: Add Docker Compose**
+- [ ] **步骤 4：添加 Docker Compose**
 
-Create `deploy/compose.yml`:
+创建 `deploy/compose.yml`：
 
 ```yaml
 services:
@@ -1216,9 +1216,9 @@ services:
       dockerfile: deploy/app/Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: local
-      FAMILY_ASSETS_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      FAMILY_ASSETS_DB_USER: ${POSTGRES_USER}
-      FAMILY_ASSETS_DB_PASSWORD: ${FAMILY_ASSETS_DB_PASSWORD}
+      STOCKET_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      STOCKET_DB_USER: ${POSTGRES_USER}
+      STOCKET_DB_PASSWORD: ${STOCKET_DB_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -1233,7 +1233,7 @@ services:
       context: ..
       dockerfile: deploy/frontend/Dockerfile
     ports:
-      - "${FAMILY_ASSETS_PORT:-8088}:8080"
+      - "${STOCKET_PORT:-8088}:8080"
     depends_on:
       app:
         condition: service_healthy
@@ -1242,20 +1242,20 @@ volumes:
   postgres-data:
 ```
 
-- [ ] **Step 5: Validate Compose syntax before a long native build**
+- [ ] **步骤 5：在长时间原生构建前验证 Compose 语法**
 
-Run:
+运行：
 
 ```bash
 cp .env.example .env
 docker compose --env-file .env -f deploy/compose.yml config --quiet
 ```
 
-Expected: PASS with no schema or interpolation errors. The committed password is for loopback development only; replace it in `.env` before any shared or Internet-accessible deployment. The ignored `.env` file must not be committed.
+预期：通过，无模式或插值错误。提交的密码仅用于本地回环开发；在任何共享或可从互联网访问的部署前替换 `.env` 中的密码。被忽略的 `.env` 文件不得提交。
 
-- [ ] **Step 6: Build and start the native stack**
+- [ ] **步骤 6：构建并启动原生技术栈**
 
-Run:
+运行：
 
 ```bash
 docker compose --env-file .env -f deploy/compose.yml up --build -d
@@ -1263,35 +1263,35 @@ curl --fail http://localhost:8088/api/v1/system
 curl --fail http://localhost:8088/actuator/health/readiness
 ```
 
-Expected: both `curl` commands return HTTP 200; system JSON contains `family-assets`, and readiness reports `UP`.
+预期：两个 `curl` 命令均返回 HTTP 200；系统 JSON 包含 `stocket`，就绪状态报告 `UP`。
 
-- [ ] **Step 7: Stop the stack without deleting data**
+- [ ] **步骤 7：停止技术栈而不删除数据**
 
-Run:
+运行：
 
 ```bash
 docker compose --env-file .env -f deploy/compose.yml down
 ```
 
-Expected: containers stop; the named PostgreSQL volume remains.
+预期：容器停止；命名的 PostgreSQL 卷保留。
 
-- [ ] **Step 8: Commit deployment resources**
+- [ ] **步骤 8：提交部署资源**
 
 ```bash
 git add .env.example deploy
 git commit -m "build: add native Docker Compose deployment"
 ```
 
-### Task 8: Add Stable Developer Commands and CI
+### 任务八：添加稳定的开发者命令和 CI
 
-**Files:**
-- Create: `Makefile`
-- Create: `.github/workflows/ci.yml`
-- Modify: `README.md`
+**文件：**
+- 创建：`Makefile`
+- 创建：`.github/workflows/ci.yml`
+- 修改：`README.md`
 
-- [ ] **Step 1: Add stable local command aliases**
+- [ ] **步骤 1：添加稳定的本地命令别名**
 
-Create `Makefile`:
+创建 `Makefile`：
 
 ```makefile
 .PHONY: test backend-test frontend-test build aot native-test compose-config
@@ -1318,9 +1318,9 @@ compose-config:
 	docker compose --env-file .env.example -f deploy/compose.yml config --quiet
 ```
 
-- [ ] **Step 2: Add CI for JVM, frontend, PostgreSQL, AOT, and native tests**
+- [ ] **步骤 2：添加 JVM、前端、PostgreSQL、AOT 和原生测试的 CI**
 
-Create `.github/workflows/ci.yml`:
+创建 `.github/workflows/ci.yml`：
 
 ```yaml
 name: ci
@@ -1366,23 +1366,23 @@ jobs:
       - run: cd backend && ./mvnw -PnativeTest test
 ```
 
-- [ ] **Step 3: Replace README with verified developer instructions**
+- [ ] **步骤 3：用经验证的开发者说明替换 README**
 
-Replace `README.md` with:
+用以下内容替换 `README.md`：
 
 ```markdown
-# Family Assets
+# 家庭资产
 
 面向单个家庭、多位成员的自托管家庭资产管理系统。
 
-## Requirements
+## 环境要求
 
 - JDK 21
-- Node.js 24 and npm
+- Node.js 24 和 npm
 - Docker with Compose
-- GraalVM 21 only when compiling native executables outside Docker
+- 仅在 Docker 外编译原生可执行文件时需要 GraalVM 21
 
-## Verify
+## 验证
 
 ```bash
 make test
@@ -1391,22 +1391,22 @@ make aot
 make compose-config
 ```
 
-Run the native test suite with GraalVM 21:
+使用 GraalVM 21 运行原生测试套件：
 
 ```bash
 make native-test
 ```
 
-## Local Backend
+## 本地后端
 
-Start PostgreSQL, then run:
+启动 PostgreSQL，然后运行：
 
 ```bash
 cd backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-## Local Frontend
+## 本地前端
 
 ```bash
 cd frontend
@@ -1414,27 +1414,27 @@ npm install
 npm run dev
 ```
 
-Vite proxies `/api` to `http://localhost:8080`.
+Vite 将 `/api` 代理到 `http://localhost:8080`。
 
-## Native Docker Stack
+## 原生 Docker 技术栈
 
 ```bash
 cp .env.example .env
-# Replace the local-development passwords before shared deployment.
+# 在共享部署前替换本地开发密码。
 docker compose --env-file .env -f deploy/compose.yml up --build -d
 ```
 
-Open `http://localhost:8088`.
+打开 `http://localhost:8088`。
 
-## Documentation
+## 文档
 
-- Design: `docs/superpowers/specs/2026-07-10-family-assets-design.md`
-- Delivery roadmap: `docs/superpowers/plans/2026-07-11-delivery-roadmap.md`
+- 设计文档：`docs/superpowers/specs/2026-07-10-stocket-design.md`
+- 交付路线图：`docs/superpowers/plans/2026-07-11-delivery-roadmap.md`
 ```
 
-- [ ] **Step 4: Run every fast verification command**
+- [ ] **步骤 4：运行所有快速验证命令**
 
-Run:
+运行：
 
 ```bash
 make test
@@ -1443,43 +1443,43 @@ make aot
 make compose-config
 ```
 
-Expected: all targets PASS. `make aot` creates generated AOT sources without unsupported reflection or proxy errors.
+预期：所有目标通过。`make aot` 创建生成的 AOT 源码，无不支持的反射或代理错误。
 
-- [ ] **Step 5: Run the native verification gate**
+- [ ] **步骤 5：运行原生验证门禁**
 
-Run on a GraalVM 21 machine:
+在 GraalVM 21 机器上运行：
 
 ```bash
 make native-test
 ```
 
-Expected: PASS. If local GraalVM is unavailable, the GitHub Actions `native-test` job must pass before this task is complete.
+预期：通过。如果本地 GraalVM 不可用，GitHub Actions `native-test` 作业必须在此任务完成前通过。
 
-- [ ] **Step 6: Commit CI and developer documentation**
+- [ ] **步骤 6：提交 CI 和开发者文档**
 
 ```bash
 git add Makefile .github/workflows/ci.yml README.md
 git commit -m "ci: verify JVM frontend AOT and native builds"
 ```
 
-### Task 9: Final Foundation Acceptance
+### 任务九：最终基础验收
 
-**Files:**
-- Modify only if verification exposes a defect; do not add later-phase features.
+**文件：**
+- 仅在验证暴露缺陷时修改；不要添加后续阶段的功能。
 
-- [ ] **Step 1: Verify the repository is clean before acceptance**
+- [ ] **步骤 1：验收前验证仓库是否干净**
 
-Run:
+运行：
 
 ```bash
 git status --short
 ```
 
-Expected: no output.
+预期：无输出。
 
-- [ ] **Step 2: Run the full fast test matrix from a clean checkout**
+- [ ] **步骤 2：从干净检出运行完整的快速测试矩阵**
 
-Run:
+运行：
 
 ```bash
 make test
@@ -1488,11 +1488,11 @@ make aot
 make compose-config
 ```
 
-Expected: all commands exit 0.
+预期：所有命令退出码为 0。
 
-- [ ] **Step 3: Run the native deployment smoke test**
+- [ ] **步骤 3：运行原生部署冒烟测试**
 
-Run:
+运行：
 
 ```bash
 docker compose --env-file .env -f deploy/compose.yml up --build -d
@@ -1501,43 +1501,43 @@ curl --fail http://localhost:8088/actuator/health/readiness
 docker compose --env-file .env -f deploy/compose.yml down
 ```
 
-Expected: the native backend and frontend gateway return HTTP 200, PostgreSQL migration version 1 is installed, and shutdown preserves the database volume.
+预期：原生后端和前端网关返回 HTTP 200，PostgreSQL 迁移版本 1 已安装，关机保留数据库卷。
 
-- [ ] **Step 4: Inspect commit history and repository state**
+- [ ] **步骤 4：检查提交历史和仓库状态**
 
-Run:
+运行：
 
 ```bash
 git log --oneline --decorate -10
 git status --short --branch
 ```
 
-Expected: focused commits for backend bootstrap, module/system foundation, database baseline, frontend shell, API integration, deployment, and CI; branch is clean.
+预期：针对后端引导、模块/系统基础、数据库基线、前端外壳、API 集成、部署和 CI 有聚焦的提交；分支干净。
 
-- [ ] **Step 5: Record phase completion**
+- [ ] **步骤 5：记录阶段完成**
 
-Append a `Phase 1 Complete` section to `README.md` only after local or CI native verification passes:
+仅在本地或 CI 原生验证通过后，向 `README.md` 追加 `阶段一完成` 部分：
 
 ```markdown
-## Phase 1 Complete
+## 阶段一完成
 
-The JVM test suite, frontend test/build, Spring AOT processing, PostgreSQL migration test, GraalVM native tests, and native Docker smoke test pass for the engineering foundation.
+JVM 测试套件、前端测试/构建、Spring AOT 处理、PostgreSQL 迁移测试、GraalVM 原生测试和原生 Docker 冒烟测试均已为工程基础通过。
 ```
 
-Then commit:
+然后提交：
 
 ```bash
 git add README.md
 git commit -m "docs: record engineering foundation acceptance"
 ```
 
-## Phase 1 Completion Criteria
+## 阶段一完成标准
 
-- Java compilation uses release 21.
-- Spring Boot context, module verification, PostgreSQL migration, and system API tests pass.
-- The module model contains exactly the approved nine packages and no cycle.
-- Vue tests, type checking, and production build pass with a committed lock file.
-- Spring AOT processing and the `nativeTest` Maven profile pass.
-- The Docker Compose native stack returns healthy system and readiness endpoints.
-- No identity, catalog, location, inventory, reminder, notification, attachment, or audit business behavior has leaked into this foundation phase.
-- The Git working tree is clean and each task has a focused commit.
+- Java 编译使用 release 21。
+- Spring Boot 上下文、模块验证、PostgreSQL 迁移和系统 API 测试通过。
+- 模块模型恰好包含已批准的九个包且无循环。
+- Vue 测试、类型检查和生产构建通过，且有已提交的锁定文件。
+- Spring AOT 处理和 `nativeTest` Maven 配置通过。
+- Docker Compose 原生技术栈返回健康的系统和就绪端点。
+- 身份、目录、位置、库存、提醒、通知、附件或审计业务行为均未泄漏到此基础阶段。
+- Git 工作树干净，每个任务有聚焦的提交。

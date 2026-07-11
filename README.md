@@ -1,4 +1,4 @@
-# Family Assets
+# Stocket
 
 面向单个家庭、多位成员的自托管家庭资产与日常物品管理系统。
 
@@ -13,5 +13,5 @@
 - PostgreSQL
 - Docker Compose
 
-详细设计见 [家庭资产管理系统设计规格](docs/superpowers/specs/2026-07-10-family-assets-design.md)。
+详细设计见 [家庭资产管理系统设计规格](docs/superpowers/specs/2026-07-10-stocket-design.md)。
 

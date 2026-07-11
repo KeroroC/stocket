@@ -1,63 +1,63 @@
-# Family Assets Delivery Roadmap
+# 家庭资产交付路线图
 
-> **For agentic workers:** Each phase requires its own detailed plan before implementation. Implement phases in order; every phase must leave the repository deployable and testable.
+> **致智能体工作者：** 每个阶段在实施前都需要制定独立的详细计划。按顺序实施各阶段；每个阶段完成后，仓库必须保持可部署和可测试状态。
 
-**Goal:** Deliver the approved Family Assets design through small, independently verifiable increments instead of one oversized implementation plan.
+**目标：** 通过小型、可独立验证的增量方式交付已批准的家庭资产设计方案，而非一次性制定庞大的实施计划。
 
-**Architecture:** A single repository contains a Java 21/Spring Boot 4 modular monolith, a Vue 3 PWA, and Docker Compose deployment resources. PostgreSQL is the system of record; module boundaries are enforced with Spring Modulith, and GraalVM Native Image compatibility is verified from the first phase.
+**架构：** 单一仓库包含 Java 21/Spring Boot 4 模块化单体应用、Vue 3 PWA 和 Docker Compose 部署资源。PostgreSQL 作为系统数据源；模块边界通过 Spring Modulith 强制执行，GraalVM Native Image 兼容性从第一阶段开始即进行验证。
 
-**Tech Stack:** Java 21 LTS, Spring Boot 4.0.3, Spring Modulith 2.0.5, Maven, PostgreSQL, Flyway, Vue 3, TypeScript, Vite, Element Plus, Docker Compose, GraalVM Native Image
+**技术栈：** Java 21 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven、PostgreSQL、Flyway、Vue 3、TypeScript、Vite、Element Plus、Docker Compose、GraalVM Native Image
 
 ---
 
-## Phase 1: Engineering Foundation
+## 阶段一：工程基础
 
-Create the backend and frontend project skeletons, establish module boundaries, add PostgreSQL migrations, health/version endpoints, Docker Compose, CI, and JVM/native verification. The result is an empty but production-shaped application that starts reliably in development and as a native executable.
+创建后端和前端项目骨架，建立模块边界，添加 PostgreSQL 迁移、健康/版本端点、Docker Compose、CI 以及 JVM/原生验证。最终产出一个空的但具备生产形态的应用程序，可在开发环境和原生可执行文件中可靠启动。
 
-Detailed plan: `docs/superpowers/plans/2026-07-11-foundation-native-baseline.md`
+详细计划：`docs/superpowers/plans/2026-07-11-foundation-native-baseline.md`
 
-## Phase 2: Identity and Household
+## 阶段二：身份与家庭
 
-Implement one-time household initialization, server-side sessions, CSRF protection, login/logout, account management, invitation acceptance, role enforcement, password changes, administrator reset, local maintenance recovery, and identity audit events.
+实现一次性家庭初始化、服务端会话、CSRF 防护、登录/登出、账户管理、邀请接受、角色强制、密码修改、管理员重置、本地维护恢复和身份审计事件。
 
-Acceptance slice: an administrator initializes the system, creates or invites members, and all three roles receive correct API authorization.
+验收切片：管理员初始化系统，创建或邀请成员，三种角色均获得正确的 API 授权。
 
-## Phase 3: Catalog and Locations
+## 阶段三：目录与位置
 
-Implement tree-shaped categories and locations, category attribute schemas, item definitions, tags, barcodes, location QR codes, archive rules, and catalog search projections.
+实现树形分类和位置、分类属性模式、物品定义、标签、条码、位置二维码、归档规则和目录搜索投影。
 
-Acceptance slice: a member creates a category template, location hierarchy, and reusable item definition, then retrieves it by name or exact barcode.
+验收切片：成员创建分类模板、位置层级和可复用物品定义，然后通过名称或精确条码检索。
 
-## Phase 4: Inventory Ledger
+## 阶段四：库存台账
 
-Implement batch and asset inventory entries, expiration calculation, inbound, consumption, transfer, partial batch split, adjustment, loss, retirement, immutable movements, transactional snapshots, row locking, optimistic versions, idempotency, and integrity reconciliation.
+实现批量和资产库存条目、过期计算、入库、消耗、调拨、部分批次拆分、调整、损耗、退库、不可变移动记录、事务快照、行锁、乐观版本控制、幂等性和完整性对账。
 
-Acceptance slice: concurrent operations never create negative inventory, retries never duplicate a movement, and movement sums match inventory snapshots.
+验收切片：并发操作永远不会产生负库存，重试永远不会重复创建移动记录，移动总和与库存快照一致。
 
-## Phase 5: Reminder and Notification Pipeline
+## 阶段五：提醒与通知管道
 
-Implement expiration and low-stock rules, reminder lifecycle, transactional Outbox processing, in-app notifications, Web Push, SMTP email, generic Webhook delivery, deduplication, exponential retries, encrypted channel secrets, and failed-delivery administration.
+实现过期和低库存规则、提醒生命周期、事务性 Outbox 处理、应用内通知、Web Push、SMTP 邮件、通用 Webhook 投递、去重、指数退避重试、加密渠道密钥和投递失败管理。
 
-Acceptance slice: inventory changes create the correct reminders; a failing external channel does not roll back inventory and can be retried safely.
+验收切片：库存变更创建正确的提醒；外部渠道失败不会回滚库存操作，且可安全重试。
 
-## Phase 6: Mobile-First PWA Workflows
+## 阶段六：移动优先 PWA 工作流
 
-Implement the task-oriented home page, global search, item/location browsing, four-step inbound wizard, barcode and QR scanning, inventory actions, reminder views, IndexedDB drafts, seven-day expiry, session-specific cleanup, offline application shell, and responsive desktop management screens.
+实现面向任务的首页、全局搜索、物品/位置浏览、四步入库向导、条码和二维码扫描、库存操作、提醒视图、IndexedDB 草稿、七天过期、会话级清理、离线应用外壳和响应式桌面管理界面。
 
-Acceptance slice: an existing item can be received on a phone in under 30 seconds, a lost connection preserves the draft, and writes remain blocked until online.
+验收切片：在手机上接收现有物品可在 30 秒内完成，断网时草稿得以保留，在线前写入操作被阻止。
 
-## Phase 7: Attachments, Export, and Audit
+## 阶段七：附件、导出与审计
 
-Implement authenticated attachment upload/download, content-based file validation, invoices and warranty documents, CSV export, audit search, administrative diagnostics, and request trace correlation.
+实现认证附件上传/下载、基于内容的文件验证、发票和保修文档、CSV 导出、审计搜索、管理诊断和请求链路追踪关联。
 
-Acceptance slice: files cannot be accessed without authorization, exports match filtered search results, and critical changes are traceable to a member and request ID.
+验收切片：未授权无法访问文件，导出结果与筛选搜索结果一致，关键变更可追溯至成员和请求 ID。
 
-## Phase 8: Operations and Release Hardening
+## 阶段八：运维与发布加固
 
-Complete HTTPS gateway configuration, secret handling, scheduled PostgreSQL and attachment backups, retention, restore verification, observability, rate limits, image scanning, AMD64/ARM64 native releases, checksums, upgrade documentation, and full acceptance tests.
+完成 HTTPS 网关配置、密钥管理、PostgreSQL 和附件定期备份、保留策略、恢复验证、可观测性、速率限制、镜像扫描、AMD64/ARM64 原生发布、校验和、升级文档和完整验收测试。
 
-Acceptance slice: a release restores into a clean temporary environment, passes JVM and native smoke tests on both Linux architectures, and produces documented recovery evidence.
+验收切片：发布版本可在干净的临时环境中恢复，在两种 Linux 架构上通过 JVM 和原生冒烟测试，并产生有文档记录的恢复证据。
 
-## Planning Rule
+## 规划规则
 
-Before starting a phase, write `docs/superpowers/plans/YYYY-MM-DD-<phase>.md` with exact files, failing tests, commands, expected failures, minimal implementations, verification, and commit boundaries. Do not pull later-phase features into an earlier phase unless the approved design requires them as a prerequisite.
+开始某阶段前，编写 `docs/superpowers/plans/YYYY-MM-DD-<阶段>.md`，包含具体文件、失败测试、命令、预期失败、最小实现、验证和提交边界。除非已批准的设计要求作为前置条件，否则不要将后续阶段的功能提前引入当前阶段。
