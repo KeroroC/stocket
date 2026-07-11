@@ -1,7 +1,7 @@
 # Family Assets 家庭资产管理系统设计规格
 
 - 日期：2026-07-10
-- 状态：已完成产品设计评审，等待书面规格复核
+- 状态：已批准，可进入实施计划与执行
 - 部署模型：单个家庭、多位成员、自托管
 - 架构方案：模块化单体
 
@@ -354,7 +354,7 @@ flowchart TD
 
 ```bash
 ./mvnw test
-./mvnw -Pnative nativeTest
+./mvnw -PnativeTest test
 ./mvnw -Pnative native:compile
 ./mvnw -Pnative spring-boot:build-image
 ```
@@ -385,7 +385,7 @@ flowchart TD
 - 模块集成测试：公开接口、事务、Outbox 和权限；
 - 真实 PostgreSQL 容器测试：锁、约束、JSONB、迁移和并发；
 - API 契约测试：成功响应和 Problem Details；
-- 原生测试：执行 `nativeTest`；
+- 原生测试：执行 `./mvnw -PnativeTest test`；
 - 原生程序冒烟测试：登录、入库、搜索、领用、转移和提醒。
 
 ### 15.2 前端测试
