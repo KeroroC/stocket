@@ -4,6 +4,6 @@
   "compilerOptions": {
     "composite": true,
     "strict": true,
-    "types": ["vitest/globals", "element-plus/global"]
+    "types": ["vitest/globals", "element-plus/global", "node"]
   }
 }
