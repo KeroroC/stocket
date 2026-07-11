@@ -1128,12 +1128,12 @@ STOCKET_DB_PASSWORD=stocket-local-dev
 创建 `deploy/app/Dockerfile`：
 
 ```dockerfile
-FROM ghcr.io/graalvm/native-image-community:21 AS build
+FROM ghcr.io/graalvm/native-image-community:25 AS build
 WORKDIR /workspace
 COPY backend/.mvn backend/mvnw backend/pom.xml ./
 RUN ./mvnw -B -q dependency:go-offline
 COPY backend/src ./src
-RUN ./mvnw -B -Pnative -DskipTests native:compile
+RUN ./mvnw -B -Pnative -DskipTests package native:compile
 
 FROM debian:bookworm-slim
 RUN apt-get update \
@@ -1359,7 +1359,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: graalvm-community
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: maven
@@ -1380,7 +1380,7 @@ jobs:
 - JDK 21
 - Node.js 24 和 npm
 - Docker with Compose
-- 仅在 Docker 外编译原生可执行文件时需要 GraalVM 21
+- 仅在 Docker 外编译原生可执行文件时需要 GraalVM 25
 
 ## 验证
 
@@ -1391,7 +1391,7 @@ make aot
 make compose-config
 ```
 
-使用 GraalVM 21 运行原生测试套件：
+使用 GraalVM 25 运行原生测试套件：
 
 ```bash
 make native-test
@@ -1447,7 +1447,7 @@ make compose-config
 
 - [ ] **步骤 5：运行原生验证门禁**
 
-在 GraalVM 21 机器上运行：
+在 GraalVM 25 机器上运行：
 
 ```bash
 make native-test

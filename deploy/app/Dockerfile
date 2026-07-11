@@ -1,4 +1,4 @@
-FROM ghcr.io/graalvm/native-image-community:21 AS build
+FROM ghcr.io/graalvm/native-image-community:25 AS build
 
 WORKDIR /workspace
 
@@ -7,7 +7,7 @@ COPY backend/mvnw backend/pom.xml ./
 RUN ./mvnw -B dependency:go-offline
 
 COPY backend/src ./src
-RUN ./mvnw -B -Pnative -DskipTests native:compile
+RUN ./mvnw -B -Pnative -DskipTests package native:compile
 
 FROM debian:bookworm-slim AS runtime
 

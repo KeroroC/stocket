@@ -1,5 +1,6 @@
 package com.familyassets.system;
 
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ProblemDetail;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 class ApiExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
+    @RegisterReflectionForBinding(FieldError.class)
     ProblemDetail handleValidationError(MethodArgumentNotValidException exception) {
         ProblemDetail problem = ProblemDetail.forStatus(422);
         problem.setTitle("Validation failed");
