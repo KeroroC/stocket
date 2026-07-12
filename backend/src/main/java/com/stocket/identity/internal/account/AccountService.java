@@ -112,6 +112,7 @@ public class AccountService {
         String newPasswordHash = passwordEncoder.encode(newPassword);
         account.changePassword(newPasswordHash, now);
         accountRepository.save(account);
+        accountRepository.flush();
 
         // Revoke all sessions for this account
         sessionRepository.revokeAllByAccountId(accountId, now, "PASSWORD_CHANGED");

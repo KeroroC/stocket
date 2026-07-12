@@ -85,6 +85,65 @@ docker compose --env-file .env -f deploy/compose.yml up --build
 
 JVM 测试套件、前端测试/构建、Spring AOT 处理、PostgreSQL 迁移测试、GraalVM 原生测试和原生 Docker 冒烟测试均已为工程基础通过。
 
+## 阶段二完成：身份与家庭
+
+系统初始化、服务端会话、CSRF 防护、登录/登出、账户管理、邀请接受、角色授权、密码修改、管理员重置、本地维护恢复和身份审计事件均已实现并通过验收。
+
+### 初始化
+
+首次启动时通过 `/api/v1/setup/initialize` 创建家庭和管理员账户。该操作只能成功一次；首位管理员自动获得会话。
+
+### Cookie 与 HTTPS 要求
+
+会话令牌通过 `STOCKET_SESSION` Cookie 传输，设置 `Secure`、`HttpOnly` 和 `SameSite=Lax`。生产环境必须启用 HTTPS，否则 Cookie 无法发送。
+
+### 会话期限
+
+- 空闲超时：30 天
+- 绝对超时：90 天
+- 密码变更后全量撤销所有会话
+
+### 管理员恢复
+
+当管理员忘记密码时，可使用本地维护命令：
+
+```bash
+# JVM 模式
+java -jar backend/target/stocket-backend-0.1.0-SNAPSHOT.jar \
+  --stocket.maintenance.reset-admin=<用户名>
+
+# 原生模式
+./backend/target/stocket-backend \
+  --stocket.maintenance.reset-admin=<用户名>
+```
+
+命令会生成临时密码、撤销所有会话、写入审计事件。临时密码仅输出到标准输出。
+
+### 角色权限矩阵
+
+| 操作 | ADMIN | MEMBER | VIEWER |
+|------|-------|--------|--------|
+| 读取数据 | Yes | Yes | Yes |
+| 写入数据 | Yes | Yes | No |
+| 管理成员/邀请 | Yes | No | No |
+
+### 验证命令
+
+```bash
+# 阶段二验收测试
+cd backend && ./mvnw -Dtest=IdentityAcceptanceTest test
+
+# 全量后端测试
+cd backend && ./mvnw test
+
+# 前端测试与构建
+cd frontend && npm test && npm run typecheck && npm run build
+
+# 维护命令冒烟测试
+cd backend && ./mvnw -DskipTests package
+./scripts/identity-maintenance-smoke.sh
+```
+
 ## 文档
 
 - [产品与技术设计规格](docs/superpowers/specs/2026-07-10-stocket-design.md)

@@ -227,6 +227,7 @@ public class MemberAdminService {
         account.setCredentialsChangedAt(now);
         account.setUpdatedAt(now);
         accountRepository.save(account);
+        accountRepository.flush();
 
         // Revoke all sessions for this account
         sessionRepository.revokeAllByAccountId(account.getId(), now, "PASSWORD_RESET_BY_ADMIN");
