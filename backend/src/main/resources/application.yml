@@ -11,6 +11,20 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+stocket:
+  identity:
+    cookie:
+      name: STOCKET_SESSION
+      secure: true
+    session:
+      idle-timeout: 30d
+      absolute-timeout: 90d
+      touch-interval: 5m
+    invite:
+      default-expiry: 24h
+    login:
+      rate-limit-window: 15m
+      max-failures: 10
 management:
   endpoints:
     web:
