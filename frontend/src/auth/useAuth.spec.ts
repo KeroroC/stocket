@@ -117,6 +117,13 @@ describe('身份启动状态', () => {
   })
 
   it('已初始化且账户正常时显示 authenticated 视图', async () => {
+    const accountData = {
+      id: 'a1',
+      username: 'admin',
+      displayName: '管理员',
+      role: 'ADMIN',
+      mustChangePassword: false,
+    }
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {
         return Promise.resolve({
@@ -136,13 +143,14 @@ describe('身份启动状态', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: async () => ({
-            id: 'a1',
-            username: 'admin',
-            displayName: '管理员',
-            role: 'ADMIN',
-            mustChangePassword: false,
-          }),
+          json: async () => accountData,
+        })
+      }
+      if (url === '/api/v1/account/sessions') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [],
         })
       }
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
@@ -152,6 +160,7 @@ describe('身份启动状态', () => {
     render(App)
     await new Promise((r) => setTimeout(r, 0))
 
+    // '管理员' appears in the sidebar user name
     expect(screen.getByText('管理员')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '退出登录' })).toBeInTheDocument()
   })
@@ -205,6 +214,13 @@ describe('身份启动状态', () => {
           }),
         })
       }
+      if (url === '/api/v1/account/sessions') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [],
+        })
+      }
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     vi.stubGlobal('fetch', fetch)
@@ -231,7 +247,7 @@ describe('身份启动状态', () => {
   })
 
   it('登录后 401 回到 anonymous 状态', async () => {
-    let callCount = 0
+    let accountCallCount = 0
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {
         return Promise.resolve({
@@ -248,8 +264,9 @@ describe('身份启动状态', () => {
         })
       }
       if (url === '/api/v1/account') {
-        callCount++
-        if (callCount === 1) {
+        accountCallCount++
+        if (accountCallCount <= 2) {
+          // First call: bootstrap; Second call: AccountView loadProfile
           return Promise.resolve({
             ok: true,
             status: 200,
@@ -262,10 +279,18 @@ describe('身份启动状态', () => {
             }),
           })
         }
+        // Subsequent calls return 401
         return Promise.resolve({
           ok: false,
           status: 401,
           json: async () => ({ error: 'UNAUTHORIZED' }),
+        })
+      }
+      if (url === '/api/v1/account/sessions') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [],
         })
       }
       if (url === '/api/v1/auth/logout') {
@@ -278,7 +303,10 @@ describe('身份启动状态', () => {
     render(App)
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(screen.getByText('管理员')).toBeInTheDocument()
+    // Wait for the AppShell to render with user name
+    await waitFor(() => {
+      expect(screen.getByText('管理员')).toBeInTheDocument()
+    })
 
     await fireEvent.click(screen.getByRole('button', { name: '退出登录' }))
 
@@ -358,6 +386,13 @@ describe('身份启动状态', () => {
             role: 'ADMIN',
             mustChangePassword: false,
           }),
+        })
+      }
+      if (url === '/api/v1/account/sessions') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [],
         })
       }
       if (url === '/api/v1/auth/logout' && method === 'POST') {

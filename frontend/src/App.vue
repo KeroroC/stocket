@@ -5,6 +5,7 @@ import SetupView from './views/SetupView.vue'
 import LoginView from './views/LoginView.vue'
 import InviteAcceptView from './views/InviteAcceptView.vue'
 import PasswordChangeView from './views/PasswordChangeView.vue'
+import AppShell from './components/AppShell.vue'
 
 const { state, bootstrap, logout, passwordChanged, initialize } = useAuth()
 
@@ -41,6 +42,11 @@ function handlePasswordChanged() {
 function handleLogout() {
   logout()
 }
+
+function handleForcePasswordChange() {
+  // Re-bootstrap to transition to password-change-required state
+  bootstrap()
+}
 </script>
 
 <template>
@@ -76,10 +82,12 @@ function handleLogout() {
       @logout="handleLogout"
     />
 
-    <!-- authenticated -->
-    <section v-else-if="state.kind === 'authenticated'" class="auth-card">
-      <h1>{{ state.account.displayName }}</h1>
-      <button class="auth-submit" @click="logout()">退出登录</button>
-    </section>
+    <!-- authenticated: full management shell -->
+    <AppShell
+      v-else-if="state.kind === 'authenticated'"
+      :account="state.account"
+      @logout="handleLogout"
+      @force-password-change="handleForcePasswordChange"
+    />
   </main>
 </template>
