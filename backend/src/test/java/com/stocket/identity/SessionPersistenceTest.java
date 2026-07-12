@@ -12,6 +12,7 @@ import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -59,7 +60,9 @@ class SessionPersistenceTest {
 
             // Create MockMvc manually from the WebApplicationContext
             WebApplicationContext webAppContext = (WebApplicationContext) firstContext;
-            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webAppContext).build();
+            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webAppContext)
+                    .apply(SecurityMockMvcConfigurers.springSecurity())
+                    .build();
 
             // Initialize the system (creates admin account and session)
             MvcResult result = mockMvc.perform(post("/api/v1/setup/initialize")
@@ -75,10 +78,11 @@ class SessionPersistenceTest {
 
             sessionCookie = result.getResponse().getCookie("STOCKET_SESSION").getValue();
 
-            // Verify the session works in the first context (404 means auth passed, endpoint not found)
+            // Verify the session works in the first context
             mockMvc.perform(get("/api/v1/account")
                             .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", sessionCookie)))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.username").value("Owner"));
 
             // Verify session is stored in the database
             JdbcTemplate jdbc = firstContext.getBean(JdbcTemplate.class);
@@ -103,13 +107,16 @@ class SessionPersistenceTest {
 
             // Create MockMvc manually from the WebApplicationContext
             WebApplicationContext webAppContext = (WebApplicationContext) secondContext;
-            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webAppContext).build();
+            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webAppContext)
+                    .apply(SecurityMockMvcConfigurers.springSecurity())
+                    .build();
 
             // Use the original cookie to access a protected endpoint - should succeed
-            // (404 means auth passed but endpoint doesn't exist, 401 would mean auth failed)
+            // (200 means auth passed, 401 would mean auth failed)
             mockMvc.perform(get("/api/v1/account")
                             .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", sessionCookie)))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.username").value("Owner"));
 
             // Verify session is still in the database
             JdbcTemplate jdbc = secondContext.getBean(JdbcTemplate.class);
