@@ -34,7 +34,7 @@ class InviteAcceptanceController {
     @GetMapping("/{token}/status")
     ResponseEntity<?> getInviteStatus(@PathVariable String token) {
         try {
-            InviteService.InviteStatusResult status = inviteService.getInviteStatus(token);
+            InviteService.InviteStatusResult status = inviteService.getInviteStatus(token, clock.instant());
             return ResponseEntity.ok(new InviteStatusResponse(
                     status.available(), status.role(), status.expiresAt()));
         } catch (InviteService.InviteNotFoundException e) {

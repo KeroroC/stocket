@@ -96,6 +96,9 @@ class InviteIntegrationTest {
         jdbc.execute("TRUNCATE household_member, user_session, member_invite, user_account, household CASCADE");
         inviteService.getAcceptRateLimiter().clear();
 
+        // Reset the mutable clock to current time
+        ((MutableClock) clock).reset();
+
         // Set up log capturer for root logger
         Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         logAppender = new ListAppender<>();
@@ -337,6 +340,39 @@ class InviteIntegrationTest {
                 .andExpect(status().isNoContent());
 
         // Status should show unavailable
+        mockMvc.perform(get("/api/v1/invites/{token}/status", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false));
+    }
+
+    @Test
+    void getInviteStatusShowsUnavailableAfterExpiry() throws Exception {
+        String adminCookie = loginAsAdmin();
+
+        // Create invite with short expiry (use clock.instant() to stay consistent with MutableClock)
+        Instant shortExpiry = clock.instant().plus(Duration.ofMinutes(5));
+        String createResponse = mockMvc.perform(post("/api/v1/admin/invites")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"MEMBER","expiresAt":"%s"}
+                                """.formatted(shortExpiry.toString())))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String inviteLink = com.jayway.jsonpath.JsonPath.read(createResponse, "$.inviteLink").toString();
+        String token = inviteLink.substring(inviteLink.lastIndexOf('/') + 1);
+
+        // Status should show available before expiry
+        mockMvc.perform(get("/api/v1/invites/{token}/status", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true));
+
+        // Advance clock past expiry
+        ((MutableClock) clock).advance(Duration.ofMinutes(10));
+
+        // Status should show unavailable after expiry
         mockMvc.perform(get("/api/v1/invites/{token}/status", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.available").value(false));
@@ -981,13 +1017,19 @@ class InviteIntegrationTest {
 
     private static class MutableClock extends Clock {
         private Instant instant;
+        private final Instant initialInstant;
 
         MutableClock(Instant instant) {
             this.instant = instant;
+            this.initialInstant = instant;
         }
 
         void advance(Duration duration) {
             this.instant = this.instant.plus(duration);
+        }
+
+        void reset() {
+            this.instant = initialInstant;
         }
 
         @Override

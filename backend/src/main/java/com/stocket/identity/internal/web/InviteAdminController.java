@@ -1,5 +1,6 @@
 package com.stocket.identity.internal.web;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -28,11 +29,14 @@ class InviteAdminController {
 
     private final InviteService inviteService;
     private final HouseholdMemberRepository householdMemberRepository;
+    private final Clock clock;
 
     InviteAdminController(InviteService inviteService,
-                          HouseholdMemberRepository householdMemberRepository) {
+                          HouseholdMemberRepository householdMemberRepository,
+                          Clock clock) {
         this.inviteService = inviteService;
         this.householdMemberRepository = householdMemberRepository;
+        this.clock = clock;
     }
 
     @PostMapping
@@ -40,7 +44,7 @@ class InviteAdminController {
             @AuthenticationPrincipal IdentityPrincipal principal,
             @Valid @RequestBody CreateInviteRequest request) {
         UUID householdId = resolveHouseholdId(principal.accountId());
-        Instant now = Instant.now();
+        Instant now = clock.instant();
 
         try {
             InviteService.InviteCreationResult result = inviteService.createInvite(
@@ -83,7 +87,7 @@ class InviteAdminController {
             @AuthenticationPrincipal IdentityPrincipal principal,
             @PathVariable UUID inviteId) {
         UUID householdId = resolveHouseholdId(principal.accountId());
-        Instant now = Instant.now();
+        Instant now = clock.instant();
 
         try {
             inviteService.revokeInvite(householdId, inviteId, now);

@@ -52,6 +52,7 @@ public class InviteService {
     private final ApplicationEventPublisher eventPublisher;
     private final IdentityProperties properties;
     private final EntityManager entityManager;
+    private final Clock clock;
     private final BoundedRateLimiter<String> acceptRateLimiter;
 
     InviteService(MemberInviteRepository inviteRepository,
@@ -75,6 +76,7 @@ public class InviteService {
         this.eventPublisher = eventPublisher;
         this.properties = properties;
         this.entityManager = entityManager;
+        this.clock = clock;
         this.acceptRateLimiter = new BoundedRateLimiter<>(
                 clock, ACCEPT_RATE_LIMIT_WINDOW, ACCEPT_RATE_LIMIT_MAX, ACCEPT_RATE_LIMIT_MAX_KEYS);
     }
@@ -175,14 +177,14 @@ public class InviteService {
      * Uses a non-locked query since this is read-only.
      */
     @Transactional(readOnly = true)
-    public InviteStatusResult getInviteStatus(String rawToken) {
+    public InviteStatusResult getInviteStatus(String rawToken, Instant now) {
         String tokenHash = tokenHasher.sha256(rawToken);
 
         MemberInvite invite = inviteRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new InviteNotFoundException());
 
         return new InviteStatusResult(
-                invite.isAvailable() && invite.getExpiresAt().isAfter(Instant.now()),
+                invite.isAvailable() && invite.getExpiresAt().isAfter(now),
                 invite.getRole(),
                 invite.getExpiresAt());
     }
@@ -269,7 +271,7 @@ public class InviteService {
                                    UUID actorAccountId, Map<String, Object> details) {
         IdentityAuditEvent event = new IdentityAuditEvent(
                 UUID.randomUUID(),
-                Instant.now(),
+                clock.instant(),
                 eventType,
                 outcome,
                 actorAccountId,
