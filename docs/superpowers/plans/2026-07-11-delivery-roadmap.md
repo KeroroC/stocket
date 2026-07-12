@@ -24,6 +24,8 @@
 
 设计规格：`docs/superpowers/specs/2026-07-12-identity-household-design.md`
 
+详细计划：`docs/superpowers/plans/2026-07-12-identity-household.md`
+
 ## 阶段三：目录与位置
 
 实现树形分类和位置、分类属性模式、物品定义、标签、条码、位置二维码、归档规则和目录搜索投影。
