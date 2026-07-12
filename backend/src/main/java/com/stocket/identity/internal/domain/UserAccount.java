@@ -98,4 +98,8 @@ public class UserAccount {
     public boolean isEnabled() {
         return status == AccountStatus.ACTIVE;
     }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
 }

@@ -103,4 +103,9 @@ public class UserSession {
         this.lastSeenAt = now;
         this.idleExpiresAt = newIdleExpiresAt;
     }
+
+    public void revoke(String reason, Instant now) {
+        this.revokedAt = now;
+        this.revokeReason = reason;
+    }
 }
