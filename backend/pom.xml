@@ -4,6 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- 父 POM：继承 Spring Boot 的依赖管理和插件配置 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -18,10 +19,13 @@
     <description>Stocket modular monolith backend</description>
 
     <properties>
-        <java.version>21</java.version>
+        <!-- 编译目标 Java 版本 -->
+        <java.version>25</java.version>
+        <!-- Spring Modulith 版本，用于模块化单体架构 -->
         <spring-modulith.version>2.0.5</spring-modulith.version>
     </properties>
 
+    <!-- 依赖版本管理：统一管理 Spring Modulith 各模块的版本 -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -35,64 +39,95 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- ==================== 运行时依赖 ==================== -->
+
+        <!-- Web 开发核心：内嵌 Tomcat，提供 REST/MVC 能力 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- 参数校验：支持 @Valid、@NotNull 等注解 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+
+        <!-- 生产监控：暴露 /actuator/health、/actuator/info 等端点 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+
+        <!-- 模块化单体架构核心：模块边界校验、模块间事件通信 -->
         <dependency>
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-starter-core</artifactId>
         </dependency>
+
+        <!-- 数据库访问层：Hibernate ORM + Spring Data Repository -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
+        <!-- 数据库版本迁移：管理 SQL 脚本的执行顺序 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
+
+        <!-- Flyway 的 PostgreSQL 方言支持 -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
+
+        <!-- PostgreSQL JDBC 驱动，仅运行时需要 -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- ==================== 测试依赖 ==================== -->
+
+        <!-- 测试套件：JUnit 5、Mockito、AssertJ 等 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Web 层切片测试：只加载 Controller 相关组件，不启动完整上下文 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- 模块化架构测试：验证模块边界是否被遵守 -->
         <dependency>
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Testcontainers 与 Spring Boot 集成，测试中启动真实容器 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Testcontainers 的 PostgreSQL 容器镜像 -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Testcontainers 与 JUnit 5 集成 -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
@@ -102,6 +137,12 @@
 
     <build>
         <plugins>
+            <!--
+                Spring Boot 打包插件：
+                - 将项目打成可执行 fat jar（包含所有依赖）
+                - build-info 目标生成 META-INF/build-info.properties，
+                  Actuator 的 /actuator/info 端点会暴露构建信息
+            -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -113,6 +154,13 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!--
+                GraalVM 原生镜像编译插件：
+                将 Java 应用编译成原生可执行文件，启动快、内存占用低。
+                -H:ConfigurationFileDirectories 指定反射/资源等元数据配置目录，
+                GraalVM 编译时需要这些信息来处理动态特性。
+            -->
             <plugin>
                 <groupId>org.graalvm.buildtools</groupId>
                 <artifactId>native-maven-plugin</artifactId>
@@ -126,6 +174,11 @@
     </build>
 
     <profiles>
+        <!--
+            原生测试 Profile：
+            激活命令：mvnw -PnativeTest test
+            在 GraalVM 原生模式下运行测试，验证原生镜像兼容性。
+        -->
         <profile>
             <id>nativeTest</id>
             <build>
@@ -135,7 +188,12 @@
                         <artifactId>native-maven-plugin</artifactId>
                         <configuration>
                             <buildArgs>
+                                <!--
+                                    强制 JUnit 的 MethodSegmentResolver 在构建时初始化，
+                                    解决原生镜像下的兼容性问题（默认所有类在运行时初始化）
+                                -->
                                 <buildArg>--initialize-at-build-time=org.junit.jupiter.engine.discovery.MethodSegmentResolver</buildArg>
+                                <!-- 测试代码的反射/资源注册信息目录 -->
                                 <buildArg>-H:ConfigurationFileDirectories=${project.build.testOutputDirectory}/META-INF/native-image/${project.groupId}/${project.artifactId}</buildArg>
                             </buildArgs>
                         </configuration>
