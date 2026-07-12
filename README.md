@@ -57,7 +57,7 @@ java -jar backend/target/stocket-backend-0.1.0-SNAPSHOT.jar \
 1. 生成一个 20 位临时密码
 2. 强制用户在首次登录时修改密码
 3. 撤销该用户的所有活跃会话
-4. 写入 `LOCAL_MAINTENANCE` 审计事件
+4. 写入 `PasswordRecoveredLocally` 审计事件
 
 临时密码会打印到标准输出，请妥善保管。
 

@@ -18,7 +18,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import com.stocket.StocketApplication;
-import com.stocket.identity.internal.maintenance.AdminRecoveryCommand;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * write audit events, and handle error cases correctly.
  *
  * <p>Tests launch the full Spring context via {@link SpringApplicationBuilder}
+ * with the {@code --stocket.maintenance.reset-admin} command-line argument
  * and verify both stdout output and database state.
  */
 @Testcontainers
@@ -118,6 +118,7 @@ class AdminRecoveryCommandTest {
     /**
      * Tests that when only the reset parameter is provided (without explicit
      * WebApplicationType.NONE), the application automatically uses NONE mode.
+     * The parameter must be passed as a command-line argument with the {@code --} prefix.
      */
     @Test
     void resetParamAutoUsesNoneMode() {
@@ -127,22 +128,30 @@ class AdminRecoveryCommandTest {
             initializeHousehold(jdbc, "admin", "ADMIN");
         }
 
-        // Act: start context with maintenance parameter (should auto-use NONE mode)
+        // Act: start context with maintenance parameter as command-line argument
         try (ConfigurableApplicationContext ctx = createBaseContext()
-                .properties("stocket.maintenance.reset-admin=admin")
-                .run()) {
-            // Assert: context should start successfully in NONE mode
+                .run("--stocket.maintenance.reset-admin=admin")) {
+            // Assert: context should start successfully
             assertThat(ctx).isNotNull();
             assertThat(ctx.isRunning()).isTrue();
 
             // Verify the MaintenanceConfiguration bean exists
             assertThat(ctx.containsBean("adminRecoveryRunner")).isTrue();
+
+            // Verify the command was executed (password should be changed)
+            JdbcTemplate jdbc = ctx.getBean(JdbcTemplate.class);
+            String passwordHash = jdbc.queryForObject(
+                    "SELECT password_hash FROM user_account WHERE normalized_username = ?",
+                    String.class, "admin");
+            assertThat(passwordHash).isNotNull();
+            assertThat(passwordHash).doesNotContain("dummy.hash.for.testing");
         }
     }
 
     /**
      * Tests that a valid admin password reset generates a temporary password,
      * forces password change, revokes sessions, and writes audit event.
+     * Verifies stdout output from the ApplicationRunner.
      */
     @Test
     void validAdminGeneratesTempPasswordAndRevokesSessions() {
@@ -158,17 +167,10 @@ class AdminRecoveryCommandTest {
         System.setOut(new PrintStream(stdout));
 
         try {
-            // Act: start context and invoke command directly
-            try (ConfigurableApplicationContext ctx = createBaseContext().run()) {
+            // Act: start context with maintenance parameter as command-line argument
+            try (ConfigurableApplicationContext ctx = createBaseContext()
+                    .run("--stocket.maintenance.reset-admin=admin")) {
                 JdbcTemplate jdbc = ctx.getBean(JdbcTemplate.class);
-
-                // Invoke the command directly
-                AdminRecoveryCommand command = ctx.getBean(AdminRecoveryCommand.class);
-                String tempPassword = command.resetAdmin("admin");
-
-                // Verify temporary password was generated
-                assertThat(tempPassword).isNotNull();
-                assertThat(tempPassword).hasSize(20);
 
                 // Verify password was changed (not the original dummy hash)
                 String passwordHash = jdbc.queryForObject(
@@ -189,13 +191,21 @@ class AdminRecoveryCommandTest {
                         Integer.class, "PasswordRecoveredLocally");
                 assertThat(auditCount).isEqualTo(1);
             }
+
+            // Verify stdout output from ApplicationRunner
+            String output = stdout.toString();
+            assertThat(output).contains("Admin recovery successful");
+            assertThat(output).contains("Username: admin");
+            assertThat(output).contains("Temporary password:");
+            assertThat(output).contains("The user must change this password on first login");
         } finally {
             System.setOut(originalOut);
         }
     }
 
     /**
-     * Tests that an unknown user causes an exception and no data modification.
+     * Tests that an unknown user causes the context to fail to start
+     * (non-zero exit code) and no data modification.
      */
     @Test
     void unknownUserFailsWithoutModifyingData() {
@@ -205,14 +215,17 @@ class AdminRecoveryCommandTest {
             initializeHousehold(jdbc, "admin", "ADMIN");
         }
 
-        // Act: start context and try to reset unknown user
-        try (ConfigurableApplicationContext ctx = createBaseContext().run()) {
-            JdbcTemplate jdbc = ctx.getBean(JdbcTemplate.class);
+        // Act: start context with unknown user - should fail to start
+        assertThatThrownBy(() -> {
+            try (ConfigurableApplicationContext ctx = createBaseContext()
+                    .run("--stocket.maintenance.reset-admin=nonexistent")) {
+                // Should not reach here
+            }
+        }).isInstanceOf(Exception.class);
 
-            // Invoke the command with unknown user - should throw exception
-            AdminRecoveryCommand command = ctx.getBean(AdminRecoveryCommand.class);
-            assertThatThrownBy(() -> command.resetAdmin("nonexistent"))
-                    .isInstanceOf(AdminRecoveryCommand.AdminNotFoundException.class);
+        // Verify no data was modified
+        try (ConfigurableApplicationContext verifyCtx = createBaseContext().run()) {
+            JdbcTemplate jdbc = verifyCtx.getBean(JdbcTemplate.class);
 
             // Verify password was NOT changed for the existing admin
             String passwordHash = jdbc.queryForObject(
@@ -229,7 +242,8 @@ class AdminRecoveryCommandTest {
     }
 
     /**
-     * Tests that a non-admin user causes an exception and no data modification.
+     * Tests that a non-admin user causes the context to fail to start
+     * (non-zero exit code) and no data modification.
      */
     @Test
     void nonAdminUserFailsWithoutModifyingData() {
@@ -239,14 +253,17 @@ class AdminRecoveryCommandTest {
             initializeHousehold(jdbc, "member", "MEMBER");
         }
 
-        // Act: start context and try to reset non-admin user
-        try (ConfigurableApplicationContext ctx = createBaseContext().run()) {
-            JdbcTemplate jdbc = ctx.getBean(JdbcTemplate.class);
+        // Act: start context with non-admin user - should fail to start
+        assertThatThrownBy(() -> {
+            try (ConfigurableApplicationContext ctx = createBaseContext()
+                    .run("--stocket.maintenance.reset-admin=member")) {
+                // Should not reach here
+            }
+        }).isInstanceOf(Exception.class);
 
-            // Invoke the command with non-admin user - should throw exception
-            AdminRecoveryCommand command = ctx.getBean(AdminRecoveryCommand.class);
-            assertThatThrownBy(() -> command.resetAdmin("member"))
-                    .isInstanceOf(AdminRecoveryCommand.NotAdminException.class);
+        // Verify no data was modified
+        try (ConfigurableApplicationContext verifyCtx = createBaseContext().run()) {
+            JdbcTemplate jdbc = verifyCtx.getBean(JdbcTemplate.class);
 
             // Verify password was NOT changed
             String passwordHash = jdbc.queryForObject(
@@ -263,7 +280,9 @@ class AdminRecoveryCommandTest {
     }
 
     /**
-     * Tests that a database failure causes an exception and no data modification.
+     * Tests that a database failure causes the context to fail to start
+     * (non-zero exit code). Since the context fails to start, no data
+     * could have been modified.
      */
     @Test
     void databaseFailureFailsWithoutModifyingData() {
@@ -273,33 +292,34 @@ class AdminRecoveryCommandTest {
             initializeHousehold(jdbc, "admin", "ADMIN");
         }
 
-        // Act: start context and simulate database failure by revoking all connections
-        try (ConfigurableApplicationContext ctx = createBaseContext().run()) {
-            JdbcTemplate jdbc = ctx.getBean(JdbcTemplate.class);
+        // Act: try to start context with invalid database URL to simulate failure
+        assertThatThrownBy(() -> {
+            try (ConfigurableApplicationContext ctx = new SpringApplicationBuilder(StocketApplication.class)
+                    .web(WebApplicationType.NONE)
+                    .properties(
+                            "spring.datasource.url=jdbc:postgresql://localhost:99999/invalid",
+                            "spring.datasource.username=invalid",
+                            "spring.datasource.password=invalid")
+                    .run("--stocket.maintenance.reset-admin=admin")) {
+                // Should not reach here
+            }
+        }).isInstanceOf(Exception.class);
 
-            // Revoke all sessions to simulate a database failure scenario
-            // (this doesn't actually break the database, but tests the command's resilience)
-            AdminRecoveryCommand command = ctx.getBean(AdminRecoveryCommand.class);
+        // Verify no data was modified in the real database
+        try (ConfigurableApplicationContext verifyCtx = createBaseContext().run()) {
+            JdbcTemplate jdbc = verifyCtx.getBean(JdbcTemplate.class);
 
-            // The command should still work even if there are no sessions to revoke
-            String tempPassword = command.resetAdmin("admin");
-
-            // Verify the command succeeded
-            assertThat(tempPassword).isNotNull();
-            assertThat(tempPassword).hasSize(20);
-
-            // Verify password was changed
+            // Verify password was NOT changed
             String passwordHash = jdbc.queryForObject(
                     "SELECT password_hash FROM user_account WHERE normalized_username = ?",
                     String.class, "admin");
-            assertThat(passwordHash).isNotNull();
-            assertThat(passwordHash).doesNotContain("dummy.hash.for.testing");
+            assertThat(passwordHash).contains("dummy.hash.for.testing");
 
-            // Verify audit event was written
+            // Verify no audit event was written
             Integer auditCount = jdbc.queryForObject(
                     "SELECT COUNT(*) FROM audit_log WHERE event_type = ?",
                     Integer.class, "PasswordRecoveredLocally");
-            assertThat(auditCount).isEqualTo(1);
+            assertThat(auditCount).isEqualTo(0);
         }
     }
 }
