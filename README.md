@@ -4,7 +4,7 @@ Stocket 是面向单个家庭、多位成员的自托管家庭资产与日常物
 
 ## 环境要求
 
-- JDK 21
+- JDK 25
 - Node.js 24 与 npm
 - Docker Engine 或兼容的容器 daemon，以及 Docker Compose
 - GraalVM 25（仅 `native-test` 与本地原生构建需要）

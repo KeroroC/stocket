@@ -4,9 +4,9 @@
 
 **目标：** 通过小型、可独立验证的增量方式交付已批准的家庭资产设计方案，而非一次性制定庞大的实施计划。
 
-**架构：** 单一仓库包含 Java 21/Spring Boot 4 模块化单体应用、Vue 3 PWA 和 Docker Compose 部署资源。PostgreSQL 作为系统数据源；模块边界通过 Spring Modulith 强制执行，GraalVM Native Image 兼容性从第一阶段开始即进行验证。
+**架构：** 单一仓库包含 Java 25/Spring Boot 4 模块化单体应用、Vue 3 PWA 和 Docker Compose 部署资源。PostgreSQL 作为系统数据源；模块边界通过 Spring Modulith 强制执行，GraalVM Native Image 兼容性从第一阶段开始即进行验证。
 
-**技术栈：** Java 21 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven、PostgreSQL、Flyway、Vue 3、TypeScript、Vite、Element Plus、Docker Compose、GraalVM Native Image
+**技术栈：** Java 25 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven、PostgreSQL、Flyway、Vue 3、TypeScript、Vite、Element Plus、Docker Compose、GraalVM Native Image
 
 ---
 

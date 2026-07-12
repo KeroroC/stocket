@@ -320,7 +320,7 @@ flowchart TD
 
 ### 13.1 后端
 
-- Java 21 LTS；
+- Java 25 LTS；
 - Spring Boot 4.0.3；
 - Maven Wrapper；
 - Spring AOT；
@@ -407,7 +407,7 @@ flowchart TD
 
 ```text
 stocket/
-├── backend/                 # Java 21 / Spring Boot / Maven
+├── backend/                 # Java 25 / Spring Boot / Maven
 ├── frontend/                # Vue 3 / TypeScript / Vite
 ├── deploy/                  # Docker Compose、网关和备份脚本
 ├── docs/

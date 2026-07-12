@@ -2,11 +2,11 @@
 
 > **致智能体工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实施本计划。步骤使用复选框（`- [ ]`）语法进行跟踪。
 
-**目标：** 创建一个具备生产形态的家庭资产仓库，运行 Java 21/Spring Boot 4 模块化单体应用和 Vue 3 前端，连接 PostgreSQL，通过 Docker Compose 启动，并通过 JVM、AOT 和 GraalVM 原生冒烟测试。
+**目标：** 创建一个具备生产形态的家庭资产仓库，运行 Java 25/Spring Boot 4 模块化单体应用和 Vue 3 前端，连接 PostgreSQL，通过 Docker Compose 启动，并通过 JVM、AOT 和 GraalVM 原生冒烟测试。
 
 **架构：** 后端是一个 Spring Boot 应用，划分为八个 Spring Modulith 包。阶段一只包含基础设施和显式模块外壳；业务实体留给后续计划。前端是一个独立构建的 Vue 应用，在部署中由 Nginx 提供服务，`/api` 反向代理到原生后端。
 
-**技术栈：** Java 21 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven 3.9.x、Flyway、PostgreSQL 17、Testcontainers、GraalVM Native Build Tools、Vue 3.5.20、TypeScript 5.9.3、Vite 8.0.16、Element Plus 2.11.0、Vitest、Docker Compose
+**技术栈：** Java 25 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven 3.9.x、Flyway、PostgreSQL 17、Testcontainers、GraalVM Native Build Tools、Vue 3.5.20、TypeScript 5.9.3、Vite 8.0.16、Element Plus 2.11.0、Vitest、Docker Compose
 
 ---
 
@@ -63,7 +63,7 @@ stocket/
     └── gateway/default.conf                    # SPA 回退和 API 代理
 ```
 
-### 任务一：引导 Java 21 Maven 应用程序
+### 任务一：引导 Java 25 Maven 应用程序
 
 **文件：**
 - 创建：`backend/pom.xml`
@@ -98,7 +98,7 @@ stocket/
   <description>Stocket modular monolith backend</description>
 
   <properties>
-    <java.version>21</java.version>
+    <java.version>25</java.version>
     <spring-modulith.version>2.0.5</spring-modulith.version>
   </properties>
 
@@ -271,13 +271,13 @@ public class StocketApplication {
 ./mvnw -q test
 ```
 
-预期：通过，包含一个测试和 Java 21；测试验证两个必需的应用程序注解而不启动基础设施。
+预期：通过，包含一个测试和 Java 25；测试验证两个必需的应用程序注解而不启动基础设施。
 
 - [ ] **步骤 7：提交后端引导**
 
 ```bash
 git add backend
-git commit -m "build: bootstrap Java 21 Spring Boot backend"
+git commit -m "build: bootstrap Java 25 Spring Boot backend"
 ```
 
 ### 任务二：强制执行模块化单体边界
@@ -931,7 +931,7 @@ import { Box, CircleCheck } from '@element-plus/icons-vue'
       <p>工程基础已就绪</p>
       <el-tag type="success" effect="light">
         <el-icon><CircleCheck /></el-icon>
-        Java 21 · Spring Boot Native · Vue 3
+        Java 25 · Spring Boot Native · Vue 3
       </el-tag>
     </section>
   </main>
@@ -1338,7 +1338,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
       - uses: actions/setup-node@v4
         with:
@@ -1377,7 +1377,7 @@ jobs:
 
 ## 环境要求
 
-- JDK 21
+- JDK 25
 - Node.js 24 和 npm
 - Docker with Compose
 - 仅在 Docker 外编译原生可执行文件时需要 GraalVM 25
@@ -1533,7 +1533,7 @@ git commit -m "docs: record engineering foundation acceptance"
 
 ## 阶段一完成标准
 
-- Java 编译使用 release 21。
+- Java 编译使用 release 25。
 - Spring Boot 上下文、模块验证、PostgreSQL 迁移和系统 API 测试通过。
 - 模块模型恰好包含已批准的九个包且无循环。
 - Vue 测试、类型检查和生产构建通过，且有已提交的锁定文件。
