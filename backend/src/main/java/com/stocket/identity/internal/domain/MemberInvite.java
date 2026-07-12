@@ -57,7 +57,71 @@ public class MemberInvite {
     public MemberInvite() {
     }
 
+    public MemberInvite(UUID id, Household household, String tokenHash,
+                         IdentityRole role, Instant expiresAt,
+                         UserAccount createdBy, Instant createdAt) {
+        this.id = id;
+        this.household = household;
+        this.tokenHash = tokenHash;
+        this.role = role;
+        this.expiresAt = expiresAt;
+        this.createdBy = createdBy;
+        this.createdAt = createdAt;
+    }
+
     public UUID getId() {
         return id;
+    }
+
+    public Household getHousehold() {
+        return household;
+    }
+
+    public String getTokenHash() {
+        return tokenHash;
+    }
+
+    public IdentityRole getRole() {
+        return role;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public Instant getAcceptedAt() {
+        return acceptedAt;
+    }
+
+    public void setAcceptedAt(Instant acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public Instant getRevokedAt() {
+        return revokedAt;
+    }
+
+    public void setRevokedAt(Instant revokedAt) {
+        this.revokedAt = revokedAt;
+    }
+
+    public UserAccount getCreatedBy() {
+        return createdBy;
+    }
+
+    public UserAccount getAcceptedBy() {
+        return acceptedBy;
+    }
+
+    public void setAcceptedBy(UserAccount acceptedBy) {
+        this.acceptedBy = acceptedBy;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public boolean isAvailable() {
+        return acceptedAt == null && revokedAt == null;
     }
 }
