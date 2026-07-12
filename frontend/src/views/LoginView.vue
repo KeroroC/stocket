@@ -27,16 +27,17 @@ async function handleSubmit() {
   submitting.value = true
   try {
     const trimmedUsername = username.value.trim()
+    const currentPassword = password.value
     await apiLogin({
       username: trimmedUsername,
-      password: password.value,
+      password: currentPassword,
     })
 
     password.value = ''
 
     emit('success', {
       username: trimmedUsername,
-      password: password.value,
+      password: currentPassword,
     })
   } catch {
     password.value = ''

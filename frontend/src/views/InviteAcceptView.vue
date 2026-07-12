@@ -69,10 +69,11 @@ async function handleSubmit() {
   try {
     const trimmedUsername = username.value.trim()
     const trimmedDisplayName = displayName.value.trim()
+    const currentPassword = password.value
     await apiAcceptInvite(props.token, {
       username: trimmedUsername,
       displayName: trimmedDisplayName,
-      password: password.value,
+      password: currentPassword,
     })
 
     password.value = ''
@@ -81,7 +82,7 @@ async function handleSubmit() {
     emit('success', {
       username: trimmedUsername,
       displayName: trimmedDisplayName,
-      password: password.value,
+      password: currentPassword,
     })
   } catch (err: unknown) {
     password.value = ''
@@ -108,9 +109,15 @@ async function handleSubmit() {
 
     <div v-else-if="loadError" role="alert" class="auth-error">
       {{ loadError }}
+      <a href="/login" class="auth-error-link">前往登录</a>
     </div>
 
-    <template v-else-if="status">
+    <div v-else-if="status && !status.available" role="alert" class="auth-error">
+      此邀请已失效，请联系家庭管理员重新发送邀请。
+      <a href="/login" class="auth-error-link">前往登录</a>
+    </div>
+
+    <template v-else-if="status && status.available">
       <div class="invite-info">
         <p>
           <span class="invite-label">角色：</span>

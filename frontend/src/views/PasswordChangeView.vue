@@ -34,9 +34,11 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
+    const currentOldPassword = oldPassword.value
+    const currentNewPassword = newPassword.value
     await apiChangePassword({
-      oldPassword: oldPassword.value,
-      newPassword: newPassword.value,
+      oldPassword: currentOldPassword,
+      newPassword: currentNewPassword,
     })
 
     oldPassword.value = ''
@@ -44,8 +46,8 @@ async function handleSubmit() {
     confirmNewPassword.value = ''
 
     emit('success', {
-      oldPassword: oldPassword.value,
-      newPassword: newPassword.value,
+      oldPassword: currentOldPassword,
+      newPassword: currentNewPassword,
     })
   } catch (err: unknown) {
     oldPassword.value = ''
