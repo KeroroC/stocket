@@ -93,7 +93,7 @@ class InviteIntegrationTest {
     @BeforeEach
     void cleanDatabase() {
         jdbc = new JdbcTemplate(dataSource);
-        jdbc.execute("TRUNCATE household_member, user_session, member_invite, user_account, household CASCADE");
+        jdbc.execute("TRUNCATE audit_log, household_member, user_session, member_invite, user_account, household CASCADE");
         inviteService.getAcceptRateLimiter().clear();
 
         // Reset the mutable clock to current time
@@ -875,7 +875,7 @@ class InviteIntegrationTest {
 
         // Verify audit log does not contain raw token or password
         List<String> auditDetails = jdbc.queryForList(
-                "SELECT details::text FROM audit_log WHERE event_type IN ('INVITE_CREATED', 'INVITE_ACCEPTED', 'INVITE_REVOKED')",
+                "SELECT details::text FROM audit_log WHERE event_type IN ('InviteCreated', 'InviteAccepted', 'InviteRevoked')",
                 String.class);
 
         for (String detail : auditDetails) {

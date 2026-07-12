@@ -122,7 +122,7 @@ public class InviteService {
                 role, expiresAt, createdBy, now);
         inviteRepository.save(invite);
 
-        publishAuditEvent("INVITE_CREATED", "SUCCESS", createdByAccountId, Map.of(
+        publishAuditEvent("InviteCreated", "SUCCESS", createdByAccountId, Map.of(
                 "inviteId", invite.getId().toString(),
                 "role", role.name()));
 
@@ -165,7 +165,7 @@ public class InviteService {
         invite.setRevokedAt(now);
         inviteRepository.save(invite);
 
-        publishAuditEvent("INVITE_REVOKED", "SUCCESS", null, Map.of(
+        publishAuditEvent("InviteRevoked", "SUCCESS", null, Map.of(
                 "inviteId", invite.getId().toString()));
 
         return true;
@@ -260,7 +260,7 @@ public class InviteService {
         invite.setAcceptedBy(account);
         inviteRepository.save(invite);
 
-        publishAuditEvent("INVITE_ACCEPTED", "SUCCESS", account.getId(), Map.of(
+        publishAuditEvent("InviteAccepted", "SUCCESS", account.getId(), Map.of(
                 "inviteId", invite.getId().toString(),
                 "role", invite.getRole().name()));
 

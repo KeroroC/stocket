@@ -101,7 +101,7 @@ public class MemberAdminService {
                 UUID.randomUUID(), household, account, role, now);
         memberRepository.save(member);
 
-        publishAuditEvent("MEMBER_CREATED", "SUCCESS", null, Map.of(
+        publishAuditEvent("MemberCreated", "SUCCESS", null, Map.of(
                 "targetAccountId", account.getId().toString(),
                 "role", role.name()));
 
@@ -165,7 +165,7 @@ public class MemberAdminService {
         member.setUpdatedAt(now);
         memberRepository.save(member);
 
-        publishAuditEvent("MEMBER_ROLE_CHANGED", "SUCCESS", null, Map.of(
+        publishAuditEvent("MemberRoleChanged", "SUCCESS", null, Map.of(
                 "targetMemberId", memberId.toString(),
                 "oldRole", oldRole.name(),
                 "newRole", newRole.name()));
@@ -195,7 +195,7 @@ public class MemberAdminService {
         member.getAccount().disable(now);
         accountRepository.save(member.getAccount());
 
-        publishAuditEvent("MEMBER_DISABLED", "SUCCESS", null, Map.of(
+        publishAuditEvent("MemberStatusChanged", "SUCCESS", null, Map.of(
                 "targetMemberId", memberId.toString()));
     }
 
@@ -231,7 +231,7 @@ public class MemberAdminService {
         // Revoke all sessions for this account
         sessionRepository.revokeAllByAccountId(account.getId(), now, "PASSWORD_RESET_BY_ADMIN");
 
-        publishAuditEvent("PASSWORD_RESET_BY_ADMIN", "SUCCESS", actorId, Map.of(
+        publishAuditEvent("PasswordResetByAdmin", "SUCCESS", actorId, Map.of(
                 "targetAccountId", account.getId().toString()));
 
         return temporaryPassword;

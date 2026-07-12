@@ -57,7 +57,7 @@ public class AuthenticationService {
 
         // Check rate limit before doing any work
         if (!rateLimiter.tryAcquire(throttleKey)) {
-            publishAuditEvent("LOGIN", "RATE_LIMITED", null, sourceAddress,
+            publishAuditEvent("LoginRateLimited", "FAILURE", null, sourceAddress,
                     Map.of("usernameFingerprint", usernameFingerprint));
             return LoginResult.rateLimited();
         }
@@ -69,7 +69,7 @@ public class AuthenticationService {
         if (account == null) {
             // Unknown user: run dummy password check for constant-time behavior
             passwordEncoder.matches(rawPassword, DUMMY_PASSWORD_HASH);
-            publishAuditEvent("LOGIN", "FAILURE", null, sourceAddress,
+            publishAuditEvent("LoginFailed", "FAILURE", null, sourceAddress,
                     Map.of("usernameFingerprint", usernameFingerprint));
             return LoginResult.invalidCredentials();
         }
@@ -78,14 +78,14 @@ public class AuthenticationService {
         if (!account.isEnabled()) {
             // Still check password to maintain constant-time behavior
             passwordEncoder.matches(rawPassword, account.getPasswordHash());
-            publishAuditEvent("LOGIN", "FAILURE", null, sourceAddress,
+            publishAuditEvent("LoginFailed", "FAILURE", null, sourceAddress,
                     Map.of("usernameFingerprint", usernameFingerprint, "reason", "ACCOUNT_DISABLED"));
             return LoginResult.invalidCredentials();
         }
 
         // Verify password
         if (!passwordEncoder.matches(rawPassword, account.getPasswordHash())) {
-            publishAuditEvent("LOGIN", "FAILURE", null, sourceAddress,
+            publishAuditEvent("LoginFailed", "FAILURE", null, sourceAddress,
                     Map.of("usernameFingerprint", usernameFingerprint));
             return LoginResult.invalidCredentials();
         }
@@ -96,7 +96,7 @@ public class AuthenticationService {
         // Create session
         CreatedSession createdSession = sessionService.create(account, userAgent, sourceAddress, now);
 
-        publishAuditEvent("LOGIN", "SUCCESS", account.getId(), sourceAddress, Map.of());
+        publishAuditEvent("LoginSucceeded", "SUCCESS", account.getId(), sourceAddress, Map.of());
 
         return LoginResult.success(account.getId(), account.getUsername(), createdSession);
     }
@@ -116,7 +116,7 @@ public class AuthenticationService {
 
         int revoked = sessionRepository.revokeByTokenHash(tokenHash, now, "USER_LOGOUT");
         if (revoked > 0) {
-            publishAuditEvent("LOGOUT", "SUCCESS", actorAccountId, null, Map.of());
+            publishAuditEvent("LoggedOut", "SUCCESS", actorAccountId, null, Map.of());
         }
     }
 

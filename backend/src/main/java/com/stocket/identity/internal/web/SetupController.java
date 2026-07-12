@@ -74,8 +74,12 @@ class SetupController {
                     httpRequest.getRemoteAddr(),
                     now);
 
-            // Publish LOGIN audit event for the initial admin session
-            publishAuditEvent("LOGIN", "SUCCESS", result.accountId(),
+            // Publish HouseholdInitialized event for the setup action
+            publishAuditEvent("HouseholdInitialized", "SUCCESS", result.accountId(),
+                    httpRequest.getRemoteAddr());
+
+            // Publish LoginSucceeded event for the session created during setup
+            publishAuditEvent("LoginSucceeded", "SUCCESS", result.accountId(),
                     httpRequest.getRemoteAddr());
 
             // Write session cookie

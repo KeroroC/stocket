@@ -31,9 +31,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -77,10 +77,10 @@ class IdentityAuditIntegrationTest {
         jdbc.execute("TRUNCATE audit_log, household_member, user_session, member_invite, user_account, household CASCADE");
     }
 
-    // ---- Setup / Initialization events ----
+    // ---- HouseholdInitialized ----
 
     @Test
-    void initializationPublishesLoginAuditEvent() throws Exception {
+    void initializationPublishesHouseholdInitializedAndLoginSucceeded() throws Exception {
         mockMvc.perform(post("/api/v1/setup/initialize")
                         .with(csrf())
                         .contentType(APPLICATION_JSON)
@@ -90,17 +90,16 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        // There should be a LOGIN SUCCESS event from the session created during setup
-        List<Map<String, Object>> rows = queryAuditLogs("LOGIN");
-        assertThat(rows).isNotEmpty();
+        List<Map<String, Object>> initEvents = queryAuditLogs("HouseholdInitialized");
+        assertThat(initEvents).isNotEmpty();
+        assertThat(initEvents.getFirst().get("outcome")).isEqualTo("SUCCESS");
+        assertThat(initEvents.getFirst().get("subject_type")).isEqualTo("USER_ACCOUNT");
 
-        Map<String, Object> loginEvent = rows.getFirst();
-        assertThat(loginEvent.get("outcome")).isEqualTo("SUCCESS");
-        assertThat(loginEvent.get("subject_type")).isEqualTo("USER_ACCOUNT");
-        assertThat(loginEvent.get("source")).isNotNull();
+        List<Map<String, Object>> loginEvents = queryAuditLogs("LoginSucceeded");
+        assertThat(loginEvents).isNotEmpty();
     }
 
-    // ---- Login success ----
+    // ---- LoginSucceeded ----
 
     @Test
     void successfulLoginCreatesAuditEvent() throws Exception {
@@ -114,17 +113,16 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
 
-        List<Map<String, Object>> successEvents = queryAuditLogs("LOGIN").stream()
-                .filter(r -> "SUCCESS".equals(r.get("outcome")))
-                .toList();
-        assertThat(successEvents).isNotEmpty();
+        List<Map<String, Object>> rows = queryAuditLogs("LoginSucceeded");
+        assertThat(rows).isNotEmpty();
 
-        Map<String, Object> event = successEvents.getFirst();
+        Map<String, Object> event = rows.getFirst();
+        assertThat(event.get("outcome")).isEqualTo("SUCCESS");
         assertThat(event.get("actor_account_id")).isNotNull();
         assertThat(event.get("subject_type")).isEqualTo("USER_ACCOUNT");
     }
 
-    // ---- Login failure ----
+    // ---- LoginFailed ----
 
     @Test
     void failedLoginCreatesAuditEventWithUsernameFingerprint() throws Exception {
@@ -138,26 +136,21 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isUnauthorized());
 
-        List<Map<String, Object>> failureEvents = queryAuditLogs("LOGIN").stream()
-                .filter(r -> "FAILURE".equals(r.get("outcome")))
-                .toList();
+        List<Map<String, Object>> failureEvents = queryAuditLogs("LoginFailed");
         assertThat(failureEvents).isNotEmpty();
 
         Map<String, Object> event = failureEvents.getFirst();
-        // Failed login: actor_account_id is null
         assertThat(event.get("actor_account_id")).isNull();
 
-        // Details should contain a username fingerprint
         String detailsJson = getDetailsAsText(event);
         Map<String, Object> details = parseJson(detailsJson);
         assertThat(details).containsKey("usernameFingerprint");
         assertThat(details.get("usernameFingerprint").toString()).isNotEmpty();
-        // Must not contain plaintext username
         assertThat(details.get("usernameFingerprint").toString()).isNotEqualTo("owner");
         assertThat(details.get("usernameFingerprint").toString()).isNotEqualTo("Owner");
     }
 
-    // ---- Logout ----
+    // ---- LoggedOut ----
 
     @Test
     void logoutCreatesAuditEvent() throws Exception {
@@ -169,7 +162,7 @@ class IdentityAuditIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", sessionCookie)))
                 .andExpect(status().isNoContent());
 
-        List<Map<String, Object>> rows = queryAuditLogs("LOGOUT");
+        List<Map<String, Object>> rows = queryAuditLogs("LoggedOut");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
@@ -177,7 +170,47 @@ class IdentityAuditIntegrationTest {
         assertThat(event.get("actor_account_id")).isNotNull();
     }
 
-    // ---- Member created ----
+    // ---- SessionRevoked ----
+
+    @Test
+    void sessionRevocationCreatesAuditEvent() throws Exception {
+        String adminCookie = loginAsAdmin();
+
+        UUID adminAccountId = jdbc.queryForObject(
+                "SELECT id FROM user_account WHERE normalized_username = 'owner'", UUID.class);
+
+        // Create a second session for the admin
+        String secondSessionToken = mockMvc.perform(post("/api/v1/auth/login")
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"username":"Owner","password":"correct horse battery staple"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getCookie("STOCKET_SESSION").getValue();
+
+        // Look up the second session ID via the token hash
+        String secondSessionHash = new String(org.springframework.security.crypto.codec.Hex.encode(
+                java.security.MessageDigest.getInstance("SHA-256")
+                        .digest(secondSessionToken.getBytes())));
+        UUID secondSessionId = jdbc.queryForObject(
+                "SELECT id FROM user_session WHERE token_hash = ?", UUID.class, secondSessionHash);
+
+        // Revoke the second session
+        mockMvc.perform(delete("/api/v1/account/sessions/{sessionId}", secondSessionId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isNoContent());
+
+        List<Map<String, Object>> rows = queryAuditLogs("SessionRevoked");
+        assertThat(rows).isNotEmpty();
+
+        Map<String, Object> event = rows.getFirst();
+        assertThat(event.get("outcome")).isEqualTo("SUCCESS");
+        assertThat(event.get("actor_account_id")).isEqualTo(adminAccountId);
+    }
+
+    // ---- MemberCreated ----
 
     @Test
     void memberCreationCreatesAuditEvent() throws Exception {
@@ -192,7 +225,7 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        List<Map<String, Object>> rows = queryAuditLogs("MEMBER_CREATED");
+        List<Map<String, Object>> rows = queryAuditLogs("MemberCreated");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
@@ -206,7 +239,7 @@ class IdentityAuditIntegrationTest {
         assertThat(details.get("role")).isEqualTo("MEMBER");
     }
 
-    // ---- Member role changed ----
+    // ---- MemberRoleChanged ----
 
     @Test
     void memberRoleChangeCreatesAuditEvent() throws Exception {
@@ -222,7 +255,7 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
 
-        List<Map<String, Object>> rows = queryAuditLogs("MEMBER_ROLE_CHANGED");
+        List<Map<String, Object>> rows = queryAuditLogs("MemberRoleChanged");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
@@ -234,14 +267,13 @@ class IdentityAuditIntegrationTest {
         assertThat(details.get("newRole")).isEqualTo("VIEWER");
     }
 
-    // ---- Member disabled ----
+    // ---- MemberStatusChanged ----
 
     @Test
     void memberDisableCreatesAuditEvent() throws Exception {
         String adminCookie = loginAsAdmin();
         UUID memberId = createMemberViaApi(adminCookie, "DisableUser", "禁用用户", "MEMBER");
 
-        // Create a second admin to allow disabling
         createMemberViaApi(adminCookie, "SecondAdmin", "第二管理员", "ADMIN");
 
         mockMvc.perform(post("/api/v1/admin/members/{memberId}/disable", memberId)
@@ -249,14 +281,14 @@ class IdentityAuditIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
                 .andExpect(status().isNoContent());
 
-        List<Map<String, Object>> rows = queryAuditLogs("MEMBER_DISABLED");
+        List<Map<String, Object>> rows = queryAuditLogs("MemberStatusChanged");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
         assertThat(event.get("outcome")).isEqualTo("SUCCESS");
     }
 
-    // ---- Password reset by admin ----
+    // ---- PasswordResetByAdmin ----
 
     @Test
     void adminPasswordResetCreatesAuditEvent() throws Exception {
@@ -268,7 +300,7 @@ class IdentityAuditIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
                 .andExpect(status().isOk());
 
-        List<Map<String, Object>> rows = queryAuditLogs("PASSWORD_RESET_BY_ADMIN");
+        List<Map<String, Object>> rows = queryAuditLogs("PasswordResetByAdmin");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
@@ -280,7 +312,7 @@ class IdentityAuditIntegrationTest {
         assertThat(details).containsKey("targetAccountId");
     }
 
-    // ---- Password changed (self) ----
+    // ---- PasswordChanged ----
 
     @Test
     void selfPasswordChangeCreatesAuditEvent() throws Exception {
@@ -299,7 +331,7 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
 
-        List<Map<String, Object>> rows = queryAuditLogs("PASSWORD_CHANGED");
+        List<Map<String, Object>> rows = queryAuditLogs("PasswordChanged");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
@@ -307,7 +339,7 @@ class IdentityAuditIntegrationTest {
         assertThat(event.get("actor_account_id")).isEqualTo(adminAccountId);
     }
 
-    // ---- Invite created ----
+    // ---- InviteCreated ----
 
     @Test
     void inviteCreationCreatesAuditEvent() throws Exception {
@@ -322,7 +354,7 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        List<Map<String, Object>> rows = queryAuditLogs("INVITE_CREATED");
+        List<Map<String, Object>> rows = queryAuditLogs("InviteCreated");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
@@ -334,7 +366,7 @@ class IdentityAuditIntegrationTest {
         assertThat(details).containsKey("role");
     }
 
-    // ---- Invite accepted ----
+    // ---- InviteAccepted ----
 
     @Test
     void inviteAcceptanceCreatesAuditEvent() throws Exception {
@@ -361,7 +393,7 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        List<Map<String, Object>> rows = queryAuditLogs("INVITE_ACCEPTED");
+        List<Map<String, Object>> rows = queryAuditLogs("InviteAccepted");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
@@ -369,7 +401,7 @@ class IdentityAuditIntegrationTest {
         assertThat(event.get("actor_account_id")).isNotNull();
     }
 
-    // ---- Invite revoked ----
+    // ---- InviteRevoked ----
 
     @Test
     void inviteRevocationCreatesAuditEvent() throws Exception {
@@ -393,7 +425,7 @@ class IdentityAuditIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
                 .andExpect(status().isNoContent());
 
-        List<Map<String, Object>> rows = queryAuditLogs("INVITE_REVOKED");
+        List<Map<String, Object>> rows = queryAuditLogs("InviteRevoked");
         assertThat(rows).isNotEmpty();
 
         Map<String, Object> event = rows.getFirst();
@@ -497,20 +529,17 @@ class IdentityAuditIntegrationTest {
     void jsonbDetailsRoundTripCorrectly() throws Exception {
         initializeHousehold();
 
-        // Login triggers an event with details
         loginAs("Owner", "correct horse battery staple");
 
-        // Read details from DB as JSONB text
         String detailsJson = jdbc.queryForObject(
-                "SELECT details::text FROM audit_log WHERE event_type = 'LOGIN' AND outcome = 'SUCCESS' ORDER BY occurred_at DESC LIMIT 1",
+                "SELECT details::text FROM audit_log WHERE event_type = 'LoginSucceeded' ORDER BY occurred_at DESC LIMIT 1",
                 String.class);
 
-        // Should be valid JSON and parseable
         Map<String, Object> details = parseJson(detailsJson);
         assertThat(details).isNotNull();
     }
 
-    // ---- All event types verified ----
+    // ---- All 12 event types verified ----
 
     @Test
     void allEventTypesAreAudited() throws Exception {
@@ -524,11 +553,13 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        // 1. LOGIN SUCCESS (from initialization)
-        assertThat(queryAuditLogs("LOGIN").stream()
-                .anyMatch(r -> "SUCCESS".equals(r.get("outcome")))).isTrue();
+        // 1. HouseholdInitialized
+        assertThat(queryAuditLogs("HouseholdInitialized")).isNotEmpty();
 
-        // 2. LOGIN FAILURE
+        // 2. LoginSucceeded (from initialization)
+        assertThat(queryAuditLogs("LoginSucceeded")).isNotEmpty();
+
+        // 3. LoginFailed
         mockMvc.perform(post("/api/v1/auth/login")
                         .with(csrf())
                         .contentType(APPLICATION_JSON)
@@ -536,8 +567,7 @@ class IdentityAuditIntegrationTest {
                                 {"username":"Owner","password":"wrong"}
                                 """))
                 .andExpect(status().isUnauthorized());
-        assertThat(queryAuditLogs("LOGIN").stream()
-                .anyMatch(r -> "FAILURE".equals(r.get("outcome")))).isTrue();
+        assertThat(queryAuditLogs("LoginFailed")).isNotEmpty();
 
         // Login for subsequent operations
         String adminCookie = mockMvc.perform(post("/api/v1/auth/login")
@@ -549,12 +579,12 @@ class IdentityAuditIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getCookie("STOCKET_SESSION").getValue();
 
-        // 3. LOGOUT
+        // 4. LoggedOut
         mockMvc.perform(post("/api/v1/auth/logout")
                         .with(csrf())
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
                 .andExpect(status().isNoContent());
-        assertThat(queryAuditLogs("LOGOUT")).isNotEmpty();
+        assertThat(queryAuditLogs("LoggedOut")).isNotEmpty();
 
         // Re-login
         adminCookie = mockMvc.perform(post("/api/v1/auth/login")
@@ -566,11 +596,11 @@ class IdentityAuditIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getCookie("STOCKET_SESSION").getValue();
 
-        // 4. MEMBER_CREATED
+        // 5. MemberCreated
         UUID memberId = createMemberViaApi(adminCookie, "Member1", "成员1", "MEMBER");
-        assertThat(queryAuditLogs("MEMBER_CREATED")).isNotEmpty();
+        assertThat(queryAuditLogs("MemberCreated")).isNotEmpty();
 
-        // 5. MEMBER_ROLE_CHANGED
+        // 6. MemberRoleChanged
         mockMvc.perform(patch("/api/v1/admin/members/{memberId}/role", memberId)
                         .with(csrf())
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
@@ -579,27 +609,44 @@ class IdentityAuditIntegrationTest {
                                 {"role":"VIEWER"}
                                 """))
                 .andExpect(status().isOk());
-        assertThat(queryAuditLogs("MEMBER_ROLE_CHANGED")).isNotEmpty();
+        assertThat(queryAuditLogs("MemberRoleChanged")).isNotEmpty();
 
-        // 6. MEMBER_DISABLED (need a second admin)
+        // 7. MemberStatusChanged (need a second admin)
         createMemberViaApi(adminCookie, "Admin2", "管理员2", "ADMIN");
         UUID memberId2 = createMemberViaApi(adminCookie, "DisableTarget", "禁用目标", "MEMBER");
         mockMvc.perform(post("/api/v1/admin/members/{memberId}/disable", memberId2)
                         .with(csrf())
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
                 .andExpect(status().isNoContent());
-        assertThat(queryAuditLogs("MEMBER_DISABLED")).isNotEmpty();
+        assertThat(queryAuditLogs("MemberStatusChanged")).isNotEmpty();
 
-        // 7. PASSWORD_RESET_BY_ADMIN
+        // 8. PasswordResetByAdmin
         UUID memberId3 = createMemberViaApi(adminCookie, "ResetTarget", "重置目标", "MEMBER");
         mockMvc.perform(post("/api/v1/admin/members/{memberId}/reset-password", memberId3)
                         .with(csrf())
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
                 .andExpect(status().isOk());
-        assertThat(queryAuditLogs("PASSWORD_RESET_BY_ADMIN")).isNotEmpty();
+        assertThat(queryAuditLogs("PasswordResetByAdmin")).isNotEmpty();
 
-        // 8. PASSWORD_CHANGED
-        String freshCookie = mockMvc.perform(post("/api/v1/auth/login")
+        // 9. SessionRevoked (revoke other sessions)
+        // Create an extra session for admin
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"username":"Owner","password":"correct horse battery staple"}
+                                """))
+                .andExpect(status().isOk());
+
+        // Revoke other sessions
+        mockMvc.perform(delete("/api/v1/account/sessions/others")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isNoContent());
+        assertThat(queryAuditLogs("SessionRevoked")).isNotEmpty();
+
+        // 10. PasswordChanged
+        adminCookie = mockMvc.perform(post("/api/v1/auth/login")
                         .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content("""
@@ -609,7 +656,7 @@ class IdentityAuditIntegrationTest {
                 .andReturn().getResponse().getCookie("STOCKET_SESSION").getValue();
         adminCookie = mockMvc.perform(post("/api/v1/account/password")
                         .with(csrf())
-                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", freshCookie))
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
                         .contentType(APPLICATION_JSON)
                         .content("""
                                 {"oldPassword":"correct horse battery staple",
@@ -617,9 +664,9 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getCookie("STOCKET_SESSION").getValue();
-        assertThat(queryAuditLogs("PASSWORD_CHANGED")).isNotEmpty();
+        assertThat(queryAuditLogs("PasswordChanged")).isNotEmpty();
 
-        // 9. INVITE_CREATED
+        // 11. InviteCreated
         String inviteResponse = mockMvc.perform(post("/api/v1/admin/invites")
                         .with(csrf())
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
@@ -629,9 +676,9 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        assertThat(queryAuditLogs("INVITE_CREATED")).isNotEmpty();
+        assertThat(queryAuditLogs("InviteCreated")).isNotEmpty();
 
-        // 10. INVITE_ACCEPTED
+        // 12. InviteAccepted
         String inviteLink = com.jayway.jsonpath.JsonPath.read(inviteResponse, "$.inviteLink").toString();
         String token = inviteLink.substring(inviteLink.lastIndexOf('/') + 1);
         mockMvc.perform(post("/api/v1/invites/{token}/accept", token)
@@ -641,9 +688,9 @@ class IdentityAuditIntegrationTest {
                                 {"username":"InvitedUser","displayName":"受邀","password":"strongpassword123"}
                                 """))
                 .andExpect(status().isCreated());
-        assertThat(queryAuditLogs("INVITE_ACCEPTED")).isNotEmpty();
+        assertThat(queryAuditLogs("InviteAccepted")).isNotEmpty();
 
-        // 11. INVITE_REVOKED
+        // 13. InviteRevoked
         String inviteResponse2 = mockMvc.perform(post("/api/v1/admin/invites")
                         .with(csrf())
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
@@ -659,16 +706,17 @@ class IdentityAuditIntegrationTest {
                         .with(csrf())
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
                 .andExpect(status().isNoContent());
-        assertThat(queryAuditLogs("INVITE_REVOKED")).isNotEmpty();
+        assertThat(queryAuditLogs("InviteRevoked")).isNotEmpty();
 
-        // Verify distinct event types
+        // Verify distinct event types (PasswordRecoveredLocally belongs to Task 9)
         List<String> eventTypes = jdbc.queryForList(
                 "SELECT DISTINCT event_type FROM audit_log", String.class);
         assertThat(eventTypes).containsExactlyInAnyOrder(
-                "LOGIN", "LOGOUT",
-                "MEMBER_CREATED", "MEMBER_ROLE_CHANGED", "MEMBER_DISABLED",
-                "PASSWORD_RESET_BY_ADMIN", "PASSWORD_CHANGED",
-                "INVITE_CREATED", "INVITE_ACCEPTED", "INVITE_REVOKED");
+                "HouseholdInitialized", "LoginSucceeded", "LoginFailed",
+                "LoggedOut", "SessionRevoked",
+                "MemberCreated", "MemberRoleChanged", "MemberStatusChanged",
+                "PasswordResetByAdmin", "PasswordChanged",
+                "InviteCreated", "InviteAccepted", "InviteRevoked");
     }
 
     // ---- Helpers ----
@@ -683,14 +731,11 @@ class IdentityAuditIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        // Revoke session created during setup to avoid interference
         jdbc.execute("UPDATE user_session SET revoked_at = now() WHERE revoked_at IS NULL");
-        // Clear audit logs from setup
         jdbc.execute("TRUNCATE audit_log");
     }
 
     private String loginAsAdmin() throws Exception {
-        // Ensure household exists
         Integer householdCount = jdbc.queryForObject("SELECT COUNT(*) FROM household", Integer.class);
         if (householdCount == 0) {
             initializeHousehold();
@@ -747,16 +792,11 @@ class IdentityAuditIntegrationTest {
                 eventType);
     }
 
-    /**
-     * Extracts the details field as a JSON text string from a query result row.
-     * Handles both direct text and PGobject representations.
-     */
     private String getDetailsAsText(Map<String, Object> row) {
         Object details = row.get("details_text");
         if (details instanceof String s) {
             return s;
         }
-        // Fallback: try to get the value from a PGobject-like structure
         if (details instanceof org.postgresql.util.PGobject pgo) {
             return pgo.getValue();
         }
@@ -767,9 +807,6 @@ class IdentityAuditIntegrationTest {
         return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
     }
 
-    /**
-     * Minimal mutable clock for testing time-dependent behavior.
-     */
     private static class MutableClock extends Clock {
         private Instant instant;
 

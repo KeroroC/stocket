@@ -120,7 +120,7 @@ public class AccountService {
         CreatedSession newSession = sessionService.create(account, userAgent, sourceAddress, now);
 
         // Publish event
-        publishAuditEvent("PASSWORD_CHANGED", "SUCCESS", accountId, sourceAddress, now);
+        publishAuditEvent("PasswordChanged", "SUCCESS", accountId, sourceAddress, now);
 
         return newSession;
     }
@@ -146,6 +146,8 @@ public class AccountService {
                 .map(session -> {
                     session.revoke("USER_REVOKED", now);
                     sessionRepository.save(session);
+                    publishAuditEvent("SessionRevoked", "SUCCESS", accountId, null, now,
+                            java.util.Map.of("sessionId", sessionId.toString()));
                     return true;
                 })
                 .orElse(false);
@@ -154,10 +156,18 @@ public class AccountService {
     @Transactional
     public void revokeOtherSessions(UUID accountId, UUID currentSessionId, Instant now) {
         sessionRepository.revokeAllByAccountIdExcept(accountId, currentSessionId, now, "USER_REVOKED_OTHERS");
+        publishAuditEvent("SessionRevoked", "SUCCESS", accountId, null, now,
+                java.util.Map.of("scope", "OTHER_SESSIONS"));
     }
 
     private void publishAuditEvent(String eventType, String outcome,
                                    UUID actorAccountId, String source, Instant now) {
+        publishAuditEvent(eventType, outcome, actorAccountId, source, now, java.util.Map.of());
+    }
+
+    private void publishAuditEvent(String eventType, String outcome,
+                                   UUID actorAccountId, String source, Instant now,
+                                   java.util.Map<String, Object> details) {
         IdentityAuditEvent event = new IdentityAuditEvent(
                 UUID.randomUUID(),
                 now,
@@ -168,7 +178,7 @@ public class AccountService {
                 actorAccountId,
                 null,
                 source != null ? source : "api",
-                java.util.Map.of());
+                details);
         eventPublisher.publishEvent(event);
     }
 
