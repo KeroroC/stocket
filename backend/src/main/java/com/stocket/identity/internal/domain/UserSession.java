@@ -99,6 +99,14 @@ public class UserSession {
         return revokedAt;
     }
 
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public String getSourceAddress() {
+        return sourceAddress;
+    }
+
     public void touch(Instant now, Instant newIdleExpiresAt) {
         this.lastSeenAt = now;
         this.idleExpiresAt = newIdleExpiresAt;

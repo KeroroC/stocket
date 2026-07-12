@@ -8,6 +8,7 @@ public record IdentityPrincipal(
         UUID accountId,
         String username,
         IdentityRole role,
-        boolean mustChangePassword
+        boolean mustChangePassword,
+        UUID sessionId
 ) {
 }

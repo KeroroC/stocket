@@ -156,11 +156,11 @@ class SecurityIntegrationTest {
         // First, create an account and get session cookie
         String cookie = initializeAndGetCookie();
 
-        // Access a protected endpoint with valid cookie - 404 means auth passed
-        // (401 would mean auth failed, 404 means auth succeeded but no handler)
+        // Access a protected endpoint with valid cookie - 200 means auth passed
+        // (401 would mean auth failed)
         mockMvc.perform(get("/api/v1/account")
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", cookie)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -180,7 +180,7 @@ class SecurityIntegrationTest {
         // Verify the session works in the current context
         mockMvc.perform(get("/api/v1/account")
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", cookie)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
 
         // Verify the session is stored in the database
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);

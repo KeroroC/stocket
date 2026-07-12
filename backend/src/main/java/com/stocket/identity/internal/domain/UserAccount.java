@@ -99,7 +99,30 @@ public class UserAccount {
         return status == AccountStatus.ACTIVE;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public Instant getCredentialsChangedAt() {
+        return credentialsChangedAt;
+    }
+
     public String getPasswordHash() {
         return passwordHash;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void changePassword(String newPasswordHash, Instant now) {
+        this.passwordHash = newPasswordHash;
+        this.credentialsChangedAt = now;
+        this.mustChangePassword = false;
+        this.updatedAt = now;
     }
 }

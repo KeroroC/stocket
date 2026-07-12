@@ -84,7 +84,8 @@ public class SessionService {
                             account.getId(),
                             account.getUsername(),
                             role,
-                            account.isMustChangePassword());
+                            account.isMustChangePassword(),
+                            session.getId());
                 });
     }
 

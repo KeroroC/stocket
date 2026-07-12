@@ -224,7 +224,7 @@ class AuthenticationIntegrationTest {
         // Verify session works
         mockMvc.perform(get("/api/v1/account")
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", sessionCookie)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
 
         // Logout
         mockMvc.perform(post("/api/v1/auth/logout")
