@@ -113,7 +113,7 @@ describe('身份启动状态', () => {
     render(App)
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(screen.getByText('修改密码')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '修改密码' })).toBeInTheDocument()
   })
 
   it('已初始化且账户正常时显示 authenticated 视图', async () => {

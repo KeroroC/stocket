@@ -41,6 +41,23 @@ export interface ChangePasswordRequest {
   newPassword: string
 }
 
+export interface InviteStatusResponse {
+  available: boolean
+  role: string
+  expiresAt: string
+}
+
+export interface AcceptInviteRequest {
+  username: string
+  displayName: string
+  password: string
+}
+
+export interface AcceptInviteResponse {
+  accountId: string
+  memberId: string
+}
+
 // --- API functions ---
 
 export function getSetupStatus(): Promise<SetupStatusResponse> {
@@ -77,6 +94,18 @@ export function getCurrentAccount(): Promise<AccountResponse> {
 
 export function changePassword(data: ChangePasswordRequest): Promise<void> {
   return apiRequest<void>('/api/v1/account/password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}
+
+export function getInviteStatus(token: string): Promise<InviteStatusResponse> {
+  return apiRequest<InviteStatusResponse>(`/api/v1/invites/${token}/status`)
+}
+
+export function acceptInvite(token: string, data: AcceptInviteRequest): Promise<AcceptInviteResponse> {
+  return apiRequest<AcceptInviteResponse>(`/api/v1/invites/${token}/accept`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),

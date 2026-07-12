@@ -1,9 +1,23 @@
 :root {
+  /* Mint Cream design tokens */
+  --st-color-bg: #FBF8EF;
+  --st-color-surface: #FFFEF9;
+  --st-color-primary-soft: #DFF4EC;
+  --st-color-primary: #167A63;
+  --st-color-primary-hover: #126B56;
+  --st-color-primary-active: #0F5D4B;
+  --st-color-text: #20332C;
+  --st-color-text-muted: #6C7B75;
+  --st-color-border: #E4E8DF;
+  --st-color-danger: #D65353;
+  --st-color-danger-soft: #FDE8E8;
+  --st-shadow-card: 0 20px 45px rgb(15 23 42 / 10%);
+
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  color: #1f2937;
-  background: #f3f6fb;
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--st-color-text);
+  background: var(--st-color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -18,6 +32,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--st-color-bg);
 }
 
 #app {
@@ -29,6 +44,190 @@ body {
   min-height: 100vh;
   place-items: center;
   padding: 24px;
+}
+
+/* Auth card */
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 32px 24px;
+  background: var(--st-color-surface);
+  border: 1px solid var(--st-color-border);
+  border-radius: 20px;
+  box-shadow: var(--st-shadow-card);
+}
+
+@media (min-width: 480px) {
+  .auth-card {
+    padding: 40px 32px;
+  }
+}
+
+.auth-card h1 {
+  margin: 0;
+  color: var(--st-color-text);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.auth-subtitle {
+  margin: 8px 0 24px;
+  color: var(--st-color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* Auth form */
+.auth-form {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--st-color-text);
+}
+
+.form-field input,
+.form-field select {
+  height: 44px;
+  padding: 0 12px;
+  font-size: 0.9375rem;
+  color: var(--st-color-text);
+  background: var(--st-color-surface);
+  border: 1px solid var(--st-color-border);
+  border-radius: 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--st-color-primary);
+  box-shadow: 0 0 0 3px var(--st-color-primary-soft);
+}
+
+.form-field input::placeholder {
+  color: var(--st-color-text-muted);
+}
+
+.form-field select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236C7B75' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* Auth error */
+.auth-error {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  color: var(--st-color-danger);
+  background: var(--st-color-danger-soft);
+  border: 1px solid var(--st-color-danger);
+  border-radius: 12px;
+  line-height: 1.5;
+}
+
+/* Auth buttons */
+.auth-submit {
+  width: 100%;
+  height: 48px;
+  margin-top: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--st-color-primary);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 160ms ease, opacity 160ms ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--st-color-primary-hover);
+}
+
+.auth-submit:active:not(:disabled) {
+  background: var(--st-color-primary-active);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-submit:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+}
+
+.auth-logout-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--st-color-text-muted);
+  background: transparent;
+  border: 1px solid var(--st-color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.auth-logout-btn:hover {
+  color: var(--st-color-text);
+  border-color: var(--st-color-text-muted);
+}
+
+.auth-logout-btn:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+}
+
+/* Invite info */
+.invite-info {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--st-color-primary-soft);
+  border-radius: 12px;
+}
+
+.invite-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.invite-info p + p {
+  margin-top: 4px;
+}
+
+.invite-label {
+  font-weight: 500;
+  color: var(--st-color-text);
+}
+
+/* Loading */
+.auth-loading {
+  text-align: center;
+  color: var(--st-color-text-muted);
+  font-size: 0.875rem;
+  padding: 24px 0;
 }
 
 .foundation-card {

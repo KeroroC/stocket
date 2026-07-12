@@ -292,7 +292,7 @@ describe('App', () => {
     render(App)
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(screen.getByText('修改密码')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '修改密码' })).toBeInTheDocument()
     expect(screen.getByText('请修改初始密码后再继续使用')).toBeInTheDocument()
   })
 
