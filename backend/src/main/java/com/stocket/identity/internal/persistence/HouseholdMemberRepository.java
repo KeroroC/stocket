@@ -26,8 +26,4 @@ public interface HouseholdMemberRepository extends JpaRepository<HouseholdMember
     List<HouseholdMember> findActiveMembersByHouseholdIdAndRole(
             @Param("householdId") UUID householdId,
             @Param("role") IdentityRole role);
-
-    @Query("select count(m) from HouseholdMember m join m.account a " +
-           "where m.household.id = :householdId and m.role = 'ADMIN' and a.status = 'ACTIVE'")
-    int countActiveAdminsByHouseholdId(@Param("householdId") UUID householdId);
 }

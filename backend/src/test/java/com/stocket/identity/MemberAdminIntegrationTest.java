@@ -1,21 +1,39 @@
 package com.stocket.identity;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.aot.DisabledInAotMode;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+
+import com.stocket.identity.internal.member.MemberAdminService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -31,17 +49,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisabledInAotMode
+@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class MemberAdminIntegrationTest {
 
     @Container
     @ServiceConnection
     static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17.5-alpine");
 
+    /**
+     * Provides a MutableClock bean so integration tests can advance time
+     * for rate limiter window recovery testing.
+     */
+    @TestConfiguration
+    static class MutableClockConfig {
+        @Bean
+        @Primary
+        Clock clock() {
+            return new MutableClock(Instant.now());
+        }
+    }
+
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private Clock clock;
+
+    @Autowired
+    private MemberAdminService memberAdminService;
 
     private JdbcTemplate jdbc;
 
@@ -57,6 +95,8 @@ class MemberAdminIntegrationTest {
                 )
                 """);
         jdbc.execute("TRUNCATE _test_temp_passwords");
+        // Clear rate limiter state between tests
+        memberAdminService.getResetPasswordRateLimiter().clear();
     }
 
     // ---- POST /admin/members ----
@@ -181,9 +221,9 @@ class MemberAdminIntegrationTest {
                 .andExpect(status().isNoContent());
 
         // Verify account is disabled
-        String status = jdbc.queryForObject(
+        String disableStatus = jdbc.queryForObject(
                 "SELECT status FROM user_account WHERE normalized_username = 'disableuser'", String.class);
-        assertThat(status).isEqualTo("DISABLED");
+        assertThat(disableStatus).isEqualTo("DISABLED");
 
         // Login should fail
         mockMvc.perform(post("/api/v1/auth/login")
@@ -271,6 +311,61 @@ class MemberAdminIntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void resetPasswordRateLimitRecoversAfterWindowExpires() throws Exception {
+        String adminCookie = loginAsAdmin("correct horse battery staple");
+        UUID memberId = createMemberViaApi(adminCookie, "RecoverTarget", "恢复目标", "MEMBER");
+
+        // Exhaust the rate limit (5 resets)
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/v1/admin/members/{memberId}/reset-password", memberId)
+                            .with(csrf())
+                            .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                    .andExpect(status().isOk());
+        }
+
+        // 6th should be rate limited
+        mockMvc.perform(post("/api/v1/admin/members/{memberId}/reset-password", memberId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isTooManyRequests());
+
+        // Advance clock past the 15-minute window
+        ((MutableClock) clock).advance(Duration.ofMinutes(16));
+
+        // Should succeed again after window expires
+        mockMvc.perform(post("/api/v1/admin/members/{memberId}/reset-password", memberId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void resetPasswordRateLimiterKeyCountStaysBounded() throws Exception {
+        String adminCookie = loginAsAdmin("correct horse battery staple");
+
+        // Create 5 different targets and reset each once
+        for (int i = 0; i < 5; i++) {
+            UUID memberId = createMemberViaApi(adminCookie, "BoundTarget" + i, "目标" + i, "MEMBER");
+            mockMvc.perform(post("/api/v1/admin/members/{memberId}/reset-password", memberId)
+                            .with(csrf())
+                            .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                    .andExpect(status().isOk());
+        }
+
+        // Verify key count matches the number of unique targets
+        assertThat(memberAdminService.getResetPasswordRateLimiter().trackedKeyCount()).isEqualTo(5);
+
+        // Create one more and reset - key count should not exceed the configured max
+        UUID extraMember = createMemberViaApi(adminCookie, "ExtraTarget", "额外目标", "MEMBER");
+        mockMvc.perform(post("/api/v1/admin/members/{memberId}/reset-password", extraMember)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isOk());
+
+        assertThat(memberAdminService.getResetPasswordRateLimiter().trackedKeyCount()).isLessThanOrEqualTo(10000);
+    }
+
     // ---- Last admin protection ----
 
     @Test
@@ -305,6 +400,81 @@ class MemberAdminIntegrationTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("LAST_ADMIN_REQUIRED"));
+    }
+
+    @Test
+    void concurrentDemotionOfTwoAdminsPreservesAtLeastOne() throws Exception {
+        String adminCookie = loginAsAdmin("correct horse battery staple");
+
+        // Create a second admin
+        UUID admin2MemberId = createMemberViaApi(adminCookie, "ConcurrentAdmin2", "并发管理员2", "ADMIN");
+
+        UUID admin1AccountId = jdbc.queryForObject(
+                "SELECT id FROM user_account WHERE normalized_username = 'owner'", UUID.class);
+        UUID admin1MemberId = jdbc.queryForObject(
+                "SELECT id FROM household_member WHERE account_id = ?", UUID.class, admin1AccountId);
+
+        // Verify we start with 2 admins
+        int adminCountBefore = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM household_member m JOIN user_account a ON m.account_id = a.id " +
+                "WHERE m.role = 'ADMIN' AND a.status = 'ACTIVE'", Integer.class);
+        assertThat(adminCountBefore).isEqualTo(2);
+
+        // Concurrently demote both admins using the service directly
+        // (follows SetupIntegrationTest pattern with CountDownLatch + virtual threads)
+        int threadCount = 2;
+        CountDownLatch readyLatch = new CountDownLatch(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CopyOnWriteArrayList<String> outcomes = new CopyOnWriteArrayList<>();
+
+        UUID finalAdmin1MemberId = admin1MemberId;
+        UUID finalAdmin2MemberId = admin2MemberId;
+
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            Future<?> f1 = executor.submit(() -> {
+                readyLatch.countDown();
+                try {
+                    startLatch.await();
+                    memberAdminService.updateRole(finalAdmin1MemberId, IdentityRole.MEMBER, Instant.now());
+                    outcomes.add("SUCCESS");
+                } catch (MemberAdminService.LastAdminRequiredException e) {
+                    outcomes.add("LAST_ADMIN_REQUIRED");
+                } catch (Exception e) {
+                    outcomes.add("ERROR:" + e.getMessage());
+                }
+            });
+
+            Future<?> f2 = executor.submit(() -> {
+                readyLatch.countDown();
+                try {
+                    startLatch.await();
+                    memberAdminService.updateRole(finalAdmin2MemberId, IdentityRole.MEMBER, Instant.now());
+                    outcomes.add("SUCCESS");
+                } catch (MemberAdminService.LastAdminRequiredException e) {
+                    outcomes.add("LAST_ADMIN_REQUIRED");
+                } catch (Exception e) {
+                    outcomes.add("ERROR:" + e.getMessage());
+                }
+            });
+
+            // Wait for both threads to be ready, then release them simultaneously
+            readyLatch.await(5, TimeUnit.SECONDS);
+            startLatch.countDown();
+
+            f1.get(10, TimeUnit.SECONDS);
+            f2.get(10, TimeUnit.SECONDS);
+        }
+
+        // Exactly one should succeed and one should fail
+        assertThat(outcomes).hasSize(2);
+        assertThat(outcomes).contains("SUCCESS");
+        assertThat(outcomes).contains("LAST_ADMIN_REQUIRED");
+
+        // At least one admin must remain
+        int adminCountAfter = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM household_member m JOIN user_account a ON m.account_id = a.id " +
+                "WHERE m.role = 'ADMIN' AND a.status = 'ACTIVE'", Integer.class);
+        assertThat(adminCountAfter).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -460,5 +630,35 @@ class MemberAdminIntegrationTest {
                 "SELECT t.temporary_password_plain FROM _test_temp_passwords t " +
                 "JOIN user_account a ON t.account_id = a.id WHERE a.normalized_username = ?",
                 String.class, normalizedUsername);
+    }
+
+    /**
+     * Minimal mutable clock for testing time-dependent behavior.
+     */
+    private static class MutableClock extends Clock {
+        private Instant instant;
+
+        MutableClock(Instant instant) {
+            this.instant = instant;
+        }
+
+        void advance(Duration duration) {
+            this.instant = this.instant.plus(duration);
+        }
+
+        @Override
+        public Instant instant() {
+            return instant;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneId.of("UTC");
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
     }
 }

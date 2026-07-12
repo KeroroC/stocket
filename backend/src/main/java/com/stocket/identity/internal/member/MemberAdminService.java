@@ -60,6 +60,10 @@ public class MemberAdminService {
                 clock, Duration.ofMinutes(15), 5, 10000);
     }
 
+    public BoundedRateLimiter<ResetPasswordKey> getResetPasswordRateLimiter() {
+        return resetPasswordRateLimiter;
+    }
+
     /**
      * Creates a new member in the household with a temporary password.
      * The temporary password is returned in plaintext only in the response.

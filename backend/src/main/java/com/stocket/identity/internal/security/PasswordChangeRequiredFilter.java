@@ -23,8 +23,7 @@ class PasswordChangeRequiredFilter extends OncePerRequestFilter {
             "/api/v1/account/password",
             "/api/v1/auth/logout",
             "/api/v1/auth/csrf",
-            "/api/v1/system",
-            "/api/v1/test/write"
+            "/api/v1/system"
     );
 
     @Override

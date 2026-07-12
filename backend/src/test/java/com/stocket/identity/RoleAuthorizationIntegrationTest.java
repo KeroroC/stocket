@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.web.servlet.MockMvc;
@@ -70,6 +71,7 @@ class RoleAuthorizationIntegrationTest {
      * The /api/v1/test/write endpoint requires ADMIN or MEMBER role.
      */
     @TestConfiguration
+    @EnableMethodSecurity
     static class TestSecurityConfig {
 
         @Bean
