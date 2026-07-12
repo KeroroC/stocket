@@ -173,8 +173,8 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    void sessionPersistsAcrossContextRestart() throws Exception {
-        // First context: create a session
+    void sessionIsStoredInDatabase() throws Exception {
+        // Create a session
         String cookie = initializeAndGetCookie();
 
         // Verify the session works in the current context
@@ -182,17 +182,165 @@ class SecurityIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", cookie)))
                 .andExpect(status().isNotFound());
 
-        // The session is stored in the database (Testcontainer),
-        // so it should persist even if we restart the application context.
-        // In a real restart test, we would close and reopen the Spring context,
-        // but the database-backed session storage guarantees persistence.
-        // Here we verify the session is indeed stored in the database.
+        // Verify the session is stored in the database
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
         Integer sessionCount = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM user_session WHERE revoked_at IS NULL",
                 Integer.class);
 
         org.assertj.core.api.Assertions.assertThat(sessionCount).isEqualTo(1);
+    }
+
+    @Test
+    void passwordChangeRequiredBlocksNonExemptPaths() throws Exception {
+        // Create an account with must_change_password=true
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        UUID accountId = UUID.randomUUID();
+        UUID householdId = UUID.randomUUID();
+        String passwordHash = passwordEncoder.encode("test-password");
+
+        // First initialize to create household
+        initializeAndGetCookie();
+        householdId = jdbc.queryForObject("SELECT id FROM household LIMIT 1", UUID.class);
+
+        // Create user with must_change_password=true
+        jdbc.update("""
+                INSERT INTO user_account (id, username, normalized_username, display_name,
+                password_hash, status, must_change_password, credentials_changed_at, created_at, updated_at, version)
+                VALUES (?, 'TestUser', 'testuser', '测试用户', ?, 'ACTIVE', true, now(), now(), now(), 0)
+                """, accountId, passwordHash);
+
+        jdbc.update("""
+                INSERT INTO household_member (id, household_id, account_id, role, created_at, updated_at)
+                VALUES (?, ?, ?, 'MEMBER', now(), now())
+                """, UUID.randomUUID(), householdId, accountId);
+
+        // Create session for the user
+        String token = secureValueGenerator.generateToken();
+        String tokenHash = tokenHasher.sha256(token);
+        Instant now = Instant.now();
+
+        jdbc.update("""
+                INSERT INTO user_session (id, account_id, token_hash, created_at, last_seen_at,
+                idle_expires_at, absolute_expires_at, user_agent, source_address)
+                VALUES (?, ?, ?, ?::timestamptz, ?::timestamptz, ?::timestamptz, ?::timestamptz, 'test', '127.0.0.1')
+                """,
+                UUID.randomUUID(),
+                accountId,
+                tokenHash,
+                now.toString(),
+                now.toString(),
+                now.plus(30, ChronoUnit.DAYS).toString(),
+                now.plus(90, ChronoUnit.DAYS).toString());
+
+        // Non-exempt paths should return 403 with PASSWORD_CHANGE_REQUIRED
+        mockMvc.perform(get("/api/v1/test/nonexempt")
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
+                .andExpect(jsonPath("$.retryable").value(false));
+    }
+
+    @Test
+    void passwordChangeRequiredAllowsExemptPaths() throws Exception {
+        // Create an account with must_change_password=true
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        UUID accountId = UUID.randomUUID();
+        UUID householdId = UUID.randomUUID();
+        String passwordHash = passwordEncoder.encode("test-password");
+
+        // First initialize to create household
+        initializeAndGetCookie();
+        householdId = jdbc.queryForObject("SELECT id FROM household LIMIT 1", UUID.class);
+
+        // Create user with must_change_password=true
+        jdbc.update("""
+                INSERT INTO user_account (id, username, normalized_username, display_name,
+                password_hash, status, must_change_password, credentials_changed_at, created_at, updated_at, version)
+                VALUES (?, 'TestUser', 'testuser', '测试用户', ?, 'ACTIVE', true, now(), now(), now(), 0)
+                """, accountId, passwordHash);
+
+        jdbc.update("""
+                INSERT INTO household_member (id, household_id, account_id, role, created_at, updated_at)
+                VALUES (?, ?, ?, 'MEMBER', now(), now())
+                """, UUID.randomUUID(), householdId, accountId);
+
+        // Create session for the user
+        String token = secureValueGenerator.generateToken();
+        String tokenHash = tokenHasher.sha256(token);
+        Instant now = Instant.now();
+
+        jdbc.update("""
+                INSERT INTO user_session (id, account_id, token_hash, created_at, last_seen_at,
+                idle_expires_at, absolute_expires_at, user_agent, source_address)
+                VALUES (?, ?, ?, ?::timestamptz, ?::timestamptz, ?::timestamptz, ?::timestamptz, 'test', '127.0.0.1')
+                """,
+                UUID.randomUUID(),
+                accountId,
+                tokenHash,
+                now.toString(),
+                now.toString(),
+                now.plus(30, ChronoUnit.DAYS).toString(),
+                now.plus(90, ChronoUnit.DAYS).toString());
+
+        // Exempt paths should be accessible
+        mockMvc.perform(get("/api/v1/auth/csrf")
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/system")
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void passwordChangeRequiredBlocksAdminWithMustChangePassword() throws Exception {
+        // Create an ADMIN account with must_change_password=true
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        UUID accountId = UUID.randomUUID();
+        UUID householdId = UUID.randomUUID();
+        String passwordHash = passwordEncoder.encode("test-password");
+
+        // First initialize to create household
+        initializeAndGetCookie();
+        householdId = jdbc.queryForObject("SELECT id FROM household LIMIT 1", UUID.class);
+
+        // Create ADMIN user with must_change_password=true
+        jdbc.update("""
+                INSERT INTO user_account (id, username, normalized_username, display_name,
+                password_hash, status, must_change_password, credentials_changed_at, created_at, updated_at, version)
+                VALUES (?, 'AdminUser', 'adminuser', '管理员', ?, 'ACTIVE', true, now(), now(), now(), 0)
+                """, accountId, passwordHash);
+
+        jdbc.update("""
+                INSERT INTO household_member (id, household_id, account_id, role, created_at, updated_at)
+                VALUES (?, ?, ?, 'ADMIN', now(), now())
+                """, UUID.randomUUID(), householdId, accountId);
+
+        // Create session for the admin
+        String token = secureValueGenerator.generateToken();
+        String tokenHash = tokenHasher.sha256(token);
+        Instant now = Instant.now();
+
+        jdbc.update("""
+                INSERT INTO user_session (id, account_id, token_hash, created_at, last_seen_at,
+                idle_expires_at, absolute_expires_at, user_agent, source_address)
+                VALUES (?, ?, ?, ?::timestamptz, ?::timestamptz, ?::timestamptz, ?::timestamptz, 'test', '127.0.0.1')
+                """,
+                UUID.randomUUID(),
+                accountId,
+                tokenHash,
+                now.toString(),
+                now.toString(),
+                now.plus(30, ChronoUnit.DAYS).toString(),
+                now.plus(90, ChronoUnit.DAYS).toString());
+
+        // ADMIN with must_change_password should still be blocked on admin paths
+        mockMvc.perform(get("/api/v1/admin/test")
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"))
+                .andExpect(jsonPath("$.retryable").value(false));
     }
 
     private String initializeAndGetCookie() throws Exception {

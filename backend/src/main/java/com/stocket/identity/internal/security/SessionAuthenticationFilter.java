@@ -10,6 +10,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +27,7 @@ import com.stocket.identity.internal.authentication.SessionService;
 class SessionAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String COOKIE_NAME = "STOCKET_SESSION";
+    private static final Logger log = LoggerFactory.getLogger(SessionAuthenticationFilter.class);
 
     private final SessionService sessionService;
     private final SessionCookieService sessionCookieService;
@@ -57,7 +60,9 @@ class SessionAuthenticationFilter extends OncePerRequestFilter {
                                     SecurityContextHolder.getContext(), request, response);
                         });
             } catch (Exception e) {
-                // Invalid token - clear cookie and continue as anonymous
+                // Log the exception at WARN level (without the raw token)
+                log.warn("Session authentication failed for request {}: {}", request.getRequestURI(), e.getMessage());
+                // Clear cookie and continue as anonymous
                 sessionCookieService.clearSessionCookie(request, response);
             }
         }
