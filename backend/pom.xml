@@ -90,12 +90,25 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- 安全框架：认证、授权、CSRF 防护等 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
         <!-- ==================== 测试依赖 ==================== -->
 
         <!-- 测试套件：JUnit 5、Mockito、AssertJ 等 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Spring Security 测试支持：csrf()、with() 等 -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
 
