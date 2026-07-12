@@ -2,6 +2,7 @@ package com.stocket.identity.internal.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -41,7 +42,7 @@ class SetupController {
     }
 
     @PostMapping("/initialize")
-    ResponseEntity<?> initialize(@RequestBody InitializeRequest request,
+    ResponseEntity<?> initialize(@Valid @RequestBody InitializeRequest request,
                                  HttpServletRequest httpRequest,
                                  HttpServletResponse httpResponse) {
         if (setupService.isSetupCompleted()) {

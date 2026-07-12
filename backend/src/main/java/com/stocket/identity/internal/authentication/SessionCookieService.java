@@ -1,5 +1,7 @@
 package com.stocket.identity.internal.authentication;
 
+import java.time.Duration;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -13,10 +15,12 @@ public class SessionCookieService {
 
     private final String cookieName;
     private final boolean secure;
+    private final Duration absoluteTimeout;
 
     SessionCookieService(IdentityProperties properties) {
         this.cookieName = properties.cookie().name();
         this.secure = properties.cookie().secure();
+        this.absoluteTimeout = properties.session().absoluteTimeout();
     }
 
     public void writeSessionCookie(HttpServletRequest request, HttpServletResponse response, String token) {
@@ -25,7 +29,7 @@ public class SessionCookieService {
                 .secure(secure)
                 .path("/")
                 .sameSite("Lax")
-                .maxAge(90 * 24 * 60 * 60) // 90 days
+                .maxAge(absoluteTimeout.toSeconds())
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
     }
