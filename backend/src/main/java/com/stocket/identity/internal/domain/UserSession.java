@@ -90,4 +90,17 @@ public class UserSession {
     public Instant getAbsoluteExpiresAt() {
         return absoluteExpiresAt;
     }
+
+    public Instant getLastSeenAt() {
+        return lastSeenAt;
+    }
+
+    public Instant getRevokedAt() {
+        return revokedAt;
+    }
+
+    public void touch(Instant now, Instant newIdleExpiresAt) {
+        this.lastSeenAt = now;
+        this.idleExpiresAt = newIdleExpiresAt;
+    }
 }

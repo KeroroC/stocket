@@ -90,4 +90,12 @@ public class UserAccount {
     public AccountStatus getStatus() {
         return status;
     }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public boolean isEnabled() {
+        return status == AccountStatus.ACTIVE;
+    }
 }
