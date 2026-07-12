@@ -1,9 +1,13 @@
 package com.stocket.identity.internal.web;
 
+import java.time.Instant;
+import java.util.UUID;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.stocket.identity.IdentityAuditEvent;
 import com.stocket.identity.internal.authentication.SessionCookieService;
 import com.stocket.identity.internal.authentication.SessionService;
 import com.stocket.identity.internal.setup.InitializeCommand;
@@ -27,13 +32,16 @@ class SetupController {
     private final SetupService setupService;
     private final SessionService sessionService;
     private final SessionCookieService sessionCookieService;
+    private final ApplicationEventPublisher eventPublisher;
 
     SetupController(SetupService setupService,
                     SessionService sessionService,
-                    SessionCookieService sessionCookieService) {
+                    SessionCookieService sessionCookieService,
+                    ApplicationEventPublisher eventPublisher) {
         this.setupService = setupService;
         this.sessionService = sessionService;
         this.sessionCookieService = sessionCookieService;
+        this.eventPublisher = eventPublisher;
     }
 
     @GetMapping("/status")
@@ -59,11 +67,16 @@ class SetupController {
                             request.password()));
 
             // Create session for the newly created admin
+            Instant now = Instant.now();
             var createdSession = sessionService.create(
                     setupService.findAccountById(result.accountId()),
                     httpRequest.getHeader("User-Agent"),
                     httpRequest.getRemoteAddr(),
-                    java.time.Instant.now());
+                    now);
+
+            // Publish LOGIN audit event for the initial admin session
+            publishAuditEvent("LOGIN", "SUCCESS", result.accountId(),
+                    httpRequest.getRemoteAddr());
 
             // Write session cookie
             sessionCookieService.writeSessionCookie(httpRequest, httpResponse, createdSession.token());
@@ -74,6 +87,22 @@ class SetupController {
         } catch (SetupAlreadyCompletedException ex) {
             return conflictResponse();
         }
+    }
+
+    private void publishAuditEvent(String eventType, String outcome,
+                                   UUID actorAccountId, String source) {
+        IdentityAuditEvent event = new IdentityAuditEvent(
+                UUID.randomUUID(),
+                Instant.now(),
+                eventType,
+                outcome,
+                actorAccountId,
+                "USER_ACCOUNT",
+                actorAccountId,
+                null,
+                source != null ? source : "api",
+                java.util.Map.of());
+        eventPublisher.publishEvent(event);
     }
 
     private ResponseEntity<ProblemDetail> conflictResponse() {

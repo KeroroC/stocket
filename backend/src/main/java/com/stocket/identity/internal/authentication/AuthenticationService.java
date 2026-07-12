@@ -52,11 +52,13 @@ public class AuthenticationService {
     public LoginResult login(String username, String rawPassword,
                              String userAgent, String sourceAddress, Instant now) {
         String normalizedUsername = normalizeUsername(username);
+        String usernameFingerprint = tokenHasher.sha256(normalizedUsername);
         LoginThrottleKey throttleKey = new LoginThrottleKey(normalizedUsername, sourceAddress);
 
         // Check rate limit before doing any work
         if (!rateLimiter.tryAcquire(throttleKey)) {
-            publishAuditEvent("LOGIN", "RATE_LIMITED", null, sourceAddress, Map.of());
+            publishAuditEvent("LOGIN", "RATE_LIMITED", null, sourceAddress,
+                    Map.of("usernameFingerprint", usernameFingerprint));
             return LoginResult.rateLimited();
         }
 
@@ -67,7 +69,8 @@ public class AuthenticationService {
         if (account == null) {
             // Unknown user: run dummy password check for constant-time behavior
             passwordEncoder.matches(rawPassword, DUMMY_PASSWORD_HASH);
-            publishAuditEvent("LOGIN", "FAILURE", null, sourceAddress, Map.of());
+            publishAuditEvent("LOGIN", "FAILURE", null, sourceAddress,
+                    Map.of("usernameFingerprint", usernameFingerprint));
             return LoginResult.invalidCredentials();
         }
 
@@ -75,14 +78,15 @@ public class AuthenticationService {
         if (!account.isEnabled()) {
             // Still check password to maintain constant-time behavior
             passwordEncoder.matches(rawPassword, account.getPasswordHash());
-            publishAuditEvent("LOGIN", "FAILURE", account.getId(), sourceAddress,
-                    Map.of("reason", "ACCOUNT_DISABLED"));
+            publishAuditEvent("LOGIN", "FAILURE", null, sourceAddress,
+                    Map.of("usernameFingerprint", usernameFingerprint, "reason", "ACCOUNT_DISABLED"));
             return LoginResult.invalidCredentials();
         }
 
         // Verify password
         if (!passwordEncoder.matches(rawPassword, account.getPasswordHash())) {
-            publishAuditEvent("LOGIN", "FAILURE", account.getId(), sourceAddress, Map.of());
+            publishAuditEvent("LOGIN", "FAILURE", null, sourceAddress,
+                    Map.of("usernameFingerprint", usernameFingerprint));
             return LoginResult.invalidCredentials();
         }
 
