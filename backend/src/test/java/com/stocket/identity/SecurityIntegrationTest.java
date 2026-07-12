@@ -291,6 +291,21 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/v1/system")
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token)))
                 .andExpect(status().isOk());
+
+        // Account endpoints should also be accessible for mustChangePassword=true users
+        mockMvc.perform(get("/api/v1/account")
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mustChangePassword").value(true));
+
+        mockMvc.perform(post("/api/v1/account/password")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"oldPassword":"test-password","newPassword":"new correct horse battery staple"}
+                                """))
+                .andExpect(status().isOk());
     }
 
     @Test

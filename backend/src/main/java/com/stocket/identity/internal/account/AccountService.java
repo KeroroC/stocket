@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import com.stocket.identity.IdentityAuditEvent;
 import com.stocket.identity.IdentityRole;
@@ -118,7 +120,7 @@ public class AccountService {
         CreatedSession newSession = sessionService.create(account, userAgent, sourceAddress, now);
 
         // Publish event
-        publishAuditEvent("PASSWORD_CHANGED", "SUCCESS", accountId, sourceAddress);
+        publishAuditEvent("PASSWORD_CHANGED", "SUCCESS", accountId, sourceAddress, now);
 
         return newSession;
     }
@@ -155,10 +157,10 @@ public class AccountService {
     }
 
     private void publishAuditEvent(String eventType, String outcome,
-                                   UUID actorAccountId, String source) {
+                                   UUID actorAccountId, String source, Instant now) {
         IdentityAuditEvent event = new IdentityAuditEvent(
                 UUID.randomUUID(),
-                Instant.now(),
+                now,
                 eventType,
                 outcome,
                 actorAccountId,
@@ -170,12 +172,14 @@ public class AccountService {
         eventPublisher.publishEvent(event);
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public static class InvalidOldPasswordException extends RuntimeException {
         public InvalidOldPasswordException() {
             super("Old password is incorrect");
         }
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public static class PasswordPolicyViolationException extends RuntimeException {
         private final List<String> violations;
 
