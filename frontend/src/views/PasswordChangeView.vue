@@ -39,16 +39,14 @@ async function handleSubmit() {
       newPassword: newPassword.value,
     })
 
-    const dto: ChangePasswordRequest = {
-      oldPassword: oldPassword.value,
-      newPassword: newPassword.value,
-    }
-
     oldPassword.value = ''
     newPassword.value = ''
     confirmNewPassword.value = ''
 
-    emit('success', dto)
+    emit('success', {
+      oldPassword: oldPassword.value,
+      newPassword: newPassword.value,
+    })
   } catch (err: unknown) {
     oldPassword.value = ''
     newPassword.value = ''

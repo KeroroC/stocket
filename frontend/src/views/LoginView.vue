@@ -26,19 +26,18 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
+    const trimmedUsername = username.value.trim()
     await apiLogin({
-      username: username.value.trim(),
+      username: trimmedUsername,
       password: password.value,
     })
 
-    const dto: LoginRequest = {
-      username: username.value.trim(),
-      password: password.value,
-    }
-
     password.value = ''
 
-    emit('success', dto)
+    emit('success', {
+      username: trimmedUsername,
+      password: password.value,
+    })
   } catch {
     password.value = ''
     errorMessage.value = '用户名或密码错误'

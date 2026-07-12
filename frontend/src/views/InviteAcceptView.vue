@@ -67,22 +67,22 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
+    const trimmedUsername = username.value.trim()
+    const trimmedDisplayName = displayName.value.trim()
     await apiAcceptInvite(props.token, {
-      username: username.value.trim(),
-      displayName: displayName.value.trim(),
+      username: trimmedUsername,
+      displayName: trimmedDisplayName,
       password: password.value,
     })
-
-    const dto: AcceptInviteRequest = {
-      username: username.value.trim(),
-      displayName: displayName.value.trim(),
-      password: password.value,
-    }
 
     password.value = ''
     confirmPassword.value = ''
 
-    emit('success', dto)
+    emit('success', {
+      username: trimmedUsername,
+      displayName: trimmedDisplayName,
+      password: password.value,
+    })
   } catch (err: unknown) {
     password.value = ''
     confirmPassword.value = ''
