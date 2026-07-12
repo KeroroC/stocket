@@ -27,6 +27,9 @@ DB_USER="stocket"
 DB_PASSWORD="stocket-smoke-test"
 DB_PORT=54321
 CONTAINER_NAME="stocket-smoke-pg-$$"
+# Port the application would bind to if it started an HTTP server.
+# We verify this port is never listened to during maintenance.
+HTTP_CHECK_PORT=18080
 
 cleanup() {
     echo "[smoke] Cleaning up container $CONTAINER_NAME"
@@ -39,46 +42,79 @@ psql_exec() {
     docker exec "$CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" -t -A -c "$1" 2>/dev/null | head -1 | tr -d '[:space:]'
 }
 
-# Helper: run a Java/native process, capture output, kill once "Admin recovery" output appears
-# The JVM process doesn't exit cleanly after maintenance (HikariCP keeps it alive),
-# so we wait for the expected output and then kill the process.
+# Helper: check that no process is listening on the given port
+assert_port_not_listened() {
+    local port="$1"
+    local label="$2"
+    # Use lsof to check if any process has the port open for listening
+    if lsof -iTCP:"$port" -sTCP:LISTEN -P -n 2>/dev/null | grep -q LISTEN; then
+        echo "[smoke] ERROR: Port $port is being listened to during $label"
+        echo "[smoke] HTTP port must never be bound during maintenance"
+        lsof -iTCP:"$port" -sTCP:LISTEN -P -n 2>/dev/null
+        return 1
+    fi
+    echo "[smoke] OK: Port $port not listened to during $label"
+    return 0
+}
+
+# Helper: run a maintenance process, capture output, and determine exit code.
+#
+# The JVM/native process may not exit cleanly after maintenance (HikariCP
+# connection pool keeps non-daemon threads alive). We handle three cases:
+#   1. Process exits naturally with a code -> return that code
+#   2. Output contains the success marker "Admin recovery successful." -> return 0
+#   3. Output contains "Application run failed" -> wait for exit, return exit code
+#   4. Timeout -> return 124
+#
 # Usage: run_maintenance <binary> <args...>
 run_maintenance() {
     local outfile
     outfile=$(mktemp)
     "$@" > "$outfile" 2>&1 &
     local pid=$!
-    # Wait for the process to either exit or produce the expected output
     local elapsed=0
     local max_wait=120
-    while kill -0 "$pid" 2>/dev/null && [[ $elapsed -lt $max_wait ]]; do
-        # Check if we got the expected output
-        if grep -q "Admin recovery" "$outfile" 2>/dev/null; then
-            # Give it a moment to finish writing output
-            sleep 2
-            kill "$pid" 2>/dev/null || true
-            wait "$pid" 2>/dev/null || true
-            cat "$outfile"
-            rm -f "$outfile"
-            return 0
+    local result_code=124  # default: timeout
+
+    # Disable errexit temporarily so we can capture wait exit codes
+    set +e
+    while [[ $elapsed -lt $max_wait ]]; do
+        # Check if process already exited naturally
+        if ! kill -0 "$pid" 2>/dev/null; then
+            wait "$pid" 2>/dev/null
+            result_code=$?
+            break
         fi
-        # Check for error (Application run failed)
+        # Check for success marker (exact line from MaintenanceConfiguration)
+        if grep -q "^Admin recovery successful\." "$outfile" 2>/dev/null; then
+            # Success - kill the lingering process (HikariCP keeps it alive)
+            sleep 2
+            kill "$pid" 2>/dev/null
+            wait "$pid" 2>/dev/null
+            result_code=0
+            break
+        fi
+        # Check for failure marker
         if grep -q "Application run failed" "$outfile" 2>/dev/null; then
-            wait "$pid" 2>/dev/null || true
-            local exit_code=$?
-            cat "$outfile"
-            rm -f "$outfile"
-            return $exit_code
+            # Wait for the process to actually exit
+            wait "$pid" 2>/dev/null
+            result_code=$?
+            break
         fi
         sleep 1
         elapsed=$((elapsed + 1))
     done
-    # Timeout - kill the process
-    kill "$pid" 2>/dev/null || true
-    wait "$pid" 2>/dev/null || true
+
+    # If we exited the loop without the process dying, kill it
+    if kill -0 "$pid" 2>/dev/null; then
+        kill "$pid" 2>/dev/null
+        wait "$pid" 2>/dev/null
+    fi
+    set -e
+
     cat "$outfile"
     rm -f "$outfile"
-    return 124
+    return $result_code
 }
 
 # ---- Verify artifacts exist ----
@@ -111,14 +147,17 @@ for i in $(seq 1 30); do
 done
 
 DB_URL="jdbc:postgresql://localhost:$DB_PORT/$DB_NAME"
-JAVA_OPTS="--spring.datasource.url=$DB_URL --spring.datasource.username=$DB_USER --spring.datasource.password=$DB_PASSWORD"
+JVM_OPTS="--spring.main.web-application-type=none --spring.datasource.url=$DB_URL --spring.datasource.username=$DB_USER --spring.datasource.password=$DB_PASSWORD"
+# Native image uses same opts; web-application-type=none is set programmatically
+# in StocketApplication.main() when maintenance option is detected.
+NATIVE_OPTS="--spring.datasource.url=$DB_URL --spring.datasource.username=$DB_USER --spring.datasource.password=$DB_PASSWORD"
 
 # ---- Step 1: Run JVM jar with non-existent admin (triggers Flyway migration) ----
 echo "[smoke] Step 1: Running Flyway migration via JVM jar..."
 set +e
 JVM_MIGRATION_OUTPUT=$(run_maintenance java -jar "$JAR" \
     --stocket.maintenance.reset-admin=nonexistent \
-    $JAVA_OPTS 2>&1)
+    $JVM_OPTS 2>&1)
 JVM_MIGRATION_EXIT=$?
 set -e
 
@@ -128,6 +167,9 @@ if [[ $JVM_MIGRATION_EXIT -eq 0 ]]; then
     exit 1
 fi
 echo "[smoke] Flyway migration completed (exit=$JVM_MIGRATION_EXIT, expected non-zero)"
+
+# Assert HTTP port not listened to during migration
+assert_port_not_listened "$HTTP_CHECK_PORT" "JVM migration step" || exit 1
 
 # ---- Step 2: Insert test data via psql ----
 echo "[smoke] Step 2: Inserting test data..."
@@ -174,7 +216,7 @@ echo "[smoke] Step 3: Running JVM recovery..."
 set +e
 JVM_OUTPUT=$(run_maintenance java -jar "$JAR" \
     --stocket.maintenance.reset-admin=admin \
-    $JAVA_OPTS 2>&1)
+    $JVM_OPTS 2>&1)
 JVM_EXIT=$?
 set -e
 
@@ -192,6 +234,9 @@ if [[ $TEMP_PASSWORD_COUNT -ne 1 ]]; then
     exit 1
 fi
 echo "[smoke] JVM recovery succeeded"
+
+# Assert HTTP port not listened to during recovery
+assert_port_not_listened "$HTTP_CHECK_PORT" "JVM recovery" || exit 1
 
 # Assert old sessions revoked
 ACTIVE_SESSIONS_AFTER_JVM=$(psql_exec "
@@ -237,23 +282,20 @@ echo "[smoke] Step 5: Running native recovery..."
 set +e
 NATIVE_OUTPUT=$(run_maintenance "$NATIVE" \
     --stocket.maintenance.reset-admin=admin \
-    --server.port=0 \
-    $JAVA_OPTS 2>&1)
+    $NATIVE_OPTS 2>&1)
 NATIVE_EXIT=$?
 set -e
 
 if [[ $NATIVE_EXIT -ne 0 ]]; then
-    # Check if this is the known AOT/ServletContext issue
-    if echo "$NATIVE_OUTPUT" | grep -q "No ServletContext set"; then
-        echo "[smoke] WARNING: Native image has pre-existing AOT issue (No ServletContext)"
-        echo "[smoke] Skipping native verification - JVM path verified above"
-        echo ""
-        echo "[smoke] ========================================"
-        echo "[smoke] SMOKE TESTS PASSED (JVM only, native AOT issue)"
-        echo "[smoke] ========================================"
-        exit 0
-    fi
     echo "[smoke] ERROR: Native recovery failed with exit code $NATIVE_EXIT"
+    if echo "$NATIVE_OUTPUT" | grep -q "No ServletContext set"; then
+        echo "[smoke] Root cause: AOT-compiled native image has hard-coded servlet beans"
+        echo "[smoke] that require a ServletContext. The StocketApplication.main() sets"
+        echo "[smoke] WebApplicationType.NONE for maintenance mode, but AOT-generated code"
+        echo "[smoke] cannot conditionally skip servlet beans at runtime."
+        echo "[smoke] Fix: Rebuild native image with AOT processing in NONE web mode, or"
+        echo "[smoke] use Spring Boot's conditional AOT hints to exclude servlet beans."
+    fi
     echo "[smoke] Output: $NATIVE_OUTPUT"
     exit 1
 fi
@@ -266,6 +308,9 @@ if [[ $TEMP_PASSWORD_COUNT_NATIVE -ne 1 ]]; then
     exit 1
 fi
 echo "[smoke] Native recovery succeeded"
+
+# Assert HTTP port not listened to during native recovery
+assert_port_not_listened "$HTTP_CHECK_PORT" "native recovery" || exit 1
 
 # Assert old sessions revoked
 ACTIVE_SESSIONS_AFTER_NATIVE=$(psql_exec "
