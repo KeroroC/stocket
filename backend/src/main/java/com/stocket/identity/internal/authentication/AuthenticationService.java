@@ -24,6 +24,8 @@ public class AuthenticationService {
      */
     private static final String DUMMY_PASSWORD_HASH = "{bcrypt}$2a$10$00000000000000000000000000000000000000000000000000000000";
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthenticationService.class);
+
     private final UserAccountRepository accountRepository;
     private final UserSessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
@@ -57,8 +59,7 @@ public class AuthenticationService {
 
         // Check rate limit before doing any work
         if (!rateLimiter.tryAcquire(throttleKey)) {
-            publishAuditEvent("LoginRateLimited", "FAILURE", null, sourceAddress,
-                    Map.of("usernameFingerprint", usernameFingerprint));
+            log.warn("Login rate limited for source: {}", sourceAddress);
             return LoginResult.rateLimited();
         }
 
