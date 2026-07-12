@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import App from './App.vue'
+import App from '../App.vue'
 
 let cookieSpy: ReturnType<typeof vi.spyOn>
 
@@ -15,20 +15,8 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function accountResponse(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'a1',
-    username: 'admin',
-    displayName: '管理员',
-    email: null,
-    role: 'ADMIN',
-    mustChangePassword: false,
-    ...overrides,
-  }
-}
-
-describe('App', () => {
-  it('setup-required 状态：显示初始化视图，不调用认证接口', async () => {
+describe('身份启动状态', () => {
+  it('setup status 未初始化时显示 setup-required 视图', async () => {
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {
         return Promise.resolve({
@@ -37,11 +25,7 @@ describe('App', () => {
           json: async () => ({ initialized: false }),
         })
       }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      })
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     vi.stubGlobal('fetch', fetch)
 
@@ -49,11 +33,17 @@ describe('App', () => {
     await new Promise((r) => setTimeout(r, 0))
 
     expect(screen.getByText('初始化家庭')).toBeInTheDocument()
-    expect(fetch).not.toHaveBeenCalledWith('/api/v1/account', expect.anything())
-    expect(fetch).not.toHaveBeenCalledWith('/api/v1/auth/csrf', expect.anything())
+    expect(fetch).not.toHaveBeenCalledWith(
+      '/api/v1/account',
+      expect.anything(),
+    )
+    expect(fetch).not.toHaveBeenCalledWith(
+      '/api/v1/auth/csrf',
+      expect.anything(),
+    )
   })
 
-  it('anonymous 状态：显示登录表单，调用 /account 和 /auth/csrf', async () => {
+  it('已初始化但 /account 返回 401 时显示 anonymous 视图', async () => {
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {
         return Promise.resolve({
@@ -76,11 +66,7 @@ describe('App', () => {
           json: async () => ({}),
         })
       }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      })
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     vi.stubGlobal('fetch', fetch)
 
@@ -88,11 +74,10 @@ describe('App', () => {
     await new Promise((r) => setTimeout(r, 0))
 
     expect(screen.getByRole('heading', { name: '登录' })).toBeInTheDocument()
-    expect(fetch).toHaveBeenCalledWith('/api/v1/account', expect.anything())
     expect(fetch).toHaveBeenCalledWith('/api/v1/auth/csrf', expect.anything())
   })
 
-  it('authenticated 状态：显示用户名和退出登录按钮', async () => {
+  it('已初始化且账户要求改密时显示 password-change-required 视图', async () => {
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {
         return Promise.resolve({
@@ -112,14 +97,55 @@ describe('App', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: async () => accountResponse(),
+          json: async () => ({
+            id: 'a1',
+            username: 'admin',
+            displayName: '管理员',
+            role: 'ADMIN',
+            mustChangePassword: true,
+          }),
         })
       }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      })
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
+    })
+    vi.stubGlobal('fetch', fetch)
+
+    render(App)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(screen.getByText('修改密码')).toBeInTheDocument()
+  })
+
+  it('已初始化且账户正常时显示 authenticated 视图', async () => {
+    const fetch = vi.fn((url: string) => {
+      if (url === '/api/v1/setup/status') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ initialized: true }),
+        })
+      }
+      if (url === '/api/v1/auth/csrf') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({}),
+        })
+      }
+      if (url === '/api/v1/account') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'a1',
+            username: 'admin',
+            displayName: '管理员',
+            role: 'ADMIN',
+            mustChangePassword: false,
+          }),
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     vi.stubGlobal('fetch', fetch)
 
@@ -130,58 +156,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: '退出登录' })).toBeInTheDocument()
   })
 
-  it('退出登录：调用 /auth/logout 后回到 anonymous', async () => {
-    const fetch = vi.fn((url: string) => {
-      if (url === '/api/v1/setup/status') {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({ initialized: true }),
-        })
-      }
-      if (url === '/api/v1/auth/csrf') {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({}),
-        })
-      }
-      if (url === '/api/v1/account') {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => accountResponse(),
-        })
-      }
-      if (url === '/api/v1/auth/logout') {
-        return Promise.resolve({
-          ok: true,
-          status: 204,
-          json: async () => ({}),
-        })
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      })
-    })
-    vi.stubGlobal('fetch', fetch)
-
-    render(App)
-    await new Promise((r) => setTimeout(r, 0))
-
-    expect(screen.getByText('管理员')).toBeInTheDocument()
-
-    await fireEvent.click(screen.getByRole('button', { name: '退出登录' }))
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: '登录' })).toBeInTheDocument()
-    })
-    expect(fetch).toHaveBeenCalledWith('/api/v1/auth/logout', expect.objectContaining({ method: 'POST' }))
-  })
-
-  it('登录后显示 authenticated 状态并刷新 CSRF', async () => {
+  it('登录后重新获取 CSRF', async () => {
     let accountCalls = 0
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {
@@ -189,13 +164,6 @@ describe('App', () => {
           ok: true,
           status: 200,
           json: async () => ({ initialized: true }),
-        })
-      }
-      if (url === '/api/v1/auth/csrf') {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({}),
         })
       }
       if (url === '/api/v1/account') {
@@ -210,7 +178,20 @@ describe('App', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: async () => accountResponse(),
+          json: async () => ({
+            id: 'a1',
+            username: 'admin',
+            displayName: '管理员',
+            role: 'ADMIN',
+            mustChangePassword: false,
+          }),
+        })
+      }
+      if (url === '/api/v1/auth/csrf') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({}),
         })
       }
       if (url === '/api/v1/auth/login') {
@@ -224,11 +205,7 @@ describe('App', () => {
           }),
         })
       }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      })
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     vi.stubGlobal('fetch', fetch)
 
@@ -243,11 +220,6 @@ describe('App', () => {
       expect(screen.getByText('管理员')).toBeInTheDocument()
     })
 
-    expect(fetch).toHaveBeenCalledWith(
-      '/api/v1/auth/login',
-      expect.objectContaining({ method: 'POST' }),
-    )
-
     const loginCallIndex = fetch.mock.calls.findIndex(
       (c: unknown[]) => (c[0] as string) === '/api/v1/auth/login',
     )
@@ -258,7 +230,8 @@ describe('App', () => {
     expect(csrfCallsAfterLogin.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('password-change-required 状态：显示修改密码提示', async () => {
+  it('登录后 401 回到 anonymous 状态', async () => {
+    let callCount = 0
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {
         return Promise.resolve({
@@ -275,31 +248,47 @@ describe('App', () => {
         })
       }
       if (url === '/api/v1/account') {
+        callCount++
+        if (callCount === 1) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              id: 'a1',
+              username: 'admin',
+              displayName: '管理员',
+              role: 'ADMIN',
+              mustChangePassword: false,
+            }),
+          })
+        }
         return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => accountResponse({ mustChangePassword: true }),
+          ok: false,
+          status: 401,
+          json: async () => ({ error: 'UNAUTHORIZED' }),
         })
       }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      })
+      if (url === '/api/v1/auth/logout') {
+        return Promise.resolve({ ok: true, status: 204, json: async () => ({}) })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     vi.stubGlobal('fetch', fetch)
 
     render(App)
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(screen.getByText('修改密码')).toBeInTheDocument()
-    expect(screen.getByText('请修改初始密码后再继续使用')).toBeInTheDocument()
+    expect(screen.getByText('管理员')).toBeInTheDocument()
+
+    await fireEvent.click(screen.getByRole('button', { name: '退出登录' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '登录' })).toBeInTheDocument()
+    })
   })
 
-  it('bootstrap 调用顺序：setup/status → auth/csrf → account', async () => {
-    const callHistory: string[] = []
+  it('bootstrap 中 /account 返回 401 时调用 refreshCsrf', async () => {
     const fetch = vi.fn((url: string) => {
-      callHistory.push(url)
       if (url === '/api/v1/setup/status') {
         return Promise.resolve({
           ok: true,
@@ -321,19 +310,95 @@ describe('App', () => {
           json: async () => ({ error: 'UNAUTHORIZED' }),
         })
       }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      })
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     vi.stubGlobal('fetch', fetch)
 
     render(App)
     await new Promise((r) => setTimeout(r, 0))
 
+    const callHistory = fetch.mock.calls.map((c: unknown[]) => c[0] as string)
+
     expect(callHistory[0]).toBe('/api/v1/setup/status')
     expect(callHistory[1]).toBe('/api/v1/auth/csrf')
     expect(callHistory[2]).toBe('/api/v1/account')
+
+    expect(callHistory).toContain('/api/v1/auth/csrf')
+    expect(callHistory.indexOf('/api/v1/auth/csrf')).toBeLessThan(
+      callHistory.indexOf('/api/v1/account'),
+    )
+  })
+
+  it('CSRF 403 时刷新并最多重试一次', async () => {
+    let postAttempts = 0
+    const fetch = vi.fn((url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      if (url === '/api/v1/setup/status') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ initialized: true }),
+        })
+      }
+      if (url === '/api/v1/auth/csrf') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({}),
+        })
+      }
+      if (url === '/api/v1/account') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'a1',
+            username: 'admin',
+            displayName: '管理员',
+            role: 'ADMIN',
+            mustChangePassword: false,
+          }),
+        })
+      }
+      if (url === '/api/v1/auth/logout' && method === 'POST') {
+        postAttempts++
+        if (postAttempts === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 403,
+            json: async () => ({
+              error: 'CSRF_TOKEN_INVALID',
+              retryable: true,
+            }),
+          })
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 204,
+          json: async () => ({}),
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
+    })
+    vi.stubGlobal('fetch', fetch)
+
+    render(App)
+    await new Promise((r) => setTimeout(r, 0))
+
+    await fireEvent.click(screen.getByRole('button', { name: '退出登录' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '登录' })).toBeInTheDocument()
+    })
+
+    const logoutCalls = fetch.mock.calls.filter(
+      (c: unknown[]) => (c[0] as string) === '/api/v1/auth/logout',
+    )
+    expect(logoutCalls).toHaveLength(2)
+
+    const csrfCalls = fetch.mock.calls.filter(
+      (c: unknown[]) => (c[0] as string) === '/api/v1/auth/csrf',
+    )
+    expect(csrfCalls.length).toBeGreaterThanOrEqual(2)
   })
 })

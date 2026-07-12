@@ -1,47 +1,66 @@
 <script setup lang="ts">
-import { Box, CircleCheck, Warning } from '@element-plus/icons-vue'
 import { onMounted, ref } from 'vue'
-import { getSystemStatus } from './api/system'
+import { useAuth } from './auth/useAuth'
 
-const message = ref('正在连接后端…')
-const connected = ref(false)
+const { state, bootstrap, login, logout, passwordChanged, initialize } = useAuth()
 
-onMounted(async () => {
-  try {
-    const status = await getSystemStatus()
-    connected.value = true
-    message.value = `后端 ${status.version} 已连接`
-  } catch {
-    message.value = '后端暂不可用'
-  }
+const username = ref('')
+const password = ref('')
+
+onMounted(() => {
+  bootstrap()
 })
 </script>
 
 <template>
   <main class="app-shell">
-    <section class="foundation-card">
-      <el-icon class="foundation-icon" :size="48" color="#2563eb">
-        <Box />
-      </el-icon>
+    <!-- checking-setup -->
+    <section v-if="state.kind === 'checking-setup'" class="auth-card">
+      <p>正在检查身份状态...</p>
+    </section>
 
-      <h1>家庭资产</h1>
-      <p class="foundation-description">工程基础已就绪</p>
+    <!-- setup-required -->
+    <section v-else-if="state.kind === 'setup-required'" class="auth-card">
+      <h1>初始化家庭</h1>
+      <p>首次使用需要创建家庭和管理员账户</p>
+    </section>
 
-      <el-tag
-        class="foundation-status"
-        :type="connected ? 'success' : 'warning'"
-        effect="light"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        round
-      >
-        <el-icon>
-          <CircleCheck v-if="connected" />
-          <Warning v-else />
-        </el-icon>
-        <span>{{ message }}</span>
-      </el-tag>
+    <!-- anonymous (login) -->
+    <section v-else-if="state.kind === 'anonymous'" class="auth-card">
+      <h1>登录</h1>
+      <form @submit.prevent="login({ username, password })">
+        <div class="form-field">
+          <label for="username">用户名</label>
+          <input
+            id="username"
+            v-model="username"
+            type="text"
+            autocomplete="username"
+          />
+        </div>
+        <div class="form-field">
+          <label for="password">密码</label>
+          <input
+            id="password"
+            v-model="password"
+            type="password"
+            autocomplete="current-password"
+          />
+        </div>
+        <button type="submit">登录</button>
+      </form>
+    </section>
+
+    <!-- password-change-required -->
+    <section v-else-if="state.kind === 'password-change-required'" class="auth-card">
+      <h1>修改密码</h1>
+      <p>请修改初始密码后再继续使用</p>
+    </section>
+
+    <!-- authenticated -->
+    <section v-else-if="state.kind === 'authenticated'" class="auth-card">
+      <h1>{{ state.account.displayName }}</h1>
+      <button @click="logout()">退出登录</button>
     </section>
   </main>
 </template>
