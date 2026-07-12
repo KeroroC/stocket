@@ -50,7 +50,7 @@ async function parseProblem(response: Response): Promise<ApiProblem> {
     const body = await response.json()
     return {
       status: response.status,
-      code: body.error ?? body.type ?? 'UNKNOWN',
+      code: body.code ?? body.error ?? body.type ?? 'UNKNOWN',
       detail: body.detail ?? body.message,
       retryable: body.retryable ?? false,
       fieldErrors: body.fieldErrors,
@@ -90,6 +90,11 @@ export async function apiRequest<T>(
   }
 
   if (response.status === 204) {
+    return undefined as T
+  }
+
+  const contentLength = response.headers?.get('Content-Length')
+  if (contentLength === '0') {
     return undefined as T
   }
 
