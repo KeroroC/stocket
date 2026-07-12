@@ -129,11 +129,11 @@ public class MemberAdminService {
     }
 
     /**
-     * Returns a single member by ID.
+     * Returns a single member by ID, scoped to the requesting admin's household.
      */
     @Transactional(readOnly = true)
-    public MemberResponse getMember(UUID memberId) {
-        HouseholdMember member = memberRepository.findById(memberId)
+    public MemberResponse getMember(UUID householdId, UUID memberId) {
+        HouseholdMember member = memberRepository.findByHouseholdIdAndId(householdId, memberId)
                 .orElseThrow(() -> new MemberNotFoundException());
 
         return new MemberResponse(
@@ -147,10 +147,11 @@ public class MemberAdminService {
     /**
      * Updates a member's role with last-admin protection.
      * Uses pessimistic locking to ensure atomicity of the last-admin check.
+     * Scoped to the requesting admin's household.
      */
     @Transactional
-    public MemberResponse updateRole(UUID memberId, IdentityRole newRole, Instant now) {
-        HouseholdMember member = memberRepository.findById(memberId)
+    public MemberResponse updateRole(UUID householdId, UUID memberId, IdentityRole newRole, Instant now) {
+        HouseholdMember member = memberRepository.findByHouseholdIdAndId(householdId, memberId)
                 .orElseThrow(() -> new MemberNotFoundException());
 
         IdentityRole oldRole = member.getRole();
@@ -179,10 +180,11 @@ public class MemberAdminService {
 
     /**
      * Disables a member's account with last-admin protection.
+     * Scoped to the requesting admin's household.
      */
     @Transactional
-    public void disableMember(UUID memberId, Instant now) {
-        HouseholdMember member = memberRepository.findById(memberId)
+    public void disableMember(UUID householdId, UUID memberId, Instant now) {
+        HouseholdMember member = memberRepository.findByHouseholdIdAndId(householdId, memberId)
                 .orElseThrow(() -> new MemberNotFoundException());
 
         // If disabling an admin, check last-admin protection
@@ -200,10 +202,11 @@ public class MemberAdminService {
     /**
      * Resets a member's password with rate limiting by actor+target pair.
      * Revokes all existing sessions and returns a new temporary password.
+     * Scoped to the requesting admin's household.
      */
     @Transactional
-    public String resetPassword(UUID actorId, UUID memberId, Instant now) {
-        HouseholdMember member = memberRepository.findById(memberId)
+    public String resetPassword(UUID householdId, UUID actorId, UUID memberId, Instant now) {
+        HouseholdMember member = memberRepository.findByHouseholdIdAndId(householdId, memberId)
                 .orElseThrow(() -> new MemberNotFoundException());
 
         // Rate limit by actor+target pair

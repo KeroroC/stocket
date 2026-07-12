@@ -413,6 +413,8 @@ class MemberAdminIntegrationTest {
                 "SELECT id FROM user_account WHERE normalized_username = 'owner'", UUID.class);
         UUID admin1MemberId = jdbc.queryForObject(
                 "SELECT id FROM household_member WHERE account_id = ?", UUID.class, admin1AccountId);
+        UUID householdId = jdbc.queryForObject(
+                "SELECT id FROM household LIMIT 1", UUID.class);
 
         // Verify we start with 2 admins
         int adminCountBefore = jdbc.queryForObject(
@@ -429,13 +431,14 @@ class MemberAdminIntegrationTest {
 
         UUID finalAdmin1MemberId = admin1MemberId;
         UUID finalAdmin2MemberId = admin2MemberId;
+        UUID finalHouseholdId = householdId;
 
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             Future<?> f1 = executor.submit(() -> {
                 readyLatch.countDown();
                 try {
                     startLatch.await();
-                    memberAdminService.updateRole(finalAdmin1MemberId, IdentityRole.MEMBER, Instant.now());
+                    memberAdminService.updateRole(finalHouseholdId, finalAdmin1MemberId, IdentityRole.MEMBER, Instant.now());
                     outcomes.add("SUCCESS");
                 } catch (MemberAdminService.LastAdminRequiredException e) {
                     outcomes.add("LAST_ADMIN_REQUIRED");
@@ -448,7 +451,7 @@ class MemberAdminIntegrationTest {
                 readyLatch.countDown();
                 try {
                     startLatch.await();
-                    memberAdminService.updateRole(finalAdmin2MemberId, IdentityRole.MEMBER, Instant.now());
+                    memberAdminService.updateRole(finalHouseholdId, finalAdmin2MemberId, IdentityRole.MEMBER, Instant.now());
                     outcomes.add("SUCCESS");
                 } catch (MemberAdminService.LastAdminRequiredException e) {
                     outcomes.add("LAST_ADMIN_REQUIRED");
@@ -558,6 +561,50 @@ class MemberAdminIntegrationTest {
                                 {"username":"Blocked2","displayName":"被拒绝2","role":"MEMBER"}
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    // ---- Cross-household access control ----
+
+    @Test
+    void adminCannotAccessMemberFromDifferentHousehold() throws Exception {
+        String adminCookie = loginAsAdmin("correct horse battery staple");
+        UUID memberId = createMemberViaApi(adminCookie, "OwnMember", "本户成员", "MEMBER");
+
+        // Create a fake UUID that doesn't belong to this household
+        UUID foreignMemberId = UUID.randomUUID();
+
+        // GET foreign member should return 404
+        mockMvc.perform(get("/api/v1/admin/members/{memberId}", foreignMemberId)
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isNotFound());
+
+        // Update role of foreign member should return 404
+        mockMvc.perform(patch("/api/v1/admin/members/{memberId}/role", foreignMemberId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"VIEWER"}
+                                """))
+                .andExpect(status().isNotFound());
+
+        // Disable foreign member should return 404
+        mockMvc.perform(post("/api/v1/admin/members/{memberId}/disable", foreignMemberId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isNotFound());
+
+        // Reset password of foreign member should return 404
+        mockMvc.perform(post("/api/v1/admin/members/{memberId}/reset-password", foreignMemberId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isNotFound());
+
+        // Verify own member is still accessible
+        mockMvc.perform(get("/api/v1/admin/members/{memberId}", memberId)
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("OwnMember"));
     }
 
     // ---- Helpers ----

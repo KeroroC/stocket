@@ -67,7 +67,8 @@ class MemberAdminController {
     ResponseEntity<MemberResponse> getMember(
             @AuthenticationPrincipal IdentityPrincipal principal,
             @PathVariable UUID memberId) {
-        MemberResponse response = memberAdminService.getMember(memberId);
+        UUID householdId = resolveHouseholdId(principal.accountId());
+        MemberResponse response = memberAdminService.getMember(householdId, memberId);
         return ResponseEntity.ok(response);
     }
 
@@ -76,10 +77,11 @@ class MemberAdminController {
             @AuthenticationPrincipal IdentityPrincipal principal,
             @PathVariable UUID memberId,
             @Valid @RequestBody UpdateMemberRequest request) {
+        UUID householdId = resolveHouseholdId(principal.accountId());
         Instant now = Instant.now();
 
         try {
-            MemberResponse response = memberAdminService.updateRole(memberId, request.role(), now);
+            MemberResponse response = memberAdminService.updateRole(householdId, memberId, request.role(), now);
             return ResponseEntity.ok(response);
         } catch (MemberAdminService.LastAdminRequiredException e) {
             return conflictProblem("LAST_ADMIN_REQUIRED", e.getMessage());
@@ -90,10 +92,11 @@ class MemberAdminController {
     ResponseEntity<?> disableMember(
             @AuthenticationPrincipal IdentityPrincipal principal,
             @PathVariable UUID memberId) {
+        UUID householdId = resolveHouseholdId(principal.accountId());
         Instant now = Instant.now();
 
         try {
-            memberAdminService.disableMember(memberId, now);
+            memberAdminService.disableMember(householdId, memberId, now);
             return ResponseEntity.noContent().build();
         } catch (MemberAdminService.LastAdminRequiredException e) {
             return conflictProblem("LAST_ADMIN_REQUIRED", e.getMessage());
@@ -104,11 +107,12 @@ class MemberAdminController {
     ResponseEntity<?> resetPassword(
             @AuthenticationPrincipal IdentityPrincipal principal,
             @PathVariable UUID memberId) {
+        UUID householdId = resolveHouseholdId(principal.accountId());
         Instant now = Instant.now();
 
         try {
             String temporaryPassword = memberAdminService.resetPassword(
-                    principal.accountId(), memberId, now);
+                    householdId, principal.accountId(), memberId, now);
             return ResponseEntity.ok(new TemporaryPasswordResponse(temporaryPassword));
         } catch (MemberAdminService.ResetPasswordRateLimitedException e) {
             ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.TOO_MANY_REQUESTS);
