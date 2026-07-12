@@ -16,12 +16,17 @@ import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -82,11 +87,29 @@ class InviteIntegrationTest {
 
     private JdbcTemplate jdbc;
 
+    // Log capturer for verifying no sensitive data in logs
+    private ListAppender<ILoggingEvent> logAppender;
+
     @BeforeEach
     void cleanDatabase() {
         jdbc = new JdbcTemplate(dataSource);
         jdbc.execute("TRUNCATE household_member, user_session, member_invite, user_account, household CASCADE");
         inviteService.getAcceptRateLimiter().clear();
+
+        // Set up log capturer for root logger
+        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        logAppender = new ListAppender<>();
+        logAppender.start();
+        rootLogger.addAppender(logAppender);
+    }
+
+    @AfterEach
+    void detachLogAppender() {
+        if (logAppender != null) {
+            Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+            rootLogger.detachAppender(logAppender);
+            logAppender.stop();
+        }
     }
 
     // ---- Invite creation ----
@@ -110,10 +133,13 @@ class InviteIntegrationTest {
         // Verify invite in database has ~24h expiry
         UUID inviteId = UUID.fromString(
                 com.jayway.jsonpath.JsonPath.read(responseJson, "$.id").toString());
-        String expiresAt = jdbc.queryForObject(
-                "SELECT expires_at::text FROM member_invite WHERE id = ?",
-                String.class, inviteId);
-        assertThat(expiresAt).isNotNull();
+        Instant expiresAt = jdbc.queryForObject(
+                "SELECT expires_at FROM member_invite WHERE id = ?",
+                Instant.class, inviteId);
+        Instant now = Instant.now();
+        Instant expectedMinExpiry = now.plus(Duration.ofHours(23));
+        Instant expectedMaxExpiry = now.plus(Duration.ofHours(25));
+        assertThat(expiresAt).isBetween(expectedMinExpiry, expectedMaxExpiry);
     }
 
     @Test
@@ -787,6 +813,7 @@ class InviteIntegrationTest {
     @Test
     void auditEventsDoNotContainRawToken() throws Exception {
         String adminCookie = loginAsAdmin();
+        String sensitivePassword = "strongpassword123";
 
         String createResponse = mockMvc.perform(post("/api/v1/admin/invites")
                         .with(csrf())
@@ -806,17 +833,27 @@ class InviteIntegrationTest {
                         .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content("""
-                                {"username":"AuditUser","password":"strongpassword123"}
-                                """))
+                                {"username":"AuditUser","password":"%s"}
+                                """.formatted(sensitivePassword)))
                 .andExpect(status().isCreated());
 
-        // Verify audit log does not contain raw token
+        // Verify audit log does not contain raw token or password
         List<String> auditDetails = jdbc.queryForList(
                 "SELECT details::text FROM audit_log WHERE event_type IN ('INVITE_CREATED', 'INVITE_ACCEPTED', 'INVITE_REVOKED')",
                 String.class);
 
         for (String detail : auditDetails) {
             assertThat(detail).doesNotContain(rawToken);
+            assertThat(detail).doesNotContain(sensitivePassword);
+        }
+
+        // Verify application logs do not contain raw token or password
+        List<String> logMessages = logAppender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .toList();
+        for (String logMessage : logMessages) {
+            assertThat(logMessage).doesNotContain(rawToken);
+            assertThat(logMessage).doesNotContain(sensitivePassword);
         }
     }
 
