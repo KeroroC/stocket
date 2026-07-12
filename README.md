@@ -36,6 +36,31 @@ STOCKET_DB_PASSWORD=stocket-local-dev ./mvnw spring-boot:run -Dspring-boot.run.p
 
 后端默认监听 `http://localhost:8080`。
 
+## 本地管理员恢复
+
+当管理员忘记密码或无法登录时，可以使用本地维护命令重置密码。该命令直接操作数据库，不需要通过 Web 接口。
+
+**JVM 模式：**
+
+```bash
+java -jar backend/target/stocket-backend-0.1.0-SNAPSHOT.jar \
+  --stocket.maintenance.reset-admin=owner
+```
+
+**原生模式：**
+
+```bash
+./stocket --stocket.maintenance.reset-admin=owner
+```
+
+命令执行后会：
+1. 生成一个 20 位临时密码
+2. 强制用户在首次登录时修改密码
+3. 撤销该用户的所有活跃会话
+4. 写入 `LOCAL_MAINTENANCE` 审计事件
+
+临时密码会打印到标准输出，请妥善保管。
+
 ## 本地启动前端
 
 ```bash
