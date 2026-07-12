@@ -27,7 +27,7 @@ stocket/
 │   ├── mvnw, mvnw.cmd                          # 可复现的 Maven 入口
 │   ├── pom.xml                                 # Java、Boot、Modulith、原生依赖
 │   └── src/
-│       ├── main/java/com/familyassets/
+│       ├── main/java/com/stocket/
 │       │   ├── StocketApplication.java    # 应用程序和 @Modulithic 根
 │       │   ├── system/                         # 仅基础的系统 API
 │       │   ├── identity/package-info.java      # 模块声明
@@ -42,7 +42,7 @@ stocket/
 │       │   ├── application.yml                 # 通用类型化配置
 │       │   ├── application-local.yml           # 本地开发者默认配置
 │       │   └── db/migration/V1__baseline.sql   # 扩展和模式标记
-│       └── test/java/com/familyassets/
+│       └── test/java/com/stocket/
 │           ├── StocketApplicationTests.java
 │           ├── ArchitectureTest.java
 │           ├── DatabaseMigrationTest.java
@@ -70,8 +70,8 @@ stocket/
 - 创建：`backend/.mvn/wrapper/maven-wrapper.properties`
 - 创建：`backend/mvnw`
 - 创建：`backend/mvnw.cmd`
-- 创建：`backend/src/main/java/com/familyassets/StocketApplication.java`
-- 创建：`backend/src/test/java/com/familyassets/StocketApplicationTests.java`
+- 创建：`backend/src/main/java/com/stocket/StocketApplication.java`
+- 创建：`backend/src/test/java/com/stocket/StocketApplicationTests.java`
 
 - [ ] **步骤 1：添加 Maven 构建描述符**
 
@@ -91,7 +91,7 @@ stocket/
     <relativePath/>
   </parent>
 
-  <groupId>com.familyassets</groupId>
+  <groupId>com.stocket</groupId>
   <artifactId>stocket-backend</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <name>stocket-backend</name>
@@ -210,10 +210,10 @@ mvn -N wrapper:wrapper -Dmaven=3.9.12
 
 - [ ] **步骤 3：编写失败的应用程序根测试**
 
-创建 `backend/src/test/java/com/familyassets/StocketApplicationTests.java`：
+创建 `backend/src/test/java/com/stocket/StocketApplicationTests.java`：
 
 ```java
-package com.familyassets;
+package com.stocket;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -244,10 +244,10 @@ class StocketApplicationTests {
 
 - [ ] **步骤 5：添加应用程序根**
 
-创建 `backend/src/main/java/com/familyassets/StocketApplication.java`：
+创建 `backend/src/main/java/com/stocket/StocketApplication.java`：
 
 ```java
-package com.familyassets;
+package com.stocket;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -283,22 +283,22 @@ git commit -m "build: bootstrap Java 21 Spring Boot backend"
 ### 任务二：强制执行模块化单体边界
 
 **文件：**
-- 创建：`backend/src/main/java/com/familyassets/identity/package-info.java`
-- 创建：`backend/src/main/java/com/familyassets/catalog/package-info.java`
-- 创建：`backend/src/main/java/com/familyassets/location/package-info.java`
-- 创建：`backend/src/main/java/com/familyassets/inventory/package-info.java`
-- 创建：`backend/src/main/java/com/familyassets/reminder/package-info.java`
-- 创建：`backend/src/main/java/com/familyassets/notification/package-info.java`
-- 创建：`backend/src/main/java/com/familyassets/attachment/package-info.java`
-- 创建：`backend/src/main/java/com/familyassets/audit/package-info.java`
-- 创建：`backend/src/test/java/com/familyassets/ArchitectureTest.java`
+- 创建：`backend/src/main/java/com/stocket/identity/package-info.java`
+- 创建：`backend/src/main/java/com/stocket/catalog/package-info.java`
+- 创建：`backend/src/main/java/com/stocket/location/package-info.java`
+- 创建：`backend/src/main/java/com/stocket/inventory/package-info.java`
+- 创建：`backend/src/main/java/com/stocket/reminder/package-info.java`
+- 创建：`backend/src/main/java/com/stocket/notification/package-info.java`
+- 创建：`backend/src/main/java/com/stocket/attachment/package-info.java`
+- 创建：`backend/src/main/java/com/stocket/audit/package-info.java`
+- 创建：`backend/src/test/java/com/stocket/ArchitectureTest.java`
 
 - [ ] **步骤 1：编写失败的架构测试**
 
-创建 `backend/src/test/java/com/familyassets/ArchitectureTest.java`：
+创建 `backend/src/test/java/com/stocket/ArchitectureTest.java`：
 
 ```java
-package com.familyassets;
+package com.stocket;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -346,37 +346,37 @@ class ArchitectureTest {
 创建以下八个文件，内容如下：
 
 ```java
-// backend/src/main/java/com/familyassets/identity/package-info.java
+// backend/src/main/java/com/stocket/identity/package-info.java
 @org.springframework.modulith.ApplicationModule(displayName = "Identity")
-package com.familyassets.identity;
+package com.stocket.identity;
 
-// backend/src/main/java/com/familyassets/catalog/package-info.java
+// backend/src/main/java/com/stocket/catalog/package-info.java
 @org.springframework.modulith.ApplicationModule(displayName = "Catalog")
-package com.familyassets.catalog;
+package com.stocket.catalog;
 
-// backend/src/main/java/com/familyassets/location/package-info.java
+// backend/src/main/java/com/stocket/location/package-info.java
 @org.springframework.modulith.ApplicationModule(displayName = "Location")
-package com.familyassets.location;
+package com.stocket.location;
 
-// backend/src/main/java/com/familyassets/inventory/package-info.java
+// backend/src/main/java/com/stocket/inventory/package-info.java
 @org.springframework.modulith.ApplicationModule(displayName = "Inventory")
-package com.familyassets.inventory;
+package com.stocket.inventory;
 
-// backend/src/main/java/com/familyassets/reminder/package-info.java
+// backend/src/main/java/com/stocket/reminder/package-info.java
 @org.springframework.modulith.ApplicationModule(displayName = "Reminder")
-package com.familyassets.reminder;
+package com.stocket.reminder;
 
-// backend/src/main/java/com/familyassets/notification/package-info.java
+// backend/src/main/java/com/stocket/notification/package-info.java
 @org.springframework.modulith.ApplicationModule(displayName = "Notification")
-package com.familyassets.notification;
+package com.stocket.notification;
 
-// backend/src/main/java/com/familyassets/attachment/package-info.java
+// backend/src/main/java/com/stocket/attachment/package-info.java
 @org.springframework.modulith.ApplicationModule(displayName = "Attachment")
-package com.familyassets.attachment;
+package com.stocket.attachment;
 
-// backend/src/main/java/com/familyassets/audit/package-info.java
+// backend/src/main/java/com/stocket/audit/package-info.java
 @org.springframework.modulith.ApplicationModule(displayName = "Audit")
-package com.familyassets.audit;
+package com.stocket.audit;
 ```
 
 - [ ] **步骤 4：重新运行模块验证**
@@ -396,19 +396,19 @@ package com.familyassets.audit;
 ### 任务三：添加系统 API 和通用错误契约
 
 **文件：**
-- 创建：`backend/src/main/java/com/familyassets/system/package-info.java`
-- 创建：`backend/src/main/java/com/familyassets/system/SystemController.java`
-- 创建：`backend/src/main/java/com/familyassets/system/SystemStatus.java`
-- 创建：`backend/src/main/java/com/familyassets/system/ApiExceptionHandler.java`
+- 创建：`backend/src/main/java/com/stocket/system/package-info.java`
+- 创建：`backend/src/main/java/com/stocket/system/SystemController.java`
+- 创建：`backend/src/main/java/com/stocket/system/SystemStatus.java`
+- 创建：`backend/src/main/java/com/stocket/system/ApiExceptionHandler.java`
 - 创建：`backend/src/main/resources/application.yml`
-- 测试：`backend/src/test/java/com/familyassets/system/SystemApiTest.java`
+- 测试：`backend/src/test/java/com/stocket/system/SystemApiTest.java`
 
 - [ ] **步骤 1：编写失败的系统 API 测试**
 
-创建 `backend/src/test/java/com/familyassets/system/SystemApiTest.java`：
+创建 `backend/src/test/java/com/stocket/system/SystemApiTest.java`：
 
 ```java
-package com.familyassets.system;
+package com.stocket.system;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -485,26 +485,26 @@ class SystemApiTest {
 
 - [ ] **步骤 3：声明并实现系统模块**
 
-创建 `backend/src/main/java/com/familyassets/system/package-info.java`：
+创建 `backend/src/main/java/com/stocket/system/package-info.java`：
 
 ```java
 @org.springframework.modulith.ApplicationModule(displayName = "System")
-package com.familyassets.system;
+package com.stocket.system;
 ```
 
-创建 `backend/src/main/java/com/familyassets/system/SystemStatus.java`：
+创建 `backend/src/main/java/com/stocket/system/SystemStatus.java`：
 
 ```java
-package com.familyassets.system;
+package com.stocket.system;
 
 public record SystemStatus(String name, String version) {
 }
 ```
 
-创建 `backend/src/main/java/com/familyassets/system/SystemController.java`：
+创建 `backend/src/main/java/com/stocket/system/SystemController.java`：
 
 ```java
-package com.familyassets.system;
+package com.stocket.system;
 
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -528,10 +528,10 @@ class SystemController {
 }
 ```
 
-创建 `backend/src/main/java/com/familyassets/system/ApiExceptionHandler.java`：
+创建 `backend/src/main/java/com/stocket/system/ApiExceptionHandler.java`：
 
 ```java
-package com.familyassets.system;
+package com.stocket.system;
 
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -634,14 +634,14 @@ git commit -m "feat: establish modular system API foundation"
 **文件：**
 - 创建：`backend/src/main/resources/application-local.yml`
 - 创建：`backend/src/main/resources/db/migration/V1__baseline.sql`
-- 创建：`backend/src/test/java/com/familyassets/DatabaseMigrationTest.java`
+- 创建：`backend/src/test/java/com/stocket/DatabaseMigrationTest.java`
 
 - [ ] **步骤 1：编写失败的数据库迁移测试**
 
-创建 `backend/src/test/java/com/familyassets/DatabaseMigrationTest.java`：
+创建 `backend/src/test/java/com/stocket/DatabaseMigrationTest.java`：
 
 ```java
-package com.familyassets;
+package com.stocket;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -732,7 +732,7 @@ spring:
 - [ ] **步骤 6：提交数据库基线**
 
 ```bash
-git add backend/src/main/resources backend/src/test/java/com/familyassets/DatabaseMigrationTest.java
+git add backend/src/main/resources backend/src/test/java/com/stocket/DatabaseMigrationTest.java
 git commit -m "feat: add PostgreSQL migration baseline"
 ```
 

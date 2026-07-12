@@ -1,4 +1,4 @@
-package com.familyassets.system;
+package com.stocket.system;
 
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.web.bind.annotation.GetMapping;

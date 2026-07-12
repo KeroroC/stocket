@@ -1,2 +1,2 @@
 @org.springframework.modulith.ApplicationModule(displayName = "System")
-package com.familyassets.system;
+package com.stocket.system;

@@ -1,2 +1,2 @@
 @org.springframework.modulith.ApplicationModule(displayName = "Reminder")
-package com.familyassets.reminder;
+package com.stocket.reminder;

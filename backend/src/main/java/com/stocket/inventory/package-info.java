@@ -1,2 +1,2 @@
 @org.springframework.modulith.ApplicationModule(displayName = "Inventory")
-package com.familyassets.inventory;
+package com.stocket.inventory;

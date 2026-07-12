@@ -1,2 +1,2 @@
 @org.springframework.modulith.ApplicationModule(displayName = "Audit")
-package com.familyassets.audit;
+package com.stocket.audit;

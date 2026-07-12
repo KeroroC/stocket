@@ -1,2 +1,2 @@
 @org.springframework.modulith.ApplicationModule(displayName = "Attachment")
-package com.familyassets.attachment;
+package com.stocket.attachment;

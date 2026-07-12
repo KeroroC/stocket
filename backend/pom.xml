@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.familyassets</groupId>
+    <groupId>com.stocket</groupId>
     <artifactId>stocket-backend</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <name>stocket-backend</name>

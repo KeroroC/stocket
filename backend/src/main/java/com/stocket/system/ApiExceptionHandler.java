@@ -1,4 +1,4 @@
-package com.familyassets.system;
+package com.stocket.system;
 
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.core.Ordered;

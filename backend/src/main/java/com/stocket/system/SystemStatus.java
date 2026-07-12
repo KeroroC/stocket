@@ -1,4 +1,4 @@
-package com.familyassets.system;
+package com.stocket.system;
 
 public record SystemStatus(String name, String version) {
 }
