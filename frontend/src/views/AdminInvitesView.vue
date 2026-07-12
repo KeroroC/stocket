@@ -28,6 +28,19 @@ const createError = ref('')
 const showResultDialog = ref(false)
 const resultInviteLink = ref('')
 
+// Copy state
+const copied = ref(false)
+
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {
+    // Fallback: select the text for manual copy
+  }
+}
+
 function handleApiError(err: unknown): string {
   const problem = err as { status?: number; code?: string; detail?: string }
   if (problem.status === 401) {
@@ -146,7 +159,7 @@ function formatStatusType(status: string): string {
 
     <ul v-if="invites.length > 0" class="invite-list">
       <li v-for="invite in invites" :key="invite.id" class="invite-item">
-        <div class="invite-info">
+        <div class="invite-item-info">
           <el-tag :type="formatStatusType(invite.status) as any" size="small">
             {{ formatStatus(invite.status) }}
           </el-tag>
@@ -218,6 +231,13 @@ function formatStatusType(status: string): string {
       <div class="result-content">
         <p>邀请链接（仅显示一次，请妥善保存）：</p>
         <div class="result-secret">{{ resultInviteLink }}</div>
+        <button
+          class="result-copy-btn"
+          :disabled="copied"
+          @click="copyToClipboard(resultInviteLink)"
+        >
+          {{ copied ? '已复制' : '复制链接' }}
+        </button>
       </div>
       <template #footer>
         <button class="auth-submit" style="width: auto; height: 36px;" @click="closeResultDialog">

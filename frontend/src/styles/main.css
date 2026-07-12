@@ -606,7 +606,7 @@ body {
   background: var(--st-color-surface);
 }
 
-.invite-info {
+.invite-item-info {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -646,6 +646,36 @@ body {
   color: var(--st-color-primary);
   word-break: break-all;
   user-select: all;
+}
+
+.result-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--st-color-primary);
+  background: var(--st-color-surface);
+  border: 1px solid var(--st-color-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.result-copy-btn:hover {
+  background: var(--st-color-primary-soft);
+}
+
+.result-copy-btn:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+}
+
+.result-copy-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Admin views */

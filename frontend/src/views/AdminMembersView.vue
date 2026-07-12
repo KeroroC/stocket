@@ -41,6 +41,25 @@ const editError = ref('')
 const showResetResultDialog = ref(false)
 const resetTempPassword = ref('')
 
+// Copy state
+const copiedCreate = ref(false)
+const copiedReset = ref(false)
+
+async function copyToClipboard(text: string, target: 'create' | 'reset') {
+  try {
+    await navigator.clipboard.writeText(text)
+    if (target === 'create') {
+      copiedCreate.value = true
+      setTimeout(() => { copiedCreate.value = false }, 2000)
+    } else {
+      copiedReset.value = true
+      setTimeout(() => { copiedReset.value = false }, 2000)
+    }
+  } catch {
+    // Fallback: select the text for manual copy
+  }
+}
+
 function handleApiError(err: unknown): string {
   const problem = err as { status?: number; code?: string; detail?: string }
   if (problem.status === 401) {
@@ -273,6 +292,13 @@ function formatRole(role: string): string {
       <div class="result-content">
         <p>临时密码（仅显示一次，请妥善保存）：</p>
         <div class="result-secret">{{ resultTempPassword }}</div>
+        <button
+          class="result-copy-btn"
+          :disabled="copiedCreate"
+          @click="copyToClipboard(resultTempPassword, 'create')"
+        >
+          {{ copiedCreate ? '已复制' : '复制密码' }}
+        </button>
       </div>
       <template #footer>
         <button class="auth-submit" style="width: auto; height: 36px;" @click="closeResultDialog">
@@ -321,6 +347,13 @@ function formatRole(role: string): string {
       <div class="result-content">
         <p>临时密码（仅显示一次，请妥善保存）：</p>
         <div class="result-secret">{{ resetTempPassword }}</div>
+        <button
+          class="result-copy-btn"
+          :disabled="copiedReset"
+          @click="copyToClipboard(resetTempPassword, 'reset')"
+        >
+          {{ copiedReset ? '已复制' : '复制密码' }}
+        </button>
       </div>
       <template #footer>
         <button class="auth-submit" style="width: auto; height: 36px;" @click="closeResetResultDialog">
