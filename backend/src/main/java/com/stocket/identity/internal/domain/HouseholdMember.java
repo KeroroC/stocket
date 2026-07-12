@@ -71,4 +71,12 @@ public class HouseholdMember {
     public IdentityRole getRole() {
         return role;
     }
+
+    public void setRole(IdentityRole role) {
+        this.role = role;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

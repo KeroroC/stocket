@@ -125,4 +125,30 @@ public class UserAccount {
         this.mustChangePassword = false;
         this.updatedAt = now;
     }
+
+    public void disable(Instant now) {
+        this.status = AccountStatus.DISABLED;
+        this.updatedAt = now;
+    }
+
+    public void enable(Instant now) {
+        this.status = AccountStatus.ACTIVE;
+        this.updatedAt = now;
+    }
+
+    public void setMustChangePassword(boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public void setCredentialsChangedAt(Instant credentialsChangedAt) {
+        this.credentialsChangedAt = credentialsChangedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }
