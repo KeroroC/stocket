@@ -136,14 +136,14 @@ describe('AccountView', () => {
     })
 
     await fireEvent.update(screen.getByLabelText(/当前密码/), 'oldP@ss1')
-    await fireEvent.update(getNewPasswordInput(), 'newP@ss1234')
-    await fireEvent.update(getConfirmNewPasswordInput(), 'newP@ss1234')
+    await fireEvent.update(getNewPasswordInput(), 'newP@ss123456')
+    await fireEvent.update(getConfirmNewPasswordInput(), 'newP@ss123456')
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
     await waitFor(() => {
       expect(mockChangePassword).toHaveBeenCalledWith({
         oldPassword: 'oldP@ss1',
-        newPassword: 'newP@ss1234',
+        newPassword: 'newP@ss123456',
       })
     })
   })

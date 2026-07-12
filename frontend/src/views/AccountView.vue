@@ -117,8 +117,8 @@ async function handlePasswordSubmit() {
     passwordError.value = '请输入新密码'
     return
   }
-  if (newPassword.value.length < 8) {
-    passwordError.value = '新密码至少 8 个字符'
+  if (newPassword.value.length < 12) {
+    passwordError.value = '新密码至少 12 个字符'
     return
   }
   if (newPassword.value !== confirmNewPassword.value) {
@@ -140,7 +140,7 @@ async function handlePasswordSubmit() {
     newPassword.value = ''
     confirmNewPassword.value = ''
     const problem = err as { code?: string; detail?: string }
-    if (problem.code === 'INVALID_OLD_PASSWORD') {
+    if (problem.code === 'INVALID_CREDENTIALS') {
       passwordError.value = '旧密码错误'
     } else {
       passwordError.value = handleApiError(err) || '修改密码失败，请稍后重试'
@@ -238,7 +238,7 @@ async function handleRevokeOtherSessions() {
             id="newPassword"
             v-model="newPassword"
             type="password"
-            placeholder="至少 8 个字符"
+            placeholder="至少 12 个字符"
             autocomplete="new-password"
           />
         </div>

@@ -60,8 +60,8 @@ describe('PasswordChangeView', () => {
     const { emitted } = render(PasswordChangeView)
 
     await fireEvent.update(getOldPassword(), 'oldP@ss1')
-    await fireEvent.update(getNewPassword(), 'newSecureP@ss1')
-    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss1')
+    await fireEvent.update(getNewPassword(), 'newSecureP@ss12')
+    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss12')
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
     await waitFor(() => {
@@ -75,8 +75,8 @@ describe('PasswordChangeView', () => {
     render(PasswordChangeView)
 
     await fireEvent.update(getOldPassword(), 'oldP@ss1')
-    await fireEvent.update(getNewPassword(), 'newSecureP@ss1')
-    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss1')
+    await fireEvent.update(getNewPassword(), 'newSecureP@ss12')
+    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss12')
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
     await waitFor(() => {
@@ -90,7 +90,7 @@ describe('PasswordChangeView', () => {
     render(PasswordChangeView)
 
     await fireEvent.update(getOldPassword(), 'oldP@ss1')
-    await fireEvent.update(getNewPassword(), 'newSecureP@ss1')
+    await fireEvent.update(getNewPassword(), 'newSecureP@ss12')
     await fireEvent.update(getConfirmNewPassword(), 'differentP@ss')
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
@@ -102,14 +102,14 @@ describe('PasswordChangeView', () => {
   it('shows API error on change failure', async () => {
     mockChangePassword.mockRejectedValueOnce({
       status: 400,
-      code: 'INVALID_OLD_PASSWORD',
+      code: 'INVALID_CREDENTIALS',
     })
 
     render(PasswordChangeView)
 
     await fireEvent.update(getOldPassword(), 'wrongOld')
-    await fireEvent.update(getNewPassword(), 'newSecureP@ss1')
-    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss1')
+    await fireEvent.update(getNewPassword(), 'newSecureP@ss12')
+    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss12')
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
     await waitFor(() => {

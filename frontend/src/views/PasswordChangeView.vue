@@ -17,7 +17,7 @@ const errorMessage = ref('')
 function validate(): string | null {
   if (!oldPassword.value) return '请输入旧密码'
   if (!newPassword.value) return '请输入新密码'
-  if (newPassword.value.length < 8) return '新密码至少 8 个字符'
+  if (newPassword.value.length < 12) return '新密码至少 12 个字符'
   if (newPassword.value === oldPassword.value) return '新密码不能与旧密码相同'
   if (newPassword.value !== confirmNewPassword.value) return '新密码不一致，请重新输入'
   return null
@@ -54,7 +54,7 @@ async function handleSubmit() {
     newPassword.value = ''
     confirmNewPassword.value = ''
     const problem = err as { detail?: string; code?: string }
-    if (problem.code === 'INVALID_OLD_PASSWORD') {
+    if (problem.code === 'INVALID_CREDENTIALS') {
       errorMessage.value = '旧密码错误'
     } else {
       errorMessage.value = problem.detail ?? '修改密码失败，请稍后重试'
@@ -98,7 +98,7 @@ function handleLogout() {
           id="newPassword"
           v-model="newPassword"
           type="password"
-          placeholder="至少 8 个字符"
+          placeholder="至少 12 个字符"
           autocomplete="new-password"
         />
       </div>
