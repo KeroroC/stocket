@@ -65,12 +65,12 @@ public class AdminRecoveryCommand {
      *
      * <p>This method:
      * <ul>
-     *   <li>Finds the user by normalized username</li>
-     *   <li>Verifies the user has the ADMIN role</li>
+     *   <li>Finds the user by normalized username with pessimistic locking</li>
+     *   <li>Verifies the user has the ADMIN role with pessimistic locking</li>
      *   <li>Generates a new temporary password</li>
      *   <li>Updates the password hash and sets must_change_password flag</li>
      *   <li>Revokes all existing sessions</li>
-     *   <li>Publishes a LOCAL_MAINTENANCE audit event</li>
+     *   <li>Publishes a PasswordRecoveredLocally audit event</li>
      *   <li>Returns the temporary password (caller should print after AFTER_COMMIT)</li>
      * </ul>
      *
@@ -86,15 +86,15 @@ public class AdminRecoveryCommand {
 
         log.info("Starting admin recovery for user: {}", normalizedUsername);
 
-        // Find account
-        UserAccount account = accountRepository.findByNormalizedUsername(normalizedUsername)
+        // Find account with pessimistic locking
+        UserAccount account = accountRepository.findByNormalizedUsernameWithLock(normalizedUsername)
                 .orElseThrow(() -> {
                     log.error("User not found: {}", normalizedUsername);
                     return new AdminNotFoundException("User not found: " + normalizedUsername);
                 });
 
-        // Verify ADMIN role
-        HouseholdMember member = memberRepository.findByAccountId(account.getId())
+        // Verify ADMIN role with pessimistic locking
+        HouseholdMember member = memberRepository.findByAccountIdWithLock(account.getId())
                 .orElseThrow(() -> {
                     log.error("User {} has no household membership", normalizedUsername);
                     return new NotAdminException("User has no household membership: " + normalizedUsername);
@@ -127,7 +127,7 @@ public class AdminRecoveryCommand {
         IdentityAuditEvent auditEvent = new IdentityAuditEvent(
                 UUID.randomUUID(),
                 now,
-                "LOCAL_MAINTENANCE",
+                "PasswordRecoveredLocally",
                 "SUCCESS",
                 account.getId(),
                 "USER_ACCOUNT",
