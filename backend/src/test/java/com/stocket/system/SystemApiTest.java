@@ -8,38 +8,33 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.stocket.identity.internal.authentication.SessionCookieService;
-import com.stocket.identity.internal.authentication.SessionService;
-
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(SystemController.class)
+@WebMvcTest(value = SystemController.class, excludeFilters = @ComponentScan.Filter(
+        type = FilterType.REGEX,
+        pattern = "com\\.stocket\\.identity\\.internal\\.security\\.(SessionAuthenticationFilter|PasswordChangeRequiredFilter)"))
+@AutoConfigureMockMvc(addFilters = false)
 @Import({SystemApiTest.BuildInfoConfiguration.class,
         SystemApiTest.ValidationProbeController.class,
         ApiExceptionHandler.class})
 class SystemApiTest {
-
-    @MockitoBean
-    private SessionService sessionService;
-
-    @MockitoBean
-    private SessionCookieService sessionCookieService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -55,7 +50,6 @@ class SystemApiTest {
     @Test
     void returnsProblemDetailsForValidationErrors() throws Exception {
         mockMvc.perform(post("/api/v1/test/validation")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isUnprocessableContent())
