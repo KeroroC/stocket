@@ -56,17 +56,28 @@ class CatalogSchemaIntegrationTest {
 
     @Test
     void barcodeUniqueIndexIncludesHouseholdAndNormalizedValue() {
-        String indexDefinition = jdbc.queryForObject("""
-                select indexdef
-                from pg_indexes
-                where schemaname = 'public'
-                  and tablename = 'item_barcode'
-                  and indexname = 'uq_item_barcode_household_normalized_value'
-                """, String.class);
+        assertIndex("uq_item_barcode_household_normalized_value",
+                "CREATE UNIQUE INDEX", "USING btree (household_id, normalized_value)");
+    }
 
-        assertThat(indexDefinition)
-                .contains("household_id", "normalized_value")
-                .containsIgnoringCase("UNIQUE INDEX");
+    @Test
+    void createsRequiredTreeAndSearchIndexes() {
+        assertIndex("uq_category_active_sibling_name",
+                "CREATE UNIQUE INDEX", "USING btree (household_id, parent_id, normalized_name) NULLS NOT DISTINCT",
+                "WHERE (archived_at IS NULL)");
+        assertIndex("uq_location_active_sibling_name",
+                "CREATE UNIQUE INDEX", "USING btree (household_id, parent_id, normalized_name) NULLS NOT DISTINCT",
+                "WHERE (archived_at IS NULL)");
+        assertIndex("uq_location_household_public_code",
+                "CREATE UNIQUE INDEX", "USING btree (household_id, public_code)");
+        assertIndex("uq_item_tag_item_normalized_value",
+                "CREATE UNIQUE INDEX", "USING btree (item_definition_id, normalized_value)");
+        assertIndex("gin_catalog_search_text",
+                "USING gin (searchable_text gin_trgm_ops)");
+        assertIndex("gin_catalog_search_normalized_barcodes",
+                "USING gin (normalized_barcodes)");
+        assertIndex("catalog_search_stable_page_idx",
+                "USING btree (household_id, archived, display_name, item_definition_id)");
     }
 
     private UUID insertItemDefinition(UUID householdId, String name, String normalizedName) {
@@ -86,5 +97,16 @@ class CatalogSchemaIntegrationTest {
                     id, household_id, item_definition_id, raw_value, normalized_value
                 ) values (?, ?, ?, ?, ?)
                 """, UUID.randomUUID(), householdId, itemDefinitionId, rawValue, normalizedValue);
+    }
+
+    private void assertIndex(String indexName, String... fragments) {
+        String indexDefinition = jdbc.queryForObject("""
+                select indexdef
+                from pg_indexes
+                where schemaname = 'public'
+                  and indexname = ?
+                """, String.class, indexName);
+
+        assertThat(indexDefinition).contains(fragments);
     }
 }

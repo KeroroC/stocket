@@ -2,6 +2,7 @@ package com.stocket.identity;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -14,6 +15,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,7 +25,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import com.stocket.identity.internal.authentication.SecureValueGenerator;
+import com.stocket.identity.internal.authentication.SessionService;
 import com.stocket.identity.internal.authentication.TokenHasher;
+import com.stocket.identity.internal.security.IdentityPrincipal;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -56,6 +61,12 @@ class SecurityIntegrationTest {
 
     @Autowired
     private TokenHasher tokenHasher;
+
+    @Autowired
+    private SessionService sessionService;
+
+    @Autowired
+    private CurrentHouseholdProvider currentHouseholdProvider;
 
     @BeforeEach
     void cleanDatabase() {
@@ -194,6 +205,47 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/v1/account")
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void persistedMembershipPopulatesCurrentHouseholdContext() {
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        UUID householdId = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        String token = secureValueGenerator.generateToken();
+        Instant now = Instant.now();
+
+        jdbc.update("insert into household(id, singleton_key, name, timezone) values (?, 1, '家', 'Asia/Shanghai')",
+                householdId);
+        jdbc.update("""
+                insert into user_account(id, username, normalized_username, display_name, password_hash,
+                    status, must_change_password, credentials_changed_at, created_at, updated_at, version)
+                values (?, 'Member', 'member', '成员', ?, 'ACTIVE', false, now(), now(), now(), 0)
+                """, accountId, passwordEncoder.encode("member-password"));
+        jdbc.update("""
+                insert into household_member(id, household_id, account_id, role, created_at, updated_at)
+                values (?, ?, ?, 'MEMBER', now(), now())
+                """, memberId, householdId, accountId);
+        jdbc.update("""
+                insert into user_session(id, account_id, token_hash, created_at, last_seen_at,
+                    idle_expires_at, absolute_expires_at, user_agent, source_address)
+                values (?, ?, ?, ?::timestamptz, ?::timestamptz, ?::timestamptz, ?::timestamptz,
+                    'test', '127.0.0.1')
+                """, UUID.randomUUID(), accountId, tokenHasher.sha256(token), now.toString(), now.toString(),
+                now.plus(30, ChronoUnit.DAYS).toString(), now.plus(90, ChronoUnit.DAYS).toString());
+
+        IdentityPrincipal principal = sessionService.authenticate(token, now).orElseThrow();
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(principal, null, List.of()));
+        try {
+            CurrentHousehold current = currentHouseholdProvider.requireCurrent();
+            org.assertj.core.api.Assertions.assertThat(current.householdId()).isEqualTo(householdId);
+            org.assertj.core.api.Assertions.assertThat(current.memberId()).isEqualTo(memberId);
+            org.assertj.core.api.Assertions.assertThat(current.role()).isEqualTo(IdentityRole.MEMBER);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @Test

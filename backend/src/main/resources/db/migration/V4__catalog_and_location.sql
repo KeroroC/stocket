@@ -17,11 +17,7 @@ create table category (
 );
 
 create unique index uq_category_active_sibling_name
-    on category (
-        household_id,
-        coalesce(parent_id, '00000000-0000-0000-0000-000000000000'::uuid),
-        normalized_name
-    )
+    on category (household_id, parent_id, normalized_name) nulls not distinct
     where archived_at is null;
 
 create table location (
@@ -38,11 +34,7 @@ create table location (
 );
 
 create unique index uq_location_active_sibling_name
-    on location (
-        household_id,
-        coalesce(parent_id, '00000000-0000-0000-0000-000000000000'::uuid),
-        normalized_name
-    )
+    on location (household_id, parent_id, normalized_name) nulls not distinct
     where archived_at is null;
 
 create unique index uq_location_household_public_code
