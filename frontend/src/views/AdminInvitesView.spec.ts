@@ -24,6 +24,7 @@ vi.mock('../api/identity', () => ({
   getInvites: vi.fn().mockResolvedValue([]),
   createInvite: vi.fn(),
   revokeInvite: vi.fn(),
+  extendInvite: vi.fn(),
 }))
 
 const invitesFixture = [
@@ -33,6 +34,9 @@ const invitesFixture = [
     expiresAt: '2026-07-13T12:00:00Z',
     status: 'PENDING',
     createdAt: '2026-07-12T12:00:00Z',
+    useCount: 0,
+    maxUses: 1,
+    acceptedBy: [],
   },
   {
     id: 'inv-2',
@@ -40,6 +44,9 @@ const invitesFixture = [
     expiresAt: '2026-07-11T12:00:00Z',
     status: 'EXPIRED',
     createdAt: '2026-07-10T12:00:00Z',
+    useCount: 0,
+    maxUses: 1,
+    acceptedBy: [],
   },
   {
     id: 'inv-3',
@@ -47,6 +54,9 @@ const invitesFixture = [
     expiresAt: '2026-07-14T12:00:00Z',
     status: 'ACCEPTED',
     createdAt: '2026-07-09T12:00:00Z',
+    useCount: 1,
+    maxUses: 1,
+    acceptedBy: ['接受用户'],
   },
 ]
 
@@ -220,6 +230,45 @@ describe('AdminInvitesView', () => {
 
     await waitFor(() => {
       expect(emitted().forcePasswordChange).toBeTruthy()
+    })
+  })
+
+  it('shows acceptedBy for accepted invites', async () => {
+    render(AdminInvitesView)
+
+    await waitFor(() => {
+      expect(screen.getByText(/接受者：接受用户/)).toBeInTheDocument()
+    })
+  })
+
+  it('shows use count for multi-use invites', async () => {
+    const multiUseFixture = [
+      {
+        id: 'inv-multi',
+        role: 'MEMBER',
+        expiresAt: '2026-07-14T12:00:00Z',
+        status: 'PENDING',
+        createdAt: '2026-07-12T12:00:00Z',
+        useCount: 2,
+        maxUses: 5,
+        acceptedBy: ['用户1', '用户2'],
+      },
+    ]
+    vi.mocked(identityApi.getInvites).mockResolvedValue(multiUseFixture)
+
+    render(AdminInvitesView)
+
+    await waitFor(() => {
+      expect(screen.getByText(/使用次数：2\/5/)).toBeInTheDocument()
+    })
+  })
+
+  it('shows extend button only for pending invites', async () => {
+    render(AdminInvitesView)
+
+    await waitFor(() => {
+      const extendButtons = screen.getAllByText('延长')
+      expect(extendButtons).toHaveLength(1) // Only inv-1 is PENDING
     })
   })
 })
