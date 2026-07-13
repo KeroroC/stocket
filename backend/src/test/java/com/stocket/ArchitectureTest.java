@@ -64,4 +64,15 @@ class ArchitectureTest {
                 .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                         .importPackages("com.stocket"));
     }
+
+    @Test
+    void inventoryDoesNotUseOtherModuleInternals() {
+        noClasses().that().resideInAPackage("com.stocket.inventory..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "com.stocket.identity.internal..",
+                        "com.stocket.catalog.internal..",
+                        "com.stocket.location.internal..")
+                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                        .importPackages("com.stocket"));
+    }
 }

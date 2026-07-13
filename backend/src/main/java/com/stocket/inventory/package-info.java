@@ -1,4 +1,4 @@
 @org.springframework.modulith.ApplicationModule(
         displayName = "Inventory",
-        allowedDependencies = {"identity", "catalog", "location"})
+        allowedDependencies = {"identity :: api", "catalog :: api", "location :: api"})
 package com.stocket.inventory;

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+@org.springframework.modulith.NamedInterface("api")
 public record InventoryChanged(
         UUID eventId,
         UUID householdId,
