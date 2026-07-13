@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -194,6 +195,29 @@ class InviteIntegrationTest {
     }
 
     @Test
+    void createInviteWithMaxUses() throws Exception {
+        String adminCookie = loginAsAdmin();
+
+        String responseJson = mockMvc.perform(post("/api/v1/admin/invites")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"MEMBER","maxUses":3}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        UUID inviteId = UUID.fromString(
+                com.jayway.jsonpath.JsonPath.read(responseJson, "$.id").toString());
+        Integer maxUses = jdbc.queryForObject(
+                "SELECT max_uses FROM member_invite WHERE id = ?",
+                Integer.class, inviteId);
+        assertThat(maxUses).isEqualTo(3);
+    }
+
+    @Test
     void createInviteLinkUsesFrontendUrl() throws Exception {
         String adminCookie = loginAsAdmin();
 
@@ -214,6 +238,79 @@ class InviteIntegrationTest {
         // 验证邀请链接使用前端URL（http://localhost:5173）而不是后端URL
         assertThat(inviteLink).startsWith("http://localhost:5173/invite/");
         assertThat(inviteLink).doesNotContain("localhost:8080");
+    }
+
+    // ---- Invite extension ----
+
+    @Test
+    void extendInviteReturns204() throws Exception {
+        String adminCookie = loginAsAdmin();
+
+        // Create invite
+        String createResponse = mockMvc.perform(post("/api/v1/admin/invites")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"MEMBER"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        UUID inviteId = UUID.fromString(
+                com.jayway.jsonpath.JsonPath.read(createResponse, "$.id").toString());
+
+        // Extend invite
+        Instant newExpiry = Instant.now().plus(Duration.ofDays(7));
+        mockMvc.perform(patch("/api/v1/admin/invites/{inviteId}/extend", inviteId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"expiresAt":"%s"}
+                                """.formatted(newExpiry.toString())))
+                .andExpect(status().isNoContent());
+
+        // Verify expiry updated in database
+        Instant expiresAt = jdbc.queryForObject(
+                "SELECT expires_at FROM member_invite WHERE id = ?",
+                Instant.class, inviteId);
+        assertThat(expiresAt).isEqualTo(newExpiry);
+    }
+
+    @Test
+    void extendExpiredInviteReturns409() throws Exception {
+        String adminCookie = loginAsAdmin();
+
+        // Create invite with short expiry
+        Instant shortExpiry = clock.instant().plus(Duration.ofMinutes(5));
+        String createResponse = mockMvc.perform(post("/api/v1/admin/invites")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"MEMBER","expiresAt":"%s"}
+                                """.formatted(shortExpiry.toString())))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        UUID inviteId = UUID.fromString(
+                com.jayway.jsonpath.JsonPath.read(createResponse, "$.id").toString());
+
+        // Advance clock past expiry
+        ((MutableClock) clock).advance(Duration.ofMinutes(10));
+
+        // Try to extend expired invite
+        Instant newExpiry = Instant.now().plus(Duration.ofDays(7));
+        mockMvc.perform(patch("/api/v1/admin/invites/{inviteId}/extend", inviteId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"expiresAt":"%s"}
+                                """.formatted(newExpiry.toString())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVITE_ALREADY_EXPIRED"));
     }
 
     // ---- Invite listing ----
@@ -245,6 +342,42 @@ class InviteIntegrationTest {
                 .andExpect(jsonPath("$[0].tokenHash").doesNotExist())
                 .andExpect(jsonPath("$[0].token").doesNotExist())
                 .andExpect(jsonPath("$[0].inviteLink").doesNotExist());
+    }
+
+    @Test
+    void listInvitesShowsAcceptedBy() throws Exception {
+        String adminCookie = loginAsAdmin();
+
+        // Create invite
+        String createResponse = mockMvc.perform(post("/api/v1/admin/invites")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"MEMBER"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String inviteLink = com.jayway.jsonpath.JsonPath.read(createResponse, "$.inviteLink").toString();
+        String token = inviteLink.substring(inviteLink.lastIndexOf('/') + 1);
+
+        // Accept invite
+        mockMvc.perform(post("/api/v1/invites/{token}/accept", token)
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"username":"AcceptedUser","displayName":"接受用户","password":"strongpassword123"}
+                                """))
+                .andExpect(status().isCreated());
+
+        // List invites should show acceptedBy
+        mockMvc.perform(get("/api/v1/admin/invites")
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].acceptedBy").isArray())
+                .andExpect(jsonPath("$[0].acceptedBy[0]").value("接受用户"))
+                .andExpect(jsonPath("$[0].useCount").value(1));
     }
 
     // ---- Invite revocation ----
