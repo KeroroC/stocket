@@ -6,6 +6,7 @@ import com.stocket.inventory.internal.command.AdjustInventoryService;
 import com.stocket.inventory.internal.command.AssetLifecycleService;
 import com.stocket.inventory.internal.command.ConsumeInventoryService;
 import com.stocket.inventory.internal.command.ReceiveInventoryService;
+import com.stocket.inventory.internal.command.TransferInventoryService;
 import com.stocket.inventory.internal.idempotency.IdempotentExecutor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,15 +25,18 @@ public class InventoryCommandController {
     private final ConsumeInventoryService consumeInventory;
     private final AdjustInventoryService adjustInventory;
     private final AssetLifecycleService assetLifecycle;
+    private final TransferInventoryService transferInventory;
 
     public InventoryCommandController(ReceiveInventoryService receiveInventory,
                                       ConsumeInventoryService consumeInventory,
                                       AdjustInventoryService adjustInventory,
-                                      AssetLifecycleService assetLifecycle) {
+                                      AssetLifecycleService assetLifecycle,
+                                      TransferInventoryService transferInventory) {
         this.receiveInventory = receiveInventory;
         this.consumeInventory = consumeInventory;
         this.adjustInventory = adjustInventory;
         this.assetLifecycle = assetLifecycle;
+        this.transferInventory = transferInventory;
     }
 
     @PostMapping("/receipts")
@@ -93,6 +97,16 @@ public class InventoryCommandController {
             @RequestBody AssetStatusRequest request) {
         return response(assetLifecycle.retire(
                 id, requireIdempotencyKey(idempotencyKey), request.reason()));
+    }
+
+    @PostMapping("/entries/{id}/transfer")
+    @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
+    public ResponseEntity<InventoryCommandResponse> transfer(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody TransferRequest request) {
+        return response(transferInventory.transfer(
+                id, requireIdempotencyKey(idempotencyKey), request.targetLocationId(), request.quantity()));
     }
 
     private ResponseEntity<InventoryCommandResponse> response(
