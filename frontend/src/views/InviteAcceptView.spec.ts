@@ -77,8 +77,8 @@ describe('InviteAcceptView', () => {
 
     await fireEvent.update(screen.getByLabelText(/用户名/), 'newuser')
     await fireEvent.update(screen.getByLabelText(/显示名称/), '新用户')
-    await fireEvent.update(screen.getByLabelText('密码'), 'secureP@ss1')
-    await fireEvent.update(screen.getByLabelText(/确认密码/), 'secureP@ss1')
+    await fireEvent.update(screen.getByLabelText('密码'), 'secureP@ss123')
+    await fireEvent.update(screen.getByLabelText(/确认密码/), 'secureP@ss123')
     await fireEvent.click(screen.getByRole('button', { name: /接受邀请/ }))
 
     await waitFor(() => {
@@ -121,7 +121,7 @@ describe('InviteAcceptView', () => {
 
     await fireEvent.update(screen.getByLabelText(/用户名/), 'newuser')
     await fireEvent.update(screen.getByLabelText(/显示名称/), '新用户')
-    await fireEvent.update(screen.getByLabelText('密码'), 'secureP@ss1')
+    await fireEvent.update(screen.getByLabelText('密码'), 'secureP@ss123')
     await fireEvent.update(screen.getByLabelText(/确认密码/), 'differentP@ss')
     await fireEvent.click(screen.getByRole('button', { name: /接受邀请/ }))
 
