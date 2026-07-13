@@ -343,4 +343,107 @@ describe('App', () => {
     expect(callHistory[1]).toBe('/api/v1/auth/csrf')
     expect(callHistory[2]).toBe('/api/v1/account')
   })
+
+  it('邀请成功后跳转到登录页面', async () => {
+    // 模拟URL为邀请链接
+    const originalPathname = window.location.pathname
+    const originalPushState = window.history.pushState
+
+    // 使用jsdom的方式模拟URL
+    window.history.pushState({}, '', '/invite/test-token-123')
+
+    const fetch = vi.fn((url: string) => {
+      if (url === '/api/v1/invites/test-token-123/status') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            available: true,
+            role: 'MEMBER',
+            expiresAt: '2026-07-20T00:00:00Z',
+          }),
+        })
+      }
+      if (url === '/api/v1/invites/test-token-123/accept') {
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: async () => ({
+            accountId: 'a1',
+            memberId: 'm1',
+          }),
+        })
+      }
+      if (url === '/api/v1/setup/status') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ initialized: true }),
+        })
+      }
+      if (url === '/api/v1/auth/csrf') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({}),
+        })
+      }
+      if (url === '/api/v1/account') {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          json: async () => ({ error: 'UNAUTHORIZED' }),
+        })
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      })
+    })
+    vi.stubGlobal('fetch', fetch)
+
+    render(App)
+    await new Promise((r) => setTimeout(r, 0))
+
+    // 应该显示邀请接受视图
+    expect(screen.getByRole('heading', { name: '接受邀请' })).toBeInTheDocument()
+
+    // 填写表单
+    const usernameInput = screen.getByLabelText(/用户名/)
+    const displayNameInput = screen.getByLabelText(/显示名称/)
+    const passwordInput = screen.getByLabelText('密码')
+    const confirmPasswordInput = screen.getByLabelText(/确认密码/)
+
+    await fireEvent.update(usernameInput, 'newuser')
+    await fireEvent.update(displayNameInput, '新用户')
+    await fireEvent.update(passwordInput, 'secureP@ss123456')
+    await fireEvent.update(confirmPasswordInput, 'secureP@ss123456')
+
+    // 检查表单填写是否正确
+    expect(usernameInput).toHaveValue('newuser')
+    expect(displayNameInput).toHaveValue('新用户')
+    expect(passwordInput).toHaveValue('secureP@ss123456')
+    expect(confirmPasswordInput).toHaveValue('secureP@ss123456')
+
+    // 提交表单
+    const submitButton = screen.getByRole('button', { name: /接受邀请/ })
+    await fireEvent.click(submitButton)
+
+    // 等待API调用完成
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/v1/invites/test-token-123/accept',
+        expect.objectContaining({ method: 'POST' }),
+      )
+    })
+
+    // 应该跳转到登录页面
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '登录' })).toBeInTheDocument()
+    })
+
+    // 恢复原始状态
+    window.history.pushState({}, '', originalPathname)
+  })
 })

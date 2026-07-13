@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuth } from './auth/useAuth'
 import SetupView from './views/SetupView.vue'
 import LoginView from './views/LoginView.vue'
@@ -14,7 +14,8 @@ const inviteToken = computed(() => {
   return match ? match[1] : null
 })
 
-const showInviteView = computed(() => inviteToken.value !== null)
+const inviteCompleted = ref(false)
+const showInviteView = computed(() => inviteToken.value !== null && !inviteCompleted.value)
 
 onMounted(() => {
   if (!showInviteView.value) {
@@ -31,6 +32,7 @@ function handleLoginSuccess() {
 }
 
 function handleInviteSuccess() {
+  inviteCompleted.value = true
   window.history.replaceState({}, '', '/login')
   bootstrap()
 }
