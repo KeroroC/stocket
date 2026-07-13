@@ -1,0 +1,5 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--st-color-text); background: var(--st-color-bg); font-variant-numeric: tabular-nums; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--st-color-primary) 55%, transparent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
