@@ -49,7 +49,7 @@ frontend/src/
 ## Task 1：建立库存数据库基线与公开契约
 
 **Files:**
-- Create: `backend/src/main/resources/db/migration/V4__inventory_ledger.sql`
+- Create: `backend/src/main/resources/db/migration/V5__inventory_ledger.sql`
 - Modify: `backend/src/test/java/com/stocket/DatabaseMigrationTest.java`
 - Create: `backend/src/test/java/com/stocket/inventory/InventorySchemaIntegrationTest.java`
 - Create: `backend/src/main/java/com/stocket/inventory/{InventoryChanged,InventoryItemAvailability,InventoryQuery}.java`
@@ -57,13 +57,13 @@ frontend/src/
 
 - [ ] **Step 1：写迁移失败测试**
 
-断言 Flyway 版本包含 `4`，并检查 `inventory_entry`、`batch_detail`、`asset_detail`、`inventory_movement`、`idempotency_record`、`inventory_reconciliation_issue` 六张表。额外直接执行 SQL，证明负批次数量、数量为 `2` 的资产、重复家庭资产号和同一流水 ID 均被数据库拒绝。
+断言 Flyway 版本包含 `5`，并检查 `inventory_entry`、`batch_detail`、`asset_detail`、`inventory_movement`、`idempotency_record`、`inventory_reconciliation_issue` 六张表。额外直接执行 SQL，证明负批次数量、数量为 `2` 的资产、重复家庭资产号和同一流水 ID 均被数据库拒绝。
 
 Run: `cd backend && ./mvnw -Dtest=DatabaseMigrationTest,InventorySchemaIntegrationTest test`
 
-Expected: FAIL，最高迁移版本仍为 `3`，库存表不存在。
+Expected: FAIL，最高迁移版本仍为 `4`，库存表不存在。
 
-- [ ] **Step 2：创建 V4 迁移**
+- [ ] **Step 2：创建 V5 迁移**
 
 迁移核心约束固定为：
 
@@ -144,10 +144,10 @@ public interface InventoryQuery {
 
 Run: `cd backend && ./mvnw -Dtest=DatabaseMigrationTest,InventorySchemaIntegrationTest test`
 
-Expected: PASS，数据库约束和跨家庭资产号场景均符合预期。
+Expected: PASS，数据库约束和家庭内资产号唯一场景均符合预期。
 
 ```bash
-git add backend/src/main/resources/db/migration/V4__inventory_ledger.sql backend/src/main/java/com/stocket/inventory backend/src/test/java/com/stocket
+git add backend/src/main/resources/db/migration/V5__inventory_ledger.sql backend/src/main/java/com/stocket/inventory backend/src/test/java/com/stocket
 git diff --cached --check
 git commit -m "feat(inventory): 建立库存台账数据基线"
 ```
