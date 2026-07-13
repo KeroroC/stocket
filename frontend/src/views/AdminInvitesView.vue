@@ -5,6 +5,7 @@ import {
   getInvites as apiGetInvites,
   createInvite as apiCreateInvite,
   revokeInvite as apiRevokeInvite,
+  extendInvite as apiExtendInvite,
 } from '../api/identity'
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const error = ref('')
 const showCreateDialog = ref(false)
 const newRole = ref('MEMBER')
 const newExpiresInHours = ref(24)
+const newMaxUses = ref(1)
 const createSubmitting = ref(false)
 const createError = ref('')
 
@@ -30,6 +32,13 @@ const resultInviteLink = ref('')
 
 // Copy state
 const copied = ref(false)
+
+// Extend invite dialog
+const showExtendDialog = ref(false)
+const extendInviteId = ref('')
+const newExpiryDate = ref('')
+const extendSubmitting = ref(false)
+const extendError = ref('')
 
 async function copyToClipboard(text: string) {
   try {
@@ -72,6 +81,7 @@ onMounted(loadInvites)
 function openCreateDialog() {
   newRole.value = 'MEMBER'
   newExpiresInHours.value = 24
+  newMaxUses.value = 1
   createError.value = ''
   showCreateDialog.value = true
 }
@@ -83,6 +93,7 @@ async function handleCreateInvite() {
     const result = await apiCreateInvite({
       role: newRole.value,
       expiresInHours: newExpiresInHours.value,
+      maxUses: newMaxUses.value,
     })
     showCreateDialog.value = false
     resultInviteLink.value = result.inviteLink
@@ -110,6 +121,36 @@ async function handleRevokeInvite(inviteId: string) {
     const msg = handleApiError(err)
     if (msg) error.value = msg
   }
+}
+
+function openExtendDialog(inviteId: string, currentExpiry: string) {
+  extendInviteId.value = inviteId
+  extendError.value = ''
+  // Default to 7 days from now
+  const defaultDate = new Date()
+  defaultDate.setDate(defaultDate.getDate() + 7)
+  newExpiryDate.value = defaultDate.toISOString().slice(0, 16)
+  showExtendDialog.value = true
+}
+
+async function handleExtendInvite() {
+  extendError.value = ''
+  extendSubmitting.value = true
+  try {
+    const expiresAt = new Date(newExpiryDate.value).toISOString()
+    await apiExtendInvite(extendInviteId.value, expiresAt)
+    showExtendDialog.value = false
+    await loadInvites()
+  } catch (err: unknown) {
+    const msg = handleApiError(err)
+    if (msg) extendError.value = msg
+  } finally {
+    extendSubmitting.value = false
+  }
+}
+
+function canExtend(invite: InviteListItem): boolean {
+  return invite.status === 'PENDING'
 }
 
 function formatRole(role: string): string {
@@ -167,14 +208,29 @@ function formatStatusType(status: string): string {
           <span class="invite-expires">
             有效期至：{{ new Date(invite.expiresAt).toLocaleString() }}
           </span>
+          <span v-if="invite.maxUses > 1" class="invite-uses">
+            使用次数：{{ invite.useCount }}/{{ invite.maxUses }}
+          </span>
+          <span v-if="invite.acceptedBy && invite.acceptedBy.length > 0" class="invite-accepted-by">
+            接受者：{{ invite.acceptedBy.join(', ') }}
+          </span>
         </div>
-        <button
-          v-if="invite.status === 'PENDING'"
-          class="member-action-btn"
-          @click="handleRevokeInvite(invite.id)"
-        >
-          撤销
-        </button>
+        <div class="invite-item-actions">
+          <button
+            v-if="canExtend(invite)"
+            class="member-action-btn extend-btn"
+            @click="openExtendDialog(invite.id, invite.expiresAt)"
+          >
+            延长
+          </button>
+          <button
+            v-if="invite.status === 'PENDING'"
+            class="member-action-btn"
+            @click="handleRevokeInvite(invite.id)"
+          >
+            撤销
+          </button>
+        </div>
       </li>
     </ul>
 
@@ -211,6 +267,17 @@ function formatStatusType(status: string): string {
             max="720"
           />
         </div>
+
+        <div class="form-field">
+          <label for="inviteMaxUses">最大使用次数</label>
+          <input
+            id="inviteMaxUses"
+            v-model.number="newMaxUses"
+            type="number"
+            min="1"
+            max="100"
+          />
+        </div>
       </form>
       <template #footer>
         <button class="auth-logout-btn" style="width: auto; height: 36px;" @click="showCreateDialog = false">取消</button>
@@ -245,5 +312,59 @@ function formatStatusType(status: string): string {
         </button>
       </template>
     </el-dialog>
+
+    <!-- Extend invite dialog -->
+    <el-dialog
+      v-model="showExtendDialog"
+      title="延长邀请有效期"
+      :close-on-click-modal="false"
+      width="400px"
+    >
+      <form class="auth-form" @submit.prevent="handleExtendInvite">
+        <div v-if="extendError" role="alert" class="auth-error">
+          {{ extendError }}
+        </div>
+
+        <div class="form-field">
+          <label for="newExpiry">新的过期时间</label>
+          <input
+            id="newExpiry"
+            v-model="newExpiryDate"
+            type="datetime-local"
+            :min="new Date().toISOString().slice(0, 16)"
+          />
+        </div>
+      </form>
+      <template #footer>
+        <button class="auth-logout-btn" style="width: auto; height: 36px;" @click="showExtendDialog = false">取消</button>
+        <button class="auth-submit" style="width: auto; height: 36px;" :disabled="extendSubmitting" @click="handleExtendInvite">
+          {{ extendSubmitting ? '提交中...' : '确认延长' }}
+        </button>
+      </template>
+    </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.invite-uses {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-left: 0.5rem;
+}
+
+.invite-accepted-by {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-left: 0.5rem;
+}
+
+.invite-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.extend-btn {
+  background-color: var(--color-primary);
+  color: white;
+}
+</style>
