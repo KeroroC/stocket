@@ -4,6 +4,8 @@ import type { CurrentAccount } from '../auth/AuthState'
 import AccountView from '../views/AccountView.vue'
 import AdminMembersView from '../views/AdminMembersView.vue'
 import AdminInvitesView from '../views/AdminInvitesView.vue'
+import CategoryAdminView from '../views/CategoryAdminView.vue'
+import LocationAdminView from '../views/LocationAdminView.vue'
 
 const props = defineProps<{
   account: CurrentAccount
@@ -14,7 +16,7 @@ const emit = defineEmits<{
   forcePasswordChange: []
 }>()
 
-type ViewName = 'account' | 'members' | 'invites'
+type ViewName = 'account' | 'members' | 'invites' | 'categories' | 'locations'
 
 const currentView = ref<ViewName>('account')
 
@@ -62,6 +64,8 @@ function handleForcePasswordChange() {
             成员管理
           </button>
         </li>
+        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'categories' }]" @click="navigateTo('categories')">分类管理</button></li>
+        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'locations' }]" @click="navigateTo('locations')">位置管理</button></li>
         <li v-if="isAdmin">
           <button
             :class="['shell-nav-item', { active: currentView === 'invites' }]"
@@ -94,6 +98,8 @@ function handleForcePasswordChange() {
         @logout="handleChildLogout"
         @force-password-change="handleForcePasswordChange"
       />
+      <CategoryAdminView v-else-if="currentView === 'categories'" />
+      <LocationAdminView v-else-if="currentView === 'locations'" />
     </main>
   </div>
 </template>
