@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.stocket.identity.internal.config.IdentityProperties;
 import com.stocket.identity.internal.invite.InviteService;
 import com.stocket.identity.internal.persistence.HouseholdMemberRepository;
 import com.stocket.identity.internal.security.IdentityPrincipal;
@@ -30,13 +31,16 @@ class InviteAdminController {
     private final InviteService inviteService;
     private final HouseholdMemberRepository householdMemberRepository;
     private final Clock clock;
+    private final IdentityProperties identityProperties;
 
     InviteAdminController(InviteService inviteService,
                           HouseholdMemberRepository householdMemberRepository,
-                          Clock clock) {
+                          Clock clock,
+                          IdentityProperties identityProperties) {
         this.inviteService = inviteService;
         this.householdMemberRepository = householdMemberRepository;
         this.clock = clock;
+        this.identityProperties = identityProperties;
     }
 
     @PostMapping
@@ -51,10 +55,21 @@ class InviteAdminController {
                     householdId, request.role(), request.expiresAt(),
                     principal.accountId(), now);
 
-            String inviteLink = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/invite/")
-                    .path(result.rawToken())
-                    .toUriString();
+            String frontendUrl = identityProperties.invite().frontendUrl();
+            String inviteLink;
+
+            if (frontendUrl != null && !frontendUrl.isEmpty()) {
+                // 使用配置的前端URL
+                inviteLink = frontendUrl.endsWith("/")
+                        ? frontendUrl + "invite/" + result.rawToken()
+                        : frontendUrl + "/invite/" + result.rawToken();
+            } else {
+                // 回退到当前请求的上下文路径（向后兼容）
+                inviteLink = ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/invite/")
+                        .path(result.rawToken())
+                        .toUriString();
+            }
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new InviteLinkResponse(result.inviteId(), inviteLink));

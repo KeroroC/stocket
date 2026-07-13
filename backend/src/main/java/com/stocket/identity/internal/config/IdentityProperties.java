@@ -17,7 +17,7 @@ public record IdentityProperties(
     public record SessionProperties(Duration idleTimeout, Duration absoluteTimeout, Duration touchInterval) {
     }
 
-    public record InviteProperties(Duration defaultExpiry) {
+    public record InviteProperties(Duration defaultExpiry, String frontendUrl) {
     }
 
     public record LoginProperties(Duration rateLimitWindow, int maxFailures) {

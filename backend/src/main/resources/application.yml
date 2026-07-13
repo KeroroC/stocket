@@ -22,6 +22,7 @@ stocket:
       touch-interval: 5m
     invite:
       default-expiry: 24h
+      frontend-url: ${STOCKET_FRONTEND_URL:http://localhost:5173}
     login:
       rate-limit-window: 15m
       max-failures: 10

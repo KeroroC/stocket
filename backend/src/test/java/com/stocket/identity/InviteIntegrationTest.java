@@ -193,6 +193,29 @@ class InviteIntegrationTest {
                 .andExpect(jsonPath("$.code").value("INVALID_EXPIRY"));
     }
 
+    @Test
+    void createInviteLinkUsesFrontendUrl() throws Exception {
+        String adminCookie = loginAsAdmin();
+
+        String responseJson = mockMvc.perform(post("/api/v1/admin/invites")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"MEMBER"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.inviteLink").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        String inviteLink = com.jayway.jsonpath.JsonPath.read(responseJson, "$.inviteLink").toString();
+
+        // 验证邀请链接使用前端URL（http://localhost:5173）而不是后端URL
+        assertThat(inviteLink).startsWith("http://localhost:5173/invite/");
+        assertThat(inviteLink).doesNotContain("localhost:8080");
+    }
+
     // ---- Invite listing ----
 
     @Test
