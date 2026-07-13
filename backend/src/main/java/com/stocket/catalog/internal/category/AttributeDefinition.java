@@ -2,14 +2,12 @@ package com.stocket.catalog.internal.category;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public record AttributeDefinition(
         String key,
         String label,
         AttributeType type,
         boolean required,
-        JsonNode defaultValue,
+        Object defaultValue,
         List<String> options,
         int order
 ) {

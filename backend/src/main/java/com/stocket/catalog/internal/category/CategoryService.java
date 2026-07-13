@@ -13,9 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import com.stocket.identity.CurrentHouseholdProvider;
 
@@ -169,7 +168,7 @@ class CategoryService {
                     """, householdId, categoryId, offset);
             for (Map<String, Object> row : rows) {
                 try {
-                    Map<String, JsonNode> values = objectMapper.readValue(
+                    Map<String, Object> values = objectMapper.readValue(
                             row.get("custom_attributes").toString(), new TypeReference<>() { });
                     schemaValidator.validateValues(schema, values);
                 } catch (AttributeValidationException exception) {

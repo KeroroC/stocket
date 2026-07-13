@@ -2,6 +2,7 @@ package com.stocket.catalog.internal.category;
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -10,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -40,13 +40,13 @@ class AttributeSchemaValidator {
                     throw invalid(definition.key(), "Enum options must be non-empty and unique");
                 }
             }
-            if (definition.defaultValue() != null && !definition.defaultValue().isNull()) {
+            if (definition.defaultValue() != null) {
                 validateValue(definition, definition.defaultValue());
             }
         }
     }
 
-    Map<String, JsonNode> validateValues(List<AttributeDefinition> schema, Map<String, JsonNode> suppliedValues) {
+    Map<String, Object> validateValues(List<AttributeDefinition> schema, Map<String, Object> suppliedValues) {
         validateSchema(schema);
         Map<String, AttributeDefinition> definitions = new HashMap<>();
         schema.forEach(definition -> definitions.put(definition.key(), definition));
@@ -55,15 +55,14 @@ class AttributeSchemaValidator {
                 .findFirst()
                 .ifPresent(key -> { throw invalid(key, "Unknown attribute: " + key); });
 
-        Map<String, JsonNode> result = new LinkedHashMap<>(suppliedValues);
+        Map<String, Object> result = new LinkedHashMap<>(suppliedValues);
         for (AttributeDefinition definition : schema) {
-            JsonNode value = result.get(definition.key());
-            if ((value == null || value.isNull()) && definition.defaultValue() != null
-                    && !definition.defaultValue().isNull()) {
+            Object value = result.get(definition.key());
+            if (value == null && definition.defaultValue() != null) {
                 value = definition.defaultValue();
                 result.put(definition.key(), value);
             }
-            if (value == null || value.isNull()) {
+            if (value == null) {
                 if (definition.required()) {
                     throw invalid(definition.key(), "Required attribute missing: " + definition.key());
                 }
@@ -71,28 +70,28 @@ class AttributeSchemaValidator {
             }
             validateValue(definition, value);
         }
-        return Map.copyOf(result);
+        return Collections.unmodifiableMap(result);
     }
 
-    private void validateValue(AttributeDefinition definition, JsonNode value) {
+    private void validateValue(AttributeDefinition definition, Object value) {
         boolean valid = switch (definition.type()) {
-            case TEXT -> value.isTextual();
-            case NUMBER -> value.isNumber();
-            case BOOLEAN -> value.isBoolean();
+            case TEXT -> value instanceof String;
+            case NUMBER -> value instanceof Number;
+            case BOOLEAN -> value instanceof Boolean;
             case DATE -> isIsoDate(value);
-            case ENUM -> value.isTextual() && definition.options().contains(value.textValue());
+            case ENUM -> value instanceof String text && definition.options().contains(text);
         };
         if (!valid) {
             throw invalid(definition.key(), "Invalid value for attribute: " + definition.key());
         }
     }
 
-    private boolean isIsoDate(JsonNode value) {
-        if (!value.isTextual()) {
+    private boolean isIsoDate(Object value) {
+        if (!(value instanceof String text)) {
             return false;
         }
         try {
-            LocalDate.parse(value.textValue());
+            LocalDate.parse(text);
             return true;
         } catch (DateTimeException exception) {
             return false;

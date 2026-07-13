@@ -2,11 +2,12 @@ package com.stocket.catalog.internal.item;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,7 +37,7 @@ class ItemDefinition {
     @Column(name = "default_shelf_life_unit") private ShelfLifeUnit defaultShelfLifeUnit;
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "custom_attributes", nullable = false, columnDefinition = "jsonb")
-    private Map<String, JsonNode> customAttributes;
+    private Map<String, Object> customAttributes;
     @Version @Column(nullable = false) private long version;
     @Column(name = "archived_at") private Instant archivedAt;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
@@ -50,7 +51,7 @@ class ItemDefinition {
     }
 
     ItemDefinition(UUID id, UUID householdId, UUID categoryId, String name, String normalizedName,
-                   ItemRequest request, Map<String, JsonNode> attributes, Instant now) {
+                   ItemRequest request, Map<String, Object> attributes, Instant now) {
         this.id = id;
         this.householdId = householdId;
         this.categoryId = categoryId;
@@ -59,13 +60,13 @@ class ItemDefinition {
     }
 
     void update(String name, String normalizedName, ItemRequest request,
-                Map<String, JsonNode> attributes, Instant now) {
+                Map<String, Object> attributes, Instant now) {
         categoryId = request.categoryId();
         apply(name, normalizedName, request, attributes, now);
     }
 
     private void apply(String name, String normalizedName, ItemRequest request,
-                       Map<String, JsonNode> attributes, Instant now) {
+                       Map<String, Object> attributes, Instant now) {
         this.name = name;
         this.normalizedName = normalizedName;
         this.brand = request.brand();
@@ -74,7 +75,7 @@ class ItemDefinition {
         this.defaultUnit = request.defaultUnit().strip();
         this.defaultShelfLifeValue = request.defaultShelfLifeValue();
         this.defaultShelfLifeUnit = request.defaultShelfLifeUnit();
-        this.customAttributes = Map.copyOf(attributes);
+        this.customAttributes = new LinkedHashMap<>(attributes);
         this.updatedAt = now;
     }
 
@@ -92,7 +93,9 @@ class ItemDefinition {
     String defaultUnit() { return defaultUnit; }
     Integer defaultShelfLifeValue() { return defaultShelfLifeValue; }
     ShelfLifeUnit defaultShelfLifeUnit() { return defaultShelfLifeUnit; }
-    Map<String, JsonNode> customAttributes() { return Map.copyOf(customAttributes); }
+    Map<String, Object> customAttributes() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(customAttributes));
+    }
     List<ItemBarcode> barcodes() { return List.copyOf(barcodes); }
     List<ItemTag> tags() { return List.copyOf(tags); }
     long version() { return version; }
