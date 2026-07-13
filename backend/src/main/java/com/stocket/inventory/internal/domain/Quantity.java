@@ -18,4 +18,16 @@ public record Quantity(BigDecimal value) {
             throw InventoryRules.violation("INVALID_QUANTITY", "Quantity must be a decimal string");
         }
     }
+
+    public static BigDecimal available(String value) {
+        try {
+            BigDecimal normalized = InventoryRules.normalizeDecimal(new BigDecimal(value));
+            if (normalized.signum() < 0) {
+                throw InventoryRules.violation("NEGATIVE_STOCK", "Available quantity cannot be negative");
+            }
+            return normalized;
+        } catch (NumberFormatException exception) {
+            throw InventoryRules.violation("INVALID_QUANTITY", "Quantity must be a decimal string");
+        }
+    }
 }

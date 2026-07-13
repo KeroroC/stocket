@@ -128,6 +128,19 @@ public class InventoryEntry {
                 locationId, null, null);
     }
 
+    public MovementDraft returnBatch(Quantity quantity, String reason, Instant now) {
+        requireActive();
+        if (inventoryType != InventoryType.BATCH) {
+            throw InventoryRules.violation("INVALID_ASSET_OPERATION", "Use the asset return operation");
+        }
+        BigDecimal before = availableQuantity;
+        availableQuantity = InventoryRules.requireAvailableQuantity(
+                inventoryType, before.add(quantity.value()));
+        updatedAt = now;
+        return draft(MovementType.RETURN, quantity.value(), before, availableQuantity,
+                null, locationId, reason);
+    }
+
     public MovementDraft transfer(Quantity quantity, UUID targetLocationId, Instant now) {
         requireActive();
         if (locationId.equals(targetLocationId)) {

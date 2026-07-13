@@ -1,6 +1,6 @@
 package com.stocket.inventory.internal.web;
 
-import com.stocket.inventory.internal.command.ReceiveInventoryService;
+import com.stocket.inventory.internal.command.InventoryCommandException;
 import com.stocket.inventory.internal.domain.InventoryRuleViolationException;
 import com.stocket.inventory.internal.idempotency.IdempotentExecutor;
 import org.springframework.http.HttpStatus;
@@ -16,8 +16,8 @@ public class InventoryExceptionHandler {
         return problem(exception.status(), exception.code());
     }
 
-    @ExceptionHandler(ReceiveInventoryService.InventoryCommandException.class)
-    ProblemDetail command(ReceiveInventoryService.InventoryCommandException exception) {
+    @ExceptionHandler(InventoryCommandException.class)
+    ProblemDetail command(InventoryCommandException exception) {
         return problem(exception.status(), exception.code());
     }
 

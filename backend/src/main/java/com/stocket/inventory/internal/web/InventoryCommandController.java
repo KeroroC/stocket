@@ -1,10 +1,16 @@
 package com.stocket.inventory.internal.web;
 
+import java.util.UUID;
+
+import com.stocket.inventory.internal.command.AdjustInventoryService;
+import com.stocket.inventory.internal.command.AssetLifecycleService;
+import com.stocket.inventory.internal.command.ConsumeInventoryService;
 import com.stocket.inventory.internal.command.ReceiveInventoryService;
 import com.stocket.inventory.internal.idempotency.IdempotentExecutor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,9 +21,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class InventoryCommandController {
 
     private final ReceiveInventoryService receiveInventory;
+    private final ConsumeInventoryService consumeInventory;
+    private final AdjustInventoryService adjustInventory;
+    private final AssetLifecycleService assetLifecycle;
 
-    public InventoryCommandController(ReceiveInventoryService receiveInventory) {
+    public InventoryCommandController(ReceiveInventoryService receiveInventory,
+                                      ConsumeInventoryService consumeInventory,
+                                      AdjustInventoryService adjustInventory,
+                                      AssetLifecycleService assetLifecycle) {
         this.receiveInventory = receiveInventory;
+        this.consumeInventory = consumeInventory;
+        this.adjustInventory = adjustInventory;
+        this.assetLifecycle = assetLifecycle;
     }
 
     @PostMapping("/receipts")
@@ -28,6 +43,60 @@ public class InventoryCommandController {
         String key = requireIdempotencyKey(idempotencyKey);
         IdempotentExecutor.Result<InventoryCommandResponse> result =
                 receiveInventory.receive(key, request.toCommand());
+        return ResponseEntity.status(result.httpStatus()).body(result.body());
+    }
+
+    @PostMapping("/entries/{id}/consume")
+    @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
+    public ResponseEntity<InventoryCommandResponse> consume(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody ConsumeRequest request) {
+        return response(consumeInventory.consume(id, requireIdempotencyKey(idempotencyKey), request.quantity()));
+    }
+
+    @PostMapping("/entries/{id}/return")
+    @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
+    public ResponseEntity<InventoryCommandResponse> returnInventory(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody ConsumeRequest request) {
+        return response(consumeInventory.returnInventory(
+                id, requireIdempotencyKey(idempotencyKey), request.quantity(), request.reason()));
+    }
+
+    @PostMapping("/entries/{id}/adjust")
+    @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
+    public ResponseEntity<InventoryCommandResponse> adjust(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody AdjustmentRequest request) {
+        return response(adjustInventory.adjust(
+                id, requireIdempotencyKey(idempotencyKey), request.targetQuantity(), request.reason()));
+    }
+
+    @PostMapping("/entries/{id}/lost")
+    @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
+    public ResponseEntity<InventoryCommandResponse> lost(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody AssetStatusRequest request) {
+        return response(assetLifecycle.lost(
+                id, requireIdempotencyKey(idempotencyKey), request.reason()));
+    }
+
+    @PostMapping("/entries/{id}/retire")
+    @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
+    public ResponseEntity<InventoryCommandResponse> retire(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody AssetStatusRequest request) {
+        return response(assetLifecycle.retire(
+                id, requireIdempotencyKey(idempotencyKey), request.reason()));
+    }
+
+    private ResponseEntity<InventoryCommandResponse> response(
+            IdempotentExecutor.Result<InventoryCommandResponse> result) {
         return ResponseEntity.status(result.httpStatus()).body(result.body());
     }
 
