@@ -6,6 +6,8 @@ import {
   createMember as apiCreateMember,
   updateMember as apiUpdateMember,
   resetMemberPassword as apiResetMemberPassword,
+  enableMember as apiEnableMember,
+  disableMember as apiDisableMember,
 } from '../api/identity'
 
 const emit = defineEmits<{
@@ -160,7 +162,11 @@ async function handleEditRole() {
 async function handleToggleEnabled(member: MemberInfo) {
   error.value = ''
   try {
-    await apiUpdateMember(member.id, { enabled: !member.enabled })
+    if (member.enabled) {
+      await apiDisableMember(member.id)
+    } else {
+      await apiEnableMember(member.id)
+    }
     await loadMembers()
   } catch (err: unknown) {
     const msg = handleApiError(err)

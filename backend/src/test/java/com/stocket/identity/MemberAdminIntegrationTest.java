@@ -206,6 +206,37 @@ class MemberAdminIntegrationTest {
         assertThat(role).isEqualTo("VIEWER");
     }
 
+    // ---- POST /admin/members/{memberId}/enable ----
+
+    @Test
+    void adminCanEnableDisabledMember() throws Exception {
+        String adminCookie = loginAsAdmin("correct horse battery staple");
+        UUID memberId = createMemberViaApi(adminCookie, "EnableUser", "启用用户", "MEMBER");
+
+        // First disable the member
+        mockMvc.perform(post("/api/v1/admin/members/{memberId}/disable", memberId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isNoContent());
+
+        // Verify account is disabled
+        String disableStatus = jdbc.queryForObject(
+                "SELECT status FROM user_account WHERE normalized_username = 'enableuser'", String.class);
+        assertThat(disableStatus).isEqualTo("DISABLED");
+
+        // Now enable the member
+        mockMvc.perform(post("/api/v1/admin/members/{memberId}/enable", memberId)
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled").value(true));
+
+        // Verify account is enabled
+        String enableStatus = jdbc.queryForObject(
+                "SELECT status FROM user_account WHERE normalized_username = 'enableuser'", String.class);
+        assertThat(enableStatus).isEqualTo("ACTIVE");
+    }
+
     // ---- POST /admin/members/{memberId}/disable ----
 
     @Test

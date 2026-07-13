@@ -72,6 +72,17 @@ class MemberAdminController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{memberId}/enable")
+    ResponseEntity<?> enableMember(
+            @AuthenticationPrincipal IdentityPrincipal principal,
+            @PathVariable UUID memberId) {
+        UUID householdId = resolveHouseholdId(principal.accountId());
+        Instant now = Instant.now();
+
+        MemberResponse response = memberAdminService.enableMember(householdId, memberId, now);
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/{memberId}/role")
     ResponseEntity<?> updateRole(
             @AuthenticationPrincipal IdentityPrincipal principal,

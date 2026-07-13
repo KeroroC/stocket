@@ -231,6 +231,18 @@ export function resetMemberPassword(memberId: string): Promise<ResetPasswordResp
   })
 }
 
+export function enableMember(memberId: string): Promise<MemberInfo> {
+  return apiRequest<MemberInfo>(`/api/v1/admin/members/${memberId}/enable`, {
+    method: 'POST',
+  })
+}
+
+export function disableMember(memberId: string): Promise<void> {
+  return apiRequest<void>(`/api/v1/admin/members/${memberId}/disable`, {
+    method: 'POST',
+  })
+}
+
 // --- Admin invite functions ---
 
 export function getInvites(): Promise<InviteListItem[]> {

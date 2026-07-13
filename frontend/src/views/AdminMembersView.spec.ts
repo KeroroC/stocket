@@ -21,6 +21,8 @@ vi.mock('../api/identity', () => ({
   createMember: vi.fn(),
   updateMember: vi.fn(),
   resetMemberPassword: vi.fn(),
+  enableMember: vi.fn(),
+  disableMember: vi.fn(),
   getInvites: vi.fn(),
   createInvite: vi.fn(),
   revokeInvite: vi.fn(),
@@ -209,7 +211,7 @@ describe('AdminMembersView', () => {
   })
 
   it('toggles member enabled/disabled status', async () => {
-    vi.mocked(identityApi.updateMember).mockResolvedValueOnce({
+    vi.mocked(identityApi.enableMember).mockResolvedValueOnce({
       ...membersFixture[2],
       enabled: true,
     } as identityApi.MemberInfo)
@@ -224,7 +226,7 @@ describe('AdminMembersView', () => {
     await fireEvent.click(enableButtons[0]!)
 
     await waitFor(() => {
-      expect(vi.mocked(identityApi.updateMember)).toHaveBeenCalledWith('mem-3', { enabled: true })
+      expect(vi.mocked(identityApi.enableMember)).toHaveBeenCalledWith('mem-3')
     })
   })
 

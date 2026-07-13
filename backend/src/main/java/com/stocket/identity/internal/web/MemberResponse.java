@@ -11,6 +11,7 @@ public record MemberResponse(
         String username,
         String displayName,
         IdentityRole role,
+        boolean enabled,
         String temporaryPassword
 ) {
 }

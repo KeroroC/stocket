@@ -110,6 +110,7 @@ public class MemberAdminService {
                 account.getUsername(),
                 account.getDisplayName(),
                 member.getRole(),
+                account.isEnabled(),
                 temporaryPassword);
     }
 
@@ -124,6 +125,7 @@ public class MemberAdminService {
                         m.getAccount().getUsername(),
                         m.getAccount().getDisplayName(),
                         m.getRole(),
+                        m.getAccount().isEnabled(),
                         null))
                 .toList();
     }
@@ -141,6 +143,7 @@ public class MemberAdminService {
                 member.getAccount().getUsername(),
                 member.getAccount().getDisplayName(),
                 member.getRole(),
+                member.getAccount().isEnabled(),
                 null);
     }
 
@@ -175,6 +178,31 @@ public class MemberAdminService {
                 member.getAccount().getUsername(),
                 member.getAccount().getDisplayName(),
                 member.getRole(),
+                member.getAccount().isEnabled(),
+                null);
+    }
+
+    /**
+     * Enables a member's account.
+     * Scoped to the requesting admin's household.
+     */
+    @Transactional
+    public MemberResponse enableMember(UUID householdId, UUID memberId, Instant now) {
+        HouseholdMember member = memberRepository.findByHouseholdIdAndId(householdId, memberId)
+                .orElseThrow(() -> new MemberNotFoundException());
+
+        member.getAccount().enable(now);
+        accountRepository.save(member.getAccount());
+
+        publishAuditEvent("MemberStatusChanged", "SUCCESS", null, Map.of(
+                "targetMemberId", memberId.toString()));
+
+        return new MemberResponse(
+                member.getId(),
+                member.getAccount().getUsername(),
+                member.getAccount().getDisplayName(),
+                member.getRole(),
+                member.getAccount().isEnabled(),
                 null);
     }
 
