@@ -6,6 +6,7 @@ import AdminMembersView from '../views/AdminMembersView.vue'
 import AdminInvitesView from '../views/AdminInvitesView.vue'
 import CategoryAdminView from '../views/CategoryAdminView.vue'
 import LocationAdminView from '../views/LocationAdminView.vue'
+import ItemsView from '../views/ItemsView.vue'
 
 const props = defineProps<{
   account: CurrentAccount
@@ -16,7 +17,7 @@ const emit = defineEmits<{
   forcePasswordChange: []
 }>()
 
-type ViewName = 'account' | 'members' | 'invites' | 'categories' | 'locations'
+type ViewName = 'account' | 'items' | 'members' | 'invites' | 'categories' | 'locations'
 
 const currentView = ref<ViewName>('account')
 
@@ -48,6 +49,7 @@ function handleForcePasswordChange() {
       </div>
 
       <ul class="shell-nav">
+        <li><button :class="['shell-nav-item', { active: currentView === 'items' }]" @click="navigateTo('items')">物品目录</button></li>
         <li>
           <button
             :class="['shell-nav-item', { active: currentView === 'account' }]"
@@ -88,6 +90,7 @@ function handleForcePasswordChange() {
         @logout="handleChildLogout"
         @force-password-change="handleForcePasswordChange"
       />
+      <ItemsView v-else-if="currentView === 'items'" :role="account.role" />
       <AdminMembersView
         v-else-if="currentView === 'members'"
         @logout="handleChildLogout"
