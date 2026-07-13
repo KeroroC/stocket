@@ -45,7 +45,7 @@ function validate(): string | null {
   if (username.value.trim().length < 3) return '用户名至少 3 个字符'
   if (!displayName.value.trim()) return '请输入显示名称'
   if (!password.value) return '请输入密码'
-  if (password.value.length < 8) return '密码至少 8 个字符'
+  if (password.value.length < 12) return '密码至少 12 个字符'
   if (password.value !== confirmPassword.value) return '密码不一致，请重新输入'
   return null
 }
@@ -146,7 +146,7 @@ async function handleSubmit() {
           id="password"
           v-model="password"
           type="password"
-          placeholder="至少 8 个字符"
+          placeholder="至少 12 个字符"
           autocomplete="new-password"
         />
       </div>
