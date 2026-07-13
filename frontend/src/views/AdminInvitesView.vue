@@ -90,9 +90,12 @@ async function handleCreateInvite() {
   createError.value = ''
   createSubmitting.value = true
   try {
+    const expiresAt = new Date(
+      Date.now() + newExpiresInHours.value * 60 * 60 * 1000,
+    ).toISOString()
     const result = await apiCreateInvite({
       role: newRole.value,
-      expiresInHours: newExpiresInHours.value,
+      expiresAt,
       maxUses: newMaxUses.value,
     })
     showCreateDialog.value = false

@@ -122,7 +122,7 @@ export interface InviteListItem {
 
 export interface CreateInviteRequest {
   role: string
-  expiresInHours?: number
+  expiresAt?: string
   maxUses?: number
 }
 
@@ -270,7 +270,7 @@ export function createInvite(data: CreateInviteRequest): Promise<CreateInviteRes
 }
 
 export function revokeInvite(inviteId: string): Promise<void> {
-  return apiRequest<void>(`/api/v1/admin/invites/${inviteId}`, { method: 'DELETE' })
+  return apiRequest<void>(`/api/v1/admin/invites/${inviteId}/revoke`, { method: 'POST' })
 }
 
 export function extendInvite(inviteId: string, expiresAt: string): Promise<void> {

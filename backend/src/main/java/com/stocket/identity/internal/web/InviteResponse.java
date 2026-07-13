@@ -11,6 +11,7 @@ import com.stocket.identity.IdentityRole;
 public record InviteResponse(
         UUID id,
         IdentityRole role,
+        String status,
         Instant expiresAt,
         Instant acceptedAt,
         Instant revokedAt,

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import com.stocket.identity.IdentityAuditEvent;
 import com.stocket.identity.IdentityRole;
 import com.stocket.identity.internal.authentication.BoundedRateLimiter;
+import com.stocket.identity.internal.authentication.PasswordPolicy;
 import com.stocket.identity.internal.authentication.SecureValueGenerator;
 import com.stocket.identity.internal.authentication.TokenHasher;
 import com.stocket.identity.internal.config.IdentityProperties;
@@ -49,6 +50,7 @@ public class InviteService {
     private final SecureValueGenerator secureValueGenerator;
     private final TokenHasher tokenHasher;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicy passwordPolicy;
     private final ApplicationEventPublisher eventPublisher;
     private final IdentityProperties properties;
     private final EntityManager entityManager;
@@ -62,6 +64,7 @@ public class InviteService {
                   SecureValueGenerator secureValueGenerator,
                   TokenHasher tokenHasher,
                   PasswordEncoder passwordEncoder,
+                  PasswordPolicy passwordPolicy,
                   ApplicationEventPublisher eventPublisher,
                   IdentityProperties properties,
                   EntityManager entityManager,
@@ -73,6 +76,7 @@ public class InviteService {
         this.secureValueGenerator = secureValueGenerator;
         this.tokenHasher = tokenHasher;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicy = passwordPolicy;
         this.eventPublisher = eventPublisher;
         this.properties = properties;
         this.entityManager = entityManager;
@@ -138,6 +142,7 @@ public class InviteService {
      */
     @Transactional(readOnly = true)
     public List<InviteInfo> listInvites(UUID householdId) {
+        Instant now = clock.instant();
         return inviteRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId).stream()
                 .map(invite -> {
                     // Find members who joined via this invite
@@ -150,6 +155,7 @@ public class InviteService {
                     return new InviteInfo(
                             invite.getId(),
                             invite.getRole(),
+                            inviteStatus(invite, now),
                             invite.getExpiresAt(),
                             invite.getAcceptedAt(),
                             invite.getRevokedAt(),
@@ -159,6 +165,19 @@ public class InviteService {
                             acceptedByNames);
                 })
                 .toList();
+    }
+
+    private String inviteStatus(MemberInvite invite, Instant now) {
+        if (invite.getRevokedAt() != null) {
+            return "REVOKED";
+        }
+        if (invite.getAcceptedAt() != null || invite.getUseCount() >= invite.getMaxUses()) {
+            return "ACCEPTED";
+        }
+        if (!invite.getExpiresAt().isAfter(now)) {
+            return "EXPIRED";
+        }
+        return "PENDING";
     }
 
     /**
@@ -274,6 +293,10 @@ public class InviteService {
 
         // Validate account uniqueness BEFORE creating account
         String normalizedUsername = username.toLowerCase(Locale.ROOT).trim();
+        List<String> passwordViolations = passwordPolicy.validate(normalizedUsername, password);
+        if (!passwordViolations.isEmpty()) {
+            throw new PasswordPolicyViolationException(passwordViolations);
+        }
         if (accountRepository.findByNormalizedUsername(normalizedUsername).isPresent()) {
             throw new DuplicateUsernameException();
         }
@@ -344,6 +367,7 @@ public class InviteService {
     public record InviteInfo(
             UUID id,
             IdentityRole role,
+            String status,
             Instant expiresAt,
             Instant acceptedAt,
             Instant revokedAt,
@@ -410,6 +434,20 @@ public class InviteService {
     public static class DuplicateUsernameException extends RuntimeException {
         public DuplicateUsernameException() {
             super("Username already exists");
+        }
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public static class PasswordPolicyViolationException extends RuntimeException {
+        private final List<String> violations;
+
+        public PasswordPolicyViolationException(List<String> violations) {
+            super("Password policy violation");
+            this.violations = List.copyOf(violations);
+        }
+
+        public List<String> getViolations() {
+            return violations;
         }
     }
 

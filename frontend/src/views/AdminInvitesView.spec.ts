@@ -141,6 +141,11 @@ describe('AdminInvitesView', () => {
     await fireEvent.click(within(dialog).getByText('确认创建'))
 
     await waitFor(() => {
+      expect(identityApi.createInvite).toHaveBeenCalledWith({
+        role: 'MEMBER',
+        expiresAt: expect.any(String),
+        maxUses: 1,
+      })
       expect(screen.getByText(/abc123token/)).toBeInTheDocument()
     })
   })

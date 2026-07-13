@@ -22,7 +22,8 @@ public class AuthenticationService {
      * Fixed pseudo-digest used for timing-safe checks on unknown usernames.
      * Prevents attackers from detecting whether a username exists via response time.
      */
-    private static final String DUMMY_PASSWORD_HASH = "{bcrypt}$2a$10$00000000000000000000000000000000000000000000000000000000";
+    private static final String DUMMY_PASSWORD_HASH =
+            "{bcrypt}$2y$10$VmCiHAYz/9VLXk94qSPCuu46xj1kZY/VapMowxZSQD.mI7SUnZUE6";
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthenticationService.class);
 

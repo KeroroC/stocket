@@ -55,7 +55,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisabledInAotMode
-@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
+@TestPropertySource(properties = {
+        "spring.main.allow-bean-definition-overriding=true",
+        "stocket.identity.invite.frontend-url="
+})
 class InviteIntegrationTest {
 
     @Container
@@ -218,7 +221,7 @@ class InviteIntegrationTest {
     }
 
     @Test
-    void createInviteLinkUsesFrontendUrl() throws Exception {
+    void createInviteLinkFallsBackToCurrentRequestOrigin() throws Exception {
         String adminCookie = loginAsAdmin();
 
         String responseJson = mockMvc.perform(post("/api/v1/admin/invites")
@@ -235,9 +238,8 @@ class InviteIntegrationTest {
 
         String inviteLink = com.jayway.jsonpath.JsonPath.read(responseJson, "$.inviteLink").toString();
 
-        // 验证邀请链接使用前端URL（http://localhost:5173）而不是后端URL
-        assertThat(inviteLink).startsWith("http://localhost:5173/invite/");
-        assertThat(inviteLink).doesNotContain("localhost:8080");
+        assertThat(inviteLink).startsWith("http://localhost/invite/");
+        assertThat(inviteLink).doesNotContain("localhost:5173");
     }
 
     // ---- Invite extension ----
@@ -335,6 +337,7 @@ class InviteIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").isNotEmpty())
                 .andExpect(jsonPath("$[0].role").value("MEMBER"))
+                .andExpect(jsonPath("$[0].status").value("PENDING"))
                 .andExpect(jsonPath("$[0].expiresAt").isNotEmpty())
                 .andExpect(jsonPath("$[0].createdAt").isNotEmpty())
                 .andExpect(jsonPath("$[0].acceptedAt").doesNotExist())
@@ -377,7 +380,8 @@ class InviteIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].acceptedBy").isArray())
                 .andExpect(jsonPath("$[0].acceptedBy[0]").value("接受用户"))
-                .andExpect(jsonPath("$[0].useCount").value(1));
+                .andExpect(jsonPath("$[0].useCount").value(1))
+                .andExpect(jsonPath("$[0].status").value("ACCEPTED"));
     }
 
     // ---- Invite revocation ----
@@ -699,6 +703,66 @@ class InviteIntegrationTest {
                                 {"username":"NewUser","password":"strongpassword123"}
                                 """))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void acceptInviteRejectsPasswordShorterThanPolicyWithoutConsumingInvite() throws Exception {
+        String adminCookie = loginAsAdmin();
+        String createResponse = mockMvc.perform(post("/api/v1/admin/invites")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"MEMBER"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String inviteLink = com.jayway.jsonpath.JsonPath.read(createResponse, "$.inviteLink").toString();
+        String token = inviteLink.substring(inviteLink.lastIndexOf('/') + 1);
+
+        mockMvc.perform(post("/api/v1/invites/{token}/accept", token)
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"username":"ShortPasswordUser","password":"short123"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("PASSWORD_POLICY_VIOLATION"));
+
+        mockMvc.perform(get("/api/v1/invites/{token}/status", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true));
+    }
+
+    @Test
+    void acceptInviteRejectsPasswordEqualToUsernameWithoutConsumingInvite() throws Exception {
+        String adminCookie = loginAsAdmin();
+        String createResponse = mockMvc.perform(post("/api/v1/admin/invites")
+                        .with(csrf())
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"role":"MEMBER"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String inviteLink = com.jayway.jsonpath.JsonPath.read(createResponse, "$.inviteLink").toString();
+        String token = inviteLink.substring(inviteLink.lastIndexOf('/') + 1);
+
+        mockMvc.perform(post("/api/v1/invites/{token}/accept", token)
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"username":"sameusername","password":"sameusername"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("PASSWORD_POLICY_VIOLATION"));
+
+        mockMvc.perform(get("/api/v1/invites/{token}/status", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true));
     }
 
     @Test

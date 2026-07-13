@@ -89,6 +89,7 @@ class InviteAdminController {
                 .map(info -> new InviteResponse(
                         info.id(),
                         info.role(),
+                        info.status(),
                         info.expiresAt(),
                         info.acceptedAt(),
                         info.revokedAt(),

@@ -1,6 +1,6 @@
-.PHONY: test backend-test frontend-test build aot native-test compose-config
+.PHONY: test backend-test frontend-test config-test build aot native-test compose-config
 
-test: backend-test frontend-test
+test: backend-test frontend-test config-test
 
 backend-test:
 	cd backend && ./mvnw test
@@ -10,6 +10,9 @@ frontend/node_modules/.package-lock.json: frontend/package.json frontend/package
 
 frontend-test: frontend/node_modules/.package-lock.json
 	cd frontend && npm test && npm run typecheck
+
+config-test:
+	bash scripts/config-contract-smoke.sh
 
 build: frontend/node_modules/.package-lock.json
 	cd backend && ./mvnw package

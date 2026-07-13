@@ -25,6 +25,7 @@ services:
       STOCKET_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-stocket}
       STOCKET_DB_USER: ${POSTGRES_USER:-stocket}
       STOCKET_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      STOCKET_FRONTEND_URL: ${STOCKET_FRONTEND_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

@@ -70,6 +70,13 @@ class InviteAcceptanceController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(problem);
         } catch (InviteService.DuplicateUsernameException e) {
             return conflictProblem("DUPLICATE_USERNAME", e.getMessage());
+        } catch (InviteService.PasswordPolicyViolationException e) {
+            ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+            problem.setTitle("Password policy violation");
+            problem.setProperty("code", "PASSWORD_POLICY_VIOLATION");
+            problem.setProperty("retryable", false);
+            problem.setProperty("violations", e.getViolations());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
         }
     }
 

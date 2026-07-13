@@ -6,6 +6,6 @@ import jakarta.validation.constraints.Size;
 public record AcceptInviteRequest(
         @NotBlank @Size(max = 64) String username,
         @Size(max = 120) String displayName,
-        @NotBlank @Size(min = 8, max = 128) String password
+        @NotBlank String password
 ) {
 }
