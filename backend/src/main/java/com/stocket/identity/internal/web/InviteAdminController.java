@@ -12,6 +12,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -112,6 +113,26 @@ class InviteAdminController {
             return ResponseEntity.noContent().build();
         } catch (InviteService.InviteAlreadyAcceptedException e) {
             return conflictProblem("INVITE_ALREADY_ACCEPTED", e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{inviteId}/extend")
+    ResponseEntity<?> extendInvite(
+            @AuthenticationPrincipal IdentityPrincipal principal,
+            @PathVariable UUID inviteId,
+            @Valid @RequestBody ExtendInviteRequest request) {
+        UUID householdId = resolveHouseholdId(principal.accountId());
+        Instant now = clock.instant();
+
+        try {
+            inviteService.extendInvite(householdId, inviteId, request.expiresAt(), now);
+            return ResponseEntity.noContent().build();
+        } catch (InviteService.InviteAlreadyRevokedException e) {
+            return conflictProblem("INVITE_ALREADY_REVOKED", e.getMessage());
+        } catch (InviteService.InviteAlreadyExpiredException e) {
+            return conflictProblem("INVITE_ALREADY_EXPIRED", e.getMessage());
+        } catch (InviteService.InvalidExpiryException e) {
+            return badRequestProblem("INVALID_EXPIRY", e.getMessage());
         }
     }
 
