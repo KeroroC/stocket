@@ -115,11 +115,15 @@ export interface InviteListItem {
   expiresAt: string
   status: string
   createdAt: string
+  useCount: number
+  maxUses: number
+  acceptedBy: string[]
 }
 
 export interface CreateInviteRequest {
   role: string
   expiresInHours?: number
+  maxUses?: number
 }
 
 export interface CreateInviteResponse {
@@ -267,4 +271,12 @@ export function createInvite(data: CreateInviteRequest): Promise<CreateInviteRes
 
 export function revokeInvite(inviteId: string): Promise<void> {
   return apiRequest<void>(`/api/v1/admin/invites/${inviteId}`, { method: 'DELETE' })
+}
+
+export function extendInvite(inviteId: string, expiresAt: string): Promise<void> {
+  return apiRequest<void>(`/api/v1/admin/invites/${inviteId}/extend`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresAt }),
+  })
 }
