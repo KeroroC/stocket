@@ -276,4 +276,13 @@ describe('AdminInvitesView', () => {
       expect(extendButtons).toHaveLength(1) // Only inv-1 is PENDING
     })
   })
+
+  it('uses the shared visible action style for the extend button', async () => {
+    render(AdminInvitesView)
+
+    const extendButton = await screen.findByRole('button', { name: '延长' })
+
+    expect(extendButton).toHaveClass('member-action-btn')
+    expect(extendButton).not.toHaveClass('extend-btn')
+  })
 })

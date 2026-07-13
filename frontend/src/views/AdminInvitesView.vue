@@ -221,7 +221,7 @@ function formatStatusType(status: string): string {
         <div class="invite-item-actions">
           <button
             v-if="canExtend(invite)"
-            class="member-action-btn extend-btn"
+            class="member-action-btn"
             @click="openExtendDialog(invite.id, invite.expiresAt)"
           >
             延长
@@ -364,10 +364,5 @@ function formatStatusType(status: string): string {
 .invite-item-actions {
   display: flex;
   gap: 0.5rem;
-}
-
-.extend-btn {
-  background-color: var(--color-primary);
-  color: white;
 }
 </style>
