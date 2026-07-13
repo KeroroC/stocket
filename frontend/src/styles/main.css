@@ -1,9 +1,23 @@
 :root {
+  /* Mint Cream design tokens */
+  --st-color-bg: #FBF8EF;
+  --st-color-surface: #FFFEF9;
+  --st-color-primary-soft: #DFF4EC;
+  --st-color-primary: #167A63;
+  --st-color-primary-hover: #126B56;
+  --st-color-primary-active: #0F5D4B;
+  --st-color-text: #20332C;
+  --st-color-text-muted: #6C7B75;
+  --st-color-border: #E4E8DF;
+  --st-color-danger: #D65353;
+  --st-color-danger-soft: #FDE8E8;
+  --st-shadow-card: 0 20px 45px rgb(15 23 42 / 10%);
+
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  color: #1f2937;
-  background: #f3f6fb;
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--st-color-text);
+  background: var(--st-color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -18,6 +32,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--st-color-bg);
 }
 
 #app {
@@ -29,6 +44,318 @@ body {
   min-height: 100vh;
   place-items: center;
   padding: 24px;
+}
+
+/* Shell layout (sidebar + content) */
+.shell-layout {
+  display: flex;
+  width: 100%;
+  max-width: 1440px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--st-color-bg);
+}
+
+.shell-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  background: var(--st-color-surface);
+  border-right: 1px solid var(--st-color-border);
+}
+
+.shell-user {
+  padding: 16px 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--st-color-border);
+}
+
+.shell-user-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--st-color-text);
+}
+
+.shell-user-role {
+  font-size: 0.75rem;
+  color: var(--st-color-text-muted);
+  margin-top: 2px;
+}
+
+.shell-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.shell-nav-item {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--st-color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.shell-nav-item:hover {
+  background: var(--st-color-primary-soft);
+  color: var(--st-color-text);
+}
+
+.shell-nav-item.active {
+  background: var(--st-color-primary-soft);
+  color: var(--st-color-primary);
+  font-weight: 600;
+}
+
+.shell-nav-item:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+}
+
+.shell-sidebar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--st-color-border);
+}
+
+.shell-content {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .shell-layout {
+    flex-direction: column;
+  }
+
+  .shell-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--st-color-border);
+  }
+
+  .shell-nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  .shell-content {
+    padding: 16px;
+  }
+}
+
+/* Auth card */
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 32px 24px;
+  background: var(--st-color-surface);
+  border: 1px solid var(--st-color-border);
+  border-radius: 20px;
+  box-shadow: var(--st-shadow-card);
+}
+
+@media (min-width: 480px) {
+  .auth-card {
+    padding: 40px 32px;
+  }
+}
+
+.auth-card h1 {
+  margin: 0;
+  color: var(--st-color-text);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.auth-subtitle {
+  margin: 8px 0 24px;
+  color: var(--st-color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* Auth form */
+.auth-form {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--st-color-text);
+}
+
+.form-field input,
+.form-field select {
+  height: 44px;
+  padding: 0 12px;
+  font-size: 0.9375rem;
+  color: var(--st-color-text);
+  background: var(--st-color-surface);
+  border: 1px solid var(--st-color-border);
+  border-radius: 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--st-color-primary);
+  box-shadow: 0 0 0 3px var(--st-color-primary-soft);
+}
+
+.form-field input::placeholder {
+  color: var(--st-color-text-muted);
+}
+
+.form-field select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236C7B75' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* Auth error */
+.auth-error {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  color: var(--st-color-danger);
+  background: var(--st-color-danger-soft);
+  border: 1px solid var(--st-color-danger);
+  border-radius: 12px;
+  line-height: 1.5;
+}
+
+.auth-error-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--st-color-primary);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-error-link:hover {
+  color: var(--st-color-primary-hover);
+}
+
+.auth-error-link:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Auth buttons */
+.auth-submit {
+  width: 100%;
+  height: 48px;
+  margin-top: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--st-color-primary);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 160ms ease, opacity 160ms ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--st-color-primary-hover);
+}
+
+.auth-submit:active:not(:disabled) {
+  background: var(--st-color-primary-active);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-submit:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+}
+
+.auth-logout-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--st-color-text-muted);
+  background: transparent;
+  border: 1px solid var(--st-color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.auth-logout-btn:hover {
+  color: var(--st-color-text);
+  border-color: var(--st-color-text-muted);
+}
+
+.auth-logout-btn:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+}
+
+/* Invite info */
+.invite-info {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--st-color-primary-soft);
+  border-radius: 12px;
+}
+
+.invite-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.invite-info p + p {
+  margin-top: 4px;
+}
+
+.invite-label {
+  font-weight: 500;
+  color: var(--st-color-text);
+}
+
+/* Loading */
+.auth-loading {
+  text-align: center;
+  color: var(--st-color-text-muted);
+  font-size: 0.875rem;
+  padding: 24px 0;
 }
 
 .foundation-card {
@@ -77,4 +404,282 @@ body {
   display: inline-flex;
   gap: 6px;
   align-items: center;
+}
+
+/* Account view */
+.account-view {
+  max-width: 720px;
+}
+
+.section-title {
+  margin: 0 0 24px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--st-color-text);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.section-header .section-title {
+  margin-bottom: 0;
+}
+
+.account-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: var(--st-color-surface);
+  border: 1px solid var(--st-color-border);
+  border-radius: 16px;
+}
+
+.account-section h3 {
+  margin: 0 0 16px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--st-color-text);
+}
+
+.auth-success {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  color: var(--st-color-primary);
+  background: var(--st-color-primary-soft);
+  border: 1px solid var(--st-color-primary);
+  border-radius: 12px;
+  line-height: 1.5;
+}
+
+/* Session list */
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid var(--st-color-border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.session-item.current {
+  background: var(--st-color-primary-soft);
+  border-color: var(--st-color-primary);
+}
+
+.session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.session-agent {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--st-color-text);
+}
+
+.session-current-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--st-color-primary);
+  background: var(--st-color-primary-soft);
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.session-time {
+  font-size: 0.8125rem;
+  color: var(--st-color-text-muted);
+}
+
+.session-revoke-btn {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--st-color-danger);
+  background: transparent;
+  border: 1px solid var(--st-color-danger);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.session-revoke-btn:hover {
+  background: var(--st-color-danger-soft);
+}
+
+.session-revoke-btn:focus-visible {
+  outline: 2px solid var(--st-color-danger);
+  outline-offset: 2px;
+}
+
+/* Member list */
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid var(--st-color-border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background: var(--st-color-surface);
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.member-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--st-color-text);
+}
+
+.member-username {
+  font-size: 0.8125rem;
+  color: var(--st-color-text-muted);
+}
+
+.member-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.member-action-btn {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--st-color-primary);
+  background: transparent;
+  border: 1px solid var(--st-color-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.member-action-btn:hover {
+  border-color: var(--st-color-primary);
+  background: var(--st-color-primary-soft);
+}
+
+.member-action-btn:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+}
+
+/* Invite list */
+.invite-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.invite-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid var(--st-color-border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background: var(--st-color-surface);
+}
+
+.invite-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.invite-role {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--st-color-text);
+}
+
+.invite-expires {
+  font-size: 0.8125rem;
+  color: var(--st-color-text-muted);
+}
+
+/* Result dialog content */
+.result-content {
+  text-align: center;
+}
+
+.result-content p {
+  margin: 0 0 12px;
+  font-size: 0.875rem;
+  color: var(--st-color-text-muted);
+}
+
+.result-secret {
+  padding: 16px;
+  background: var(--st-color-primary-soft);
+  border: 1px solid var(--st-color-primary);
+  border-radius: 12px;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Segoe UI Mono', monospace;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--st-color-primary);
+  word-break: break-all;
+  user-select: all;
+}
+
+.result-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--st-color-primary);
+  background: var(--st-color-surface);
+  border: 1px solid var(--st-color-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.result-copy-btn:hover {
+  background: var(--st-color-primary-soft);
+}
+
+.result-copy-btn:focus-visible {
+  outline: 2px solid var(--st-color-primary);
+  outline-offset: 2px;
+}
+
+.result-copy-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Admin views */
+.admin-members-view,
+.admin-invites-view {
+  max-width: 960px;
 }

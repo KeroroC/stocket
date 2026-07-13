@@ -1,47 +1,93 @@
 <script setup lang="ts">
-import { Box, CircleCheck, Warning } from '@element-plus/icons-vue'
-import { onMounted, ref } from 'vue'
-import { getSystemStatus } from './api/system'
+import { computed, onMounted } from 'vue'
+import { useAuth } from './auth/useAuth'
+import SetupView from './views/SetupView.vue'
+import LoginView from './views/LoginView.vue'
+import InviteAcceptView from './views/InviteAcceptView.vue'
+import PasswordChangeView from './views/PasswordChangeView.vue'
+import AppShell from './components/AppShell.vue'
 
-const message = ref('正在连接后端…')
-const connected = ref(false)
+const { state, bootstrap, logout, passwordChanged, initialize } = useAuth()
 
-onMounted(async () => {
-  try {
-    const status = await getSystemStatus()
-    connected.value = true
-    message.value = `后端 ${status.version} 已连接`
-  } catch {
-    message.value = '后端暂不可用'
+const inviteToken = computed(() => {
+  const match = window.location.pathname.match(/^\/invite\/([^/]+)$/)
+  return match ? match[1] : null
+})
+
+const showInviteView = computed(() => inviteToken.value !== null)
+
+onMounted(() => {
+  if (!showInviteView.value) {
+    bootstrap()
   }
 })
+
+function handleSetupSuccess() {
+  bootstrap()
+}
+
+function handleLoginSuccess() {
+  bootstrap()
+}
+
+function handleInviteSuccess() {
+  window.history.replaceState({}, '', '/login')
+  bootstrap()
+}
+
+function handlePasswordChanged() {
+  passwordChanged()
+}
+
+function handleLogout() {
+  logout()
+}
+
+function handleForcePasswordChange() {
+  // Re-bootstrap to transition to password-change-required state
+  bootstrap()
+}
 </script>
 
 <template>
   <main class="app-shell">
-    <section class="foundation-card">
-      <el-icon class="foundation-icon" :size="48" color="#2563eb">
-        <Box />
-      </el-icon>
+    <!-- invite view takes priority when URL matches /invite/{token} -->
+    <InviteAcceptView
+      v-if="showInviteView && inviteToken"
+      :token="inviteToken"
+      @success="handleInviteSuccess"
+    />
 
-      <h1>家庭资产</h1>
-      <p class="foundation-description">工程基础已就绪</p>
-
-      <el-tag
-        class="foundation-status"
-        :type="connected ? 'success' : 'warning'"
-        effect="light"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        round
-      >
-        <el-icon>
-          <CircleCheck v-if="connected" />
-          <Warning v-else />
-        </el-icon>
-        <span>{{ message }}</span>
-      </el-tag>
+    <!-- checking-setup -->
+    <section v-else-if="state.kind === 'checking-setup'" class="auth-card">
+      <p>正在检查身份状态...</p>
     </section>
+
+    <!-- setup-required -->
+    <SetupView
+      v-else-if="state.kind === 'setup-required'"
+      @success="handleSetupSuccess"
+    />
+
+    <!-- anonymous (login) -->
+    <LoginView
+      v-else-if="state.kind === 'anonymous'"
+      @success="handleLoginSuccess"
+    />
+
+    <!-- password-change-required -->
+    <PasswordChangeView
+      v-else-if="state.kind === 'password-change-required'"
+      @success="handlePasswordChanged"
+      @logout="handleLogout"
+    />
+
+    <!-- authenticated: full management shell -->
+    <AppShell
+      v-else-if="state.kind === 'authenticated'"
+      :account="state.account"
+      @logout="handleLogout"
+      @force-password-change="handleForcePasswordChange"
+    />
   </main>
 </template>

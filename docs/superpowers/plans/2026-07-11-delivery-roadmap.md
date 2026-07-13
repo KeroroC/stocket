@@ -16,7 +16,7 @@
 
 详细计划：`docs/superpowers/plans/2026-07-11-foundation-native-baseline.md`
 
-## 阶段二：身份与家庭
+## 阶段二：身份与家庭 ✅
 
 实现一次性家庭初始化、服务端会话、CSRF 防护、登录/登出、账户管理、邀请接受、角色强制、密码修改、管理员重置、本地维护恢复和身份审计事件。
 
@@ -25,6 +25,12 @@
 设计规格：`docs/superpowers/specs/2026-07-12-identity-household-design.md`
 
 详细计划：`docs/superpowers/plans/2026-07-12-identity-household.md`
+
+全链路验收：`backend/src/test/java/com/stocket/identity/IdentityAcceptanceTest.java`
+
+维护冒烟脚本：`scripts/identity-maintenance-smoke.sh`
+
+已知限制：原生镜像因 AOT 生成的 Servlet 相关 Bean 在无 ServletContext 环境下无法启动维护模式；JVM 维护路径正常工作。
 
 ## 阶段三：目录与位置
 

@@ -1,11 +1,14 @@
 package com.stocket;
 
+import java.util.UUID;
+
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.aot.DisabledInAotMode;
 import org.testcontainers.junit.jupiter.Container;
@@ -13,6 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Testcontainers
 @SpringBootTest
@@ -38,5 +42,26 @@ class DatabaseMigrationTest {
                 "select count(*) from app_schema_marker where version = 1",
                 Integer.class
         )).isEqualTo(1);
+    }
+
+    @Test
+    void createsIdentityAndAuditSchema() {
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        assertThat(jdbc.queryForList("""
+                select table_name from information_schema.tables
+                where table_schema = 'public'
+                  and table_name in ('household', 'user_account', 'household_member',
+                                     'member_invite', 'user_session', 'audit_log')
+                order by table_name
+                """, String.class))
+                .containsExactly("audit_log", "household", "household_member",
+                        "member_invite", "user_account", "user_session");
+
+        jdbc.update("insert into household(id, singleton_key, name, timezone) values (?, 1, ?, ?)",
+                UUID.randomUUID(), "家", "Asia/Shanghai");
+        assertThatThrownBy(() -> jdbc.update(
+                "insert into household(id, singleton_key, name, timezone) values (?, 1, ?, ?)",
+                UUID.randomUUID(), "第二个家", "Asia/Shanghai"))
+                .isInstanceOf(DataAccessException.class);
     }
 }
