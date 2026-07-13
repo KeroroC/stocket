@@ -226,7 +226,7 @@ export function updateMember(memberId: string, data: UpdateMemberRequest): Promi
 }
 
 export function resetMemberPassword(memberId: string): Promise<ResetPasswordResponse> {
-  return apiRequest<ResetPasswordResponse>(`/api/v1/admin/members/${memberId}/password-reset`, {
+  return apiRequest<ResetPasswordResponse>(`/api/v1/admin/members/${memberId}/reset-password`, {
     method: 'POST',
   })
 }
