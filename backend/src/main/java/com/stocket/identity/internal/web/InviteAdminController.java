@@ -53,7 +53,7 @@ class InviteAdminController {
         try {
             InviteService.InviteCreationResult result = inviteService.createInvite(
                     householdId, request.role(), request.expiresAt(),
-                    principal.accountId(), now);
+                    request.maxUses(), principal.accountId(), now);
 
             String frontendUrl = identityProperties.invite().frontendUrl();
             String inviteLink;
@@ -91,7 +91,10 @@ class InviteAdminController {
                         info.expiresAt(),
                         info.acceptedAt(),
                         info.revokedAt(),
-                        info.createdAt()))
+                        info.createdAt(),
+                        info.useCount(),
+                        info.maxUses(),
+                        info.acceptedBy()))
                 .toList();
 
         return ResponseEntity.ok(response);

@@ -8,6 +8,7 @@ import com.stocket.identity.IdentityRole;
 
 public record CreateInviteRequest(
         @NotNull IdentityRole role,
-        Instant expiresAt
+        Instant expiresAt,
+        Integer maxUses
 ) {
 }

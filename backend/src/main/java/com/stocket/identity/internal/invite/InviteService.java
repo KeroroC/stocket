@@ -92,7 +92,8 @@ public class InviteService {
      */
     @Transactional
     public InviteCreationResult createInvite(UUID householdId, IdentityRole role,
-                                              Instant customExpiry, UUID createdByAccountId, Instant now) {
+                                              Instant customExpiry, Integer maxUses,
+                                              UUID createdByAccountId, Instant now) {
         Household household = householdRepository.findById(householdId)
                 .orElseThrow(() -> new IllegalArgumentException("Household not found"));
 
@@ -120,6 +121,9 @@ public class InviteService {
         MemberInvite invite = new MemberInvite(
                 UUID.randomUUID(), household, tokenHash,
                 role, expiresAt, createdBy, now);
+        if (maxUses != null && maxUses > 0) {
+            invite.setMaxUses(maxUses);
+        }
         inviteRepository.save(invite);
 
         publishAuditEvent("InviteCreated", "SUCCESS", createdByAccountId, Map.of(
@@ -135,13 +139,25 @@ public class InviteService {
     @Transactional(readOnly = true)
     public List<InviteInfo> listInvites(UUID householdId) {
         return inviteRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId).stream()
-                .map(invite -> new InviteInfo(
-                        invite.getId(),
-                        invite.getRole(),
-                        invite.getExpiresAt(),
-                        invite.getAcceptedAt(),
-                        invite.getRevokedAt(),
-                        invite.getCreatedAt()))
+                .map(invite -> {
+                    // Find members who joined via this invite
+                    List<String> acceptedByNames = householdMemberRepository
+                            .findByJoinedViaInviteId(invite.getId())
+                            .stream()
+                            .map(m -> m.getAccount().getDisplayName())
+                            .toList();
+
+                    return new InviteInfo(
+                            invite.getId(),
+                            invite.getRole(),
+                            invite.getExpiresAt(),
+                            invite.getAcceptedAt(),
+                            invite.getRevokedAt(),
+                            invite.getCreatedAt(),
+                            invite.getUseCount(),
+                            invite.getMaxUses(),
+                            acceptedByNames);
+                })
                 .toList();
     }
 
@@ -167,6 +183,37 @@ public class InviteService {
 
         publishAuditEvent("InviteRevoked", "SUCCESS", null, Map.of(
                 "inviteId", invite.getId().toString()));
+
+        return true;
+    }
+
+    /**
+     * Extends the expiry of an invite. Only valid for non-expired, non-revoked invites.
+     */
+    @Transactional
+    public boolean extendInvite(UUID householdId, UUID inviteId, Instant newExpiry, Instant now) {
+        MemberInvite invite = inviteRepository.findByHouseholdIdAndId(householdId, inviteId)
+                .orElseThrow(() -> new InviteNotFoundException());
+
+        if (invite.getRevokedAt() != null) {
+            throw new InviteAlreadyRevokedException();
+        }
+        if (invite.getExpiresAt().isBefore(now)) {
+            throw new InviteAlreadyExpiredException();
+        }
+        if (newExpiry.isBefore(now)) {
+            throw new InvalidExpiryException("New expiry must be in the future");
+        }
+        if (newExpiry.isAfter(now.plus(MAX_EXPIRY_DAYS, ChronoUnit.DAYS))) {
+            throw new InvalidExpiryException("Expiry cannot be more than " + MAX_EXPIRY_DAYS + " days");
+        }
+
+        invite.setExpiresAt(newExpiry);
+        inviteRepository.save(invite);
+
+        publishAuditEvent("InviteExtended", "SUCCESS", null, Map.of(
+                "inviteId", invite.getId().toString(),
+                "newExpiry", newExpiry.toString()));
 
         return true;
     }
@@ -253,11 +300,17 @@ public class InviteService {
         // Create household member
         HouseholdMember member = new HouseholdMember(
                 UUID.randomUUID(), household, account, invite.getRole(), now);
+        member.setJoinedViaInviteId(invite.getId());
         householdMemberRepository.save(member);
 
-        // Mark invite as accepted
-        invite.setAcceptedAt(now);
-        invite.setAcceptedBy(account);
+        // Mark invite as used (increment use count)
+        invite.setUseCount(invite.getUseCount() + 1);
+
+        // Only set acceptedAt for single-use invites (backward compatibility)
+        if (invite.getMaxUses() == 1) {
+            invite.setAcceptedAt(now);
+            invite.setAcceptedBy(account);
+        }
         inviteRepository.save(invite);
 
         publishAuditEvent("InviteAccepted", "SUCCESS", account.getId(), Map.of(
@@ -294,7 +347,10 @@ public class InviteService {
             Instant expiresAt,
             Instant acceptedAt,
             Instant revokedAt,
-            Instant createdAt) {
+            Instant createdAt,
+            Integer useCount,
+            Integer maxUses,
+            List<String> acceptedBy) {
     }
 
     public record InviteStatusResult(
@@ -354,6 +410,20 @@ public class InviteService {
     public static class DuplicateUsernameException extends RuntimeException {
         public DuplicateUsernameException() {
             super("Username already exists");
+        }
+    }
+
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public static class InviteAlreadyRevokedException extends RuntimeException {
+        public InviteAlreadyRevokedException() {
+            super("Invite has already been revoked");
+        }
+    }
+
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public static class InviteAlreadyExpiredException extends RuntimeException {
+        public InviteAlreadyExpiredException() {
+            super("Invite has already expired");
         }
     }
 }

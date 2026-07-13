@@ -95,6 +95,10 @@ public class MemberInvite {
         return expiresAt;
     }
 
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
     public Instant getAcceptedAt() {
         return acceptedAt;
     }

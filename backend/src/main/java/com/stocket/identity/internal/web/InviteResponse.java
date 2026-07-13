@@ -1,6 +1,7 @@
 package com.stocket.identity.internal.web;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,6 +14,9 @@ public record InviteResponse(
         Instant expiresAt,
         Instant acceptedAt,
         Instant revokedAt,
-        Instant createdAt
+        Instant createdAt,
+        Integer useCount,
+        Integer maxUses,
+        List<String> acceptedBy
 ) {
 }
