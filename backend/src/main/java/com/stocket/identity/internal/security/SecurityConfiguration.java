@@ -13,6 +13,7 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 import com.stocket.identity.internal.config.IdentityProperties;
 
@@ -52,7 +53,8 @@ class SecurityConfiguration {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository))
+                        .csrfTokenRepository(csrfTokenRepository)
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint(problemAuthenticationEntryPoint)
                         .accessDeniedHandler(problemAccessDeniedHandler))

@@ -8,13 +8,17 @@ import java.util.concurrent.Future;
 
 import javax.sql.DataSource;
 
+import jakarta.servlet.http.Cookie;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.aot.DisabledInAotMode;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -54,6 +58,33 @@ class SetupIntegrationTest {
         mockMvc.perform(get("/api/v1/setup/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.initialized").value(false));
+    }
+
+    @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
+    void csrfCookieAllowsBrowserStyleInitializationWithoutDuplicateCookie() throws Exception {
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        jdbc.execute("TRUNCATE household_member, user_session, member_invite, user_account, household CASCADE");
+
+        var csrfResponse = mockMvc.perform(get("/api/v1/auth/csrf"))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("XSRF-TOKEN"))
+                .andReturn()
+                .getResponse();
+        String csrfToken = csrfResponse.getCookie("XSRF-TOKEN").getValue();
+
+        assertThat(csrfResponse.getHeaders(HttpHeaders.SET_COOKIE)).hasSize(1);
+
+        mockMvc.perform(post("/api/v1/setup/initialize")
+                        .cookie(new Cookie("XSRF-TOKEN", csrfToken))
+                        .header("X-XSRF-TOKEN", csrfToken)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"householdName":"王家","timezone":"Asia/Shanghai",
+                                 "username":"Owner","displayName":"管理员","password":"correct horse battery staple"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(cookie().exists("STOCKET_SESSION"));
     }
 
     @Test

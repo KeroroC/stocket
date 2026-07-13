@@ -28,13 +28,20 @@ function accountResponse(overrides: Record<string, unknown> = {}) {
 }
 
 describe('App', () => {
-  it('setup-required 状态：显示初始化视图，不调用认证接口', async () => {
+  it('setup-required 状态：显示初始化视图，刷新 CSRF 但不调用认证接口', async () => {
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {
         return Promise.resolve({
           ok: true,
           status: 200,
           json: async () => ({ initialized: false }),
+        })
+      }
+      if (url === '/api/v1/auth/csrf') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({}),
         })
       }
       return Promise.resolve({
@@ -50,7 +57,7 @@ describe('App', () => {
 
     expect(screen.getByText('初始化家庭')).toBeInTheDocument()
     expect(fetch).not.toHaveBeenCalledWith('/api/v1/account', expect.anything())
-    expect(fetch).not.toHaveBeenCalledWith('/api/v1/auth/csrf', expect.anything())
+    expect(fetch).toHaveBeenCalledWith('/api/v1/auth/csrf', expect.anything())
   })
 
   it('anonymous 状态：显示登录表单，调用 /account 和 /auth/csrf', async () => {

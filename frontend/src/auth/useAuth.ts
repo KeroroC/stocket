@@ -19,12 +19,13 @@ export function useAuth() {
     state.value = { kind: 'checking-setup' }
 
     const setupStatus = await getSetupStatus()
+
+    await refreshCsrf()
+
     if (!setupStatus.initialized) {
       state.value = { kind: 'setup-required' }
       return
     }
-
-    await refreshCsrf()
 
     try {
       const account = await getCurrentAccount()

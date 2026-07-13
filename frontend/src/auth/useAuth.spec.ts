@@ -25,6 +25,13 @@ describe('身份启动状态', () => {
           json: async () => ({ initialized: false }),
         })
       }
+      if (url === '/api/v1/auth/csrf') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({}),
+        })
+      }
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     vi.stubGlobal('fetch', fetch)
@@ -37,7 +44,7 @@ describe('身份启动状态', () => {
       '/api/v1/account',
       expect.anything(),
     )
-    expect(fetch).not.toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       '/api/v1/auth/csrf',
       expect.anything(),
     )
