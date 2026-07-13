@@ -20,6 +20,7 @@ public class SecurityCurrentHouseholdProvider implements CurrentHouseholdProvide
             throw new AuthenticationCredentialsNotFoundException("Authentication required");
         }
 
-        return new CurrentHousehold(principal.householdId(), principal.memberId(), principal.role());
+        return new CurrentHousehold(
+                principal.householdId(), principal.accountId(), principal.memberId(), principal.role());
     }
 }

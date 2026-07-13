@@ -197,14 +197,14 @@ public class InventoryEntry {
                 null, locationId, reason);
     }
 
-    void attachBatch(BatchDetail detail) {
+    public void attachBatch(BatchDetail detail) {
         if (inventoryType != InventoryType.BATCH || detail.entry() != this) {
             throw InventoryRules.violation("INVALID_BATCH_DETAIL", "Batch detail does not match the entry");
         }
         batchDetail = detail;
     }
 
-    void attachAsset(AssetDetail detail) {
+    public void attachAsset(AssetDetail detail) {
         if (inventoryType != InventoryType.ASSET || detail.entry() != this) {
             throw InventoryRules.violation("INVALID_ASSET_DETAIL", "Asset detail does not match the entry");
         }
@@ -251,4 +251,6 @@ public class InventoryEntry {
     public Optional<AssetStatus> assetStatus() {
         return assetDetail == null ? Optional.empty() : Optional.of(assetDetail.status());
     }
+    public Optional<BatchDetail> batchDetail() { return Optional.ofNullable(batchDetail); }
+    public Optional<AssetDetail> assetDetail() { return Optional.ofNullable(assetDetail); }
 }
