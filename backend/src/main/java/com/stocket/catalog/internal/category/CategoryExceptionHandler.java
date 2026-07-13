@@ -28,6 +28,11 @@ class CategoryExceptionHandler {
         return problem(HttpStatus.CONFLICT, "Category version conflict", "VERSION_CONFLICT");
     }
 
+    @ExceptionHandler(CategoryService.CategoryNotEmptyException.class)
+    ProblemDetail notEmpty() {
+        return problem(HttpStatus.CONFLICT, "Category is not empty", "CATEGORY_NOT_EMPTY");
+    }
+
     @ExceptionHandler(AttributeValidationException.class)
     ProblemDetail invalidSchema(AttributeValidationException exception) {
         ProblemDetail problem = problem(HttpStatus.UNPROCESSABLE_ENTITY,
