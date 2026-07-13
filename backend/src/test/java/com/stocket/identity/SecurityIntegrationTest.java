@@ -164,6 +164,39 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void sessionWithoutHouseholdMembershipIsRejected() throws Exception {
+        initializeAndGetCookie();
+
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        UUID accountId = UUID.randomUUID();
+        String passwordHash = passwordEncoder.encode("orphan-password");
+        jdbc.update("""
+                INSERT INTO user_account (id, username, normalized_username, display_name,
+                password_hash, status, must_change_password, credentials_changed_at, created_at, updated_at, version)
+                VALUES (?, 'Orphan', 'orphan', '无家庭账号', ?, 'ACTIVE', false, now(), now(), now(), 0)
+                """, accountId, passwordHash);
+
+        String token = secureValueGenerator.generateToken();
+        Instant now = Instant.now();
+        jdbc.update("""
+                INSERT INTO user_session (id, account_id, token_hash, created_at, last_seen_at,
+                idle_expires_at, absolute_expires_at, user_agent, source_address)
+                VALUES (?, ?, ?, ?::timestamptz, ?::timestamptz, ?::timestamptz, ?::timestamptz, 'test', '127.0.0.1')
+                """,
+                UUID.randomUUID(),
+                accountId,
+                tokenHasher.sha256(token),
+                now.toString(),
+                now.toString(),
+                now.plus(30, ChronoUnit.DAYS).toString(),
+                now.plus(90, ChronoUnit.DAYS).toString());
+
+        mockMvc.perform(get("/api/v1/account")
+                        .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", token)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void csrfEndpointReturnsTokenWithoutAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/auth/csrf"))
                 .andExpect(status().isOk())

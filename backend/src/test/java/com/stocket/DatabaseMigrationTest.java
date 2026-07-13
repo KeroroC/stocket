@@ -64,4 +64,28 @@ class DatabaseMigrationTest {
                 UUID.randomUUID(), "第二个家", "Asia/Shanghai"))
                 .isInstanceOf(DataAccessException.class);
     }
+
+    @Test
+    void appliesAllMigrationsAndCreatesCatalogLocationSchema() {
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+
+        assertThat(jdbc.queryForList("""
+                select version
+                from flyway_schema_history
+                where success = true
+                order by installed_rank
+                """, String.class))
+                .containsExactly("1", "2", "3", "4");
+
+        assertThat(jdbc.queryForList("""
+                select table_name
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name in ('category', 'location', 'item_definition',
+                                     'item_barcode', 'item_tag', 'catalog_search_projection')
+                order by table_name
+                """, String.class))
+                .containsExactly("catalog_search_projection", "category", "item_barcode",
+                        "item_definition", "item_tag", "location");
+    }
 }
