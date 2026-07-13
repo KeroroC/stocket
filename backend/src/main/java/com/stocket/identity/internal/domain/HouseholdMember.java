@@ -44,6 +44,9 @@ public class HouseholdMember {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "joined_via_invite_id")
+    private UUID joinedViaInviteId;
+
     public HouseholdMember() {
     }
 
@@ -78,5 +81,13 @@ public class HouseholdMember {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public UUID getJoinedViaInviteId() {
+        return joinedViaInviteId;
+    }
+
+    public void setJoinedViaInviteId(UUID joinedViaInviteId) {
+        this.joinedViaInviteId = joinedViaInviteId;
     }
 }

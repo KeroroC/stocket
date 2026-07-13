@@ -43,6 +43,12 @@ public class MemberInvite {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
+    @Column(name = "max_uses", nullable = false)
+    private Integer maxUses = 1;
+
+    @Column(name = "use_count", nullable = false)
+    private Integer useCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private UserAccount createdBy;
@@ -122,6 +128,22 @@ public class MemberInvite {
     }
 
     public boolean isAvailable() {
-        return acceptedAt == null && revokedAt == null;
+        return acceptedAt == null && revokedAt == null && useCount < maxUses;
+    }
+
+    public Integer getMaxUses() {
+        return maxUses;
+    }
+
+    public void setMaxUses(Integer maxUses) {
+        this.maxUses = maxUses;
+    }
+
+    public Integer getUseCount() {
+        return useCount;
+    }
+
+    public void setUseCount(Integer useCount) {
+        this.useCount = useCount;
     }
 }
