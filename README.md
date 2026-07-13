@@ -21,6 +21,8 @@ make native-test
 
 也可以分别运行 `make backend-test` 和 `make frontend-test`。Make 的前端目标会检查 `frontend/node_modules/.package-lock.json`；依赖尚未安装或 `package.json`、`package-lock.json` 更新时，会自动运行 `npm ci`，不会在每次执行时重复安装。
 
+`make test` 是完整测试门禁；`make build` 只执行后端打包和前端生产构建，避免在连续验证时重复启动整套 Testcontainers。
+
 原生 AOT 测试集合不包含标注 `@DisabledInAotMode` 的数据库迁移、模块架构、Testcontainers 集成和纯反射形状测试；这些门禁由 JVM 测试覆盖。可在原生环境运行的领域、契约与 MVC 测试仍会进入 Native Image。CI 还会实际构建并启动 Native Compose 栈，通过网关对系统 API 和 readiness 端点执行 HTTP smoke。
 
 ## 本地启动后端
@@ -185,9 +187,50 @@ make native-test
 # Native Image 生成成功；32 个原生适用测试通过，0 失败
 ```
 
+## 阶段四完成：库存台账
+
+系统已实现批次与独立资产库存、入库、消耗、退库、调整、损耗、报废、完整调拨、部分批次拆分、不可变流水、库存查询、幂等重放和完整性对账。
+
+### API 与权限
+
+- `GET /api/v1/inventory/entries`：按物品、位置、类型、资产状态和到期区间查询库存；默认隐藏归档条目。
+- `GET /api/v1/inventory/entries/{id}` 与 `/movements`：查看批次/资产详情及倒序流水。
+- `GET /api/v1/inventory/availability?itemId=...`：返回总可用量、活跃条目数和最早到期日期。
+- `POST /api/v1/inventory/receipts` 及条目下的 `consume`、`return`、`adjust`、`transfer`、`lost`、`retire`：仅 `ADMIN`、`MEMBER` 可执行，且必须携带 `Idempotency-Key`。
+- `POST /api/v1/admin/inventory/reconcile`：仅管理员可触发完整性对账。
+
+所有数量在 HTTP JSON 中保持十进制字符串，服务端使用 `numeric(19,4)` 与 `BigDecimal`，不会经过浮点转换。写请求的幂等键绑定账户、操作和规范化请求摘要；相同请求可安全重放，不同请求复用同一键返回冲突。
+
+### 一致性模型
+
+- 库存变更在单个 PostgreSQL 事务内完成行锁、规则校验、快照更新和流水追加。
+- 批次库存不会小于零，资产可用量只能为 `0` 或 `1`；部分批次调拨生成可追溯的新条目。
+- `inventory_movement` 只追加，不提供更新或删除路径；当前快照必须等于流水数量变化之和。
+- 对账发现差异时只创建问题记录，不自动改写库存或历史流水；恢复一致后问题自动关闭。
+- `inventory` 模块只通过 `identity :: api`、`catalog :: api`、`location :: api` 访问其他模块。
+
+### 阶段四验收记录
+
+2026-07-14 在 Java 25.0.1、Docker 29.4.0 和 PostgreSQL 17.5 Testcontainers 环境完成：
+
+```bash
+cd backend && ./mvnw -Dtest=InventoryLedgerAcceptanceTest test
+# 1 个全链路验收测试通过
+
+make test
+# 后端 230 个测试、前端 103 个测试、类型检查和配置契约通过
+
+make build
+# JVM 可执行 JAR 与前端生产构建通过
+
+make aot
+# Spring AOT 处理通过
+```
+
 ## 文档
 
 - [产品与技术设计规格](docs/superpowers/specs/2026-07-10-stocket-design.md)
 - [交付路线图](docs/superpowers/plans/2026-07-11-delivery-roadmap.md)
 - [基础与原生构建实施说明](docs/superpowers/plans/2026-07-11-foundation-native-baseline.md)
 - [阶段三目录与位置实施计划](docs/superpowers/plans/2026-07-12-catalog-location.md)
+- [阶段四库存台账实施计划](docs/superpowers/plans/2026-07-12-inventory-ledger.md)

@@ -15,7 +15,7 @@ config-test:
 	bash scripts/config-contract-smoke.sh
 
 build: frontend/node_modules/.package-lock.json
-	cd backend && ./mvnw package
+	cd backend && ./mvnw -DskipTests package
 	cd frontend && npm run build
 
 aot:

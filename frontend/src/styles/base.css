@@ -3,3 +3,19 @@ html { font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Mic
 body { margin: 0; min-width: 320px; min-height: 100vh; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--st-color-primary) 55%, transparent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
+
+.inventory-workspace { display: grid; grid-template-columns: minmax(280px, .9fr) minmax(320px, 1.1fr); gap: var(--st-space-6); align-items: start; }
+.inventory-list, .movement-timeline { display: grid; gap: var(--st-space-3); }
+.inventory-card { display: grid; grid-template-columns: 1fr auto; gap: var(--st-space-2) var(--st-space-4); min-height: var(--st-control-min-size); padding: var(--st-space-4); color: var(--st-color-text); text-align: left; background: var(--st-color-surface); border: 1px solid var(--st-color-border); border-radius: var(--st-radius-card); cursor: pointer; }
+.inventory-card:hover, .inventory-card.selected { border-color: var(--st-color-primary); background: var(--st-color-primary-soft); }
+.inventory-card-title { font-weight: 700; }
+.inventory-detail, .inventory-panel { padding: var(--st-space-6); background: var(--st-color-surface); border: 1px solid var(--st-color-border); border-radius: var(--st-radius-feature); box-shadow: var(--st-shadow-card); }
+.inventory-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--st-space-4); }
+.inventory-form > button { grid-column: 1 / -1; min-height: var(--st-control-min-size); color: #fff; background: var(--st-color-primary); border: 0; border-radius: var(--st-radius-control); cursor: pointer; }
+.inventory-field { display: grid; gap: var(--st-space-2); font-weight: 600; }
+.inventory-field input, .inventory-field select { min-height: var(--st-control-min-size); padding: 0 var(--st-space-3); color: var(--st-color-text); background: var(--st-color-surface); border: 1px solid var(--st-color-border); border-radius: var(--st-radius-control); }
+.movement-timeline { margin: var(--st-space-6) 0 0; padding: 0; list-style: none; }
+.movement-timeline li { padding: var(--st-space-4); background: var(--st-color-bg); border-left: 4px solid var(--st-color-primary); border-radius: var(--st-radius-control); }
+.movement-timeline p, .movement-timeline time { margin: var(--st-space-1) 0 0; color: var(--st-color-text-muted); }
+.movement-heading { display: flex; justify-content: space-between; gap: var(--st-space-3); }
+@media (max-width: 760px) { .inventory-workspace, .inventory-form { grid-template-columns: 1fr; } .inventory-panel { padding: var(--st-space-4); padding-bottom: calc(var(--st-space-8) + var(--st-control-min-size)); } .inventory-form > button { position: sticky; bottom: var(--st-space-3); } }

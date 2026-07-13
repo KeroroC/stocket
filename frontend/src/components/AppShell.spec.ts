@@ -91,6 +91,15 @@ describe('AppShell', () => {
     }
   })
 
+  it('all roles see inventory navigation', () => {
+    for (const account of [adminAccount, memberAccount, viewerAccount]) {
+      const { unmount } = render(AppShell, { props: { account } })
+      const nav = screen.getByRole('navigation', { name: /主导航/ })
+      expect(within(nav).getByText('库存台账')).toBeInTheDocument()
+      unmount()
+    }
+  })
+
   it('ADMIN sees "成员管理" and "邀请管理" navigation items', () => {
     render(AppShell, { props: { account: adminAccount } })
 

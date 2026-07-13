@@ -33,7 +33,7 @@ class IdentityContextContractTest {
         assertThat(List.of(currentHouseholdType.getRecordComponents())
                 .stream()
                 .map(component -> component.getName() + ":" + component.getType().getSimpleName()))
-                .containsExactly("householdId:UUID", "memberId:UUID", "role:IdentityRole");
+                .containsExactly("householdId:UUID", "accountId:UUID", "memberId:UUID", "role:IdentityRole");
 
         Class<?> providerType = CurrentHouseholdProvider.class;
         assertThat(providerType.isInterface()).isTrue();
@@ -45,9 +45,10 @@ class IdentityContextContractTest {
     @Test
     void mapsAuthenticatedIdentityPrincipalToCurrentHousehold() {
         UUID householdId = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
         UUID memberId = UUID.randomUUID();
         IdentityPrincipal principal = new IdentityPrincipal(
-                UUID.randomUUID(), householdId, memberId, "member",
+                accountId, householdId, memberId, "member",
                 IdentityRole.MEMBER, false, UUID.randomUUID());
         SecurityContextHolder.getContext().setAuthentication(
                 UsernamePasswordAuthenticationToken.authenticated(principal, null, List.of()));
@@ -55,6 +56,7 @@ class IdentityContextContractTest {
         CurrentHousehold current = new SecurityCurrentHouseholdProvider().requireCurrent();
 
         assertThat(current.householdId()).isEqualTo(householdId);
+        assertThat(current.accountId()).isEqualTo(accountId);
         assertThat(current.memberId()).isEqualTo(memberId);
         assertThat(current.role()).isEqualTo(IdentityRole.MEMBER);
     }

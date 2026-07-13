@@ -44,11 +44,17 @@
 
 验收日期：2026-07-14。`make test`、`make build`、`make aot` 与 `make native-test` 均通过。
 
-## 阶段四：库存台账
+## 阶段四：库存台账 ✅
 
 实现批量和资产库存条目、过期计算、入库、消耗、调拨、部分批次拆分、调整、损耗、退库、不可变移动记录、事务快照、行锁、乐观版本控制、幂等性和完整性对账。
 
 验收切片：并发操作永远不会产生负库存，重试永远不会重复创建移动记录，移动总和与库存快照一致。
+
+详细计划：`docs/superpowers/plans/2026-07-12-inventory-ledger.md`
+
+全链路验收：`backend/src/test/java/com/stocket/inventory/InventoryLedgerAcceptanceTest.java`
+
+验收日期：2026-07-14。`make test`、`make build` 与 `make aot` 均通过。
 
 ## 阶段五：提醒与通知管道
 
