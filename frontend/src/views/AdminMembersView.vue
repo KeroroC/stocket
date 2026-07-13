@@ -4,7 +4,7 @@ import type { MemberInfo } from '../api/identity'
 import {
   getMembers as apiGetMembers,
   createMember as apiCreateMember,
-  updateMember as apiUpdateMember,
+  updateMemberRole as apiUpdateMemberRole,
   resetMemberPassword as apiResetMemberPassword,
   enableMember as apiEnableMember,
   disableMember as apiDisableMember,
@@ -148,7 +148,7 @@ async function handleEditRole() {
   editError.value = ''
   editSubmitting.value = true
   try {
-    await apiUpdateMember(editingMember.value.id, { role: editRole.value })
+    await apiUpdateMemberRole(editingMember.value.id, editRole.value)
     showEditRoleDialog.value = false
     await loadMembers()
   } catch (err: unknown) {

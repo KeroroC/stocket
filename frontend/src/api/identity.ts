@@ -243,6 +243,14 @@ export function disableMember(memberId: string): Promise<void> {
   })
 }
 
+export function updateMemberRole(memberId: string, role: string): Promise<MemberInfo> {
+  return apiRequest<MemberInfo>(`/api/v1/admin/members/${memberId}/role`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role }),
+  })
+}
+
 // --- Admin invite functions ---
 
 export function getInvites(): Promise<InviteListItem[]> {

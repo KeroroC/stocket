@@ -20,6 +20,7 @@ vi.mock('../api/identity', () => ({
   getMembers: vi.fn().mockResolvedValue([]),
   createMember: vi.fn(),
   updateMember: vi.fn(),
+  updateMemberRole: vi.fn(),
   resetMemberPassword: vi.fn(),
   enableMember: vi.fn(),
   disableMember: vi.fn(),
@@ -181,7 +182,7 @@ describe('AdminMembersView', () => {
   })
 
   it('changes member role', async () => {
-    vi.mocked(identityApi.updateMember).mockResolvedValueOnce({
+    vi.mocked(identityApi.updateMemberRole).mockResolvedValueOnce({
       ...membersFixture[1],
       role: 'VIEWER',
     } as identityApi.MemberInfo)
@@ -206,7 +207,7 @@ describe('AdminMembersView', () => {
     await fireEvent.click(within(dialog).getByText('确认'))
 
     await waitFor(() => {
-      expect(vi.mocked(identityApi.updateMember)).toHaveBeenCalledWith('mem-2', { role: 'VIEWER' })
+      expect(vi.mocked(identityApi.updateMemberRole)).toHaveBeenCalledWith('mem-2', 'VIEWER')
     })
   })
 
@@ -251,7 +252,7 @@ describe('AdminMembersView', () => {
   })
 
   it('shows Chinese error for LAST_ADMIN_REQUIRED', async () => {
-    vi.mocked(identityApi.updateMember).mockRejectedValueOnce({
+    vi.mocked(identityApi.updateMemberRole).mockRejectedValueOnce({
       status: 409,
       code: 'LAST_ADMIN_REQUIRED',
     })
