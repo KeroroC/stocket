@@ -84,6 +84,9 @@ class CategoryService {
         UUID householdId = currentHouseholdProvider.requireCurrent().householdId();
         Category category = requireCategory(householdId, id);
         requireVersion(version, category.version());
+        if (repository.existsByHouseholdIdAndParentAndArchivedAtIsNull(householdId, category)) {
+            throw new CategoryNotEmptyException();
+        }
         Integer activeItems = jdbcTemplate.queryForObject("""
                 select count(*) from item_definition
                 where household_id = ? and category_id = ? and archived_at is null
@@ -100,6 +103,9 @@ class CategoryService {
         UUID householdId = currentHouseholdProvider.requireCurrent().householdId();
         Category category = requireCategory(householdId, id);
         requireVersion(version, category.version());
+        if (category.parent() != null && category.parent().archived()) {
+            throw new CategoryParentArchivedException();
+        }
         category.restore(Instant.now());
         return CategoryMapper.toResponse(repository.saveAndFlush(category));
     }
@@ -193,6 +199,7 @@ class CategoryService {
     static class CategoryCycleException extends RuntimeException { }
     static class CategoryVersionConflictException extends RuntimeException { }
     static class CategoryNotEmptyException extends RuntimeException { }
+    static class CategoryParentArchivedException extends RuntimeException { }
     static class AttributeSchemaIncompatibleException extends RuntimeException {
         private final String itemId;
         private final String key;

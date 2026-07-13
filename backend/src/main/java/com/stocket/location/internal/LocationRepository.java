@@ -10,6 +10,7 @@ interface LocationRepository extends JpaRepository<Location, UUID> {
     Optional<Location> findByHouseholdIdAndId(UUID householdId, UUID id);
     Optional<Location> findByHouseholdIdAndPublicCode(UUID householdId, String publicCode);
     List<Location> findByHouseholdId(UUID householdId);
+    boolean existsByHouseholdIdAndParentAndArchivedAtIsNull(UUID householdId, Location parent);
     boolean existsByHouseholdIdAndParentAndNormalizedNameAndArchivedAtIsNull(
             UUID householdId, Location parent, String normalizedName);
     boolean existsByHouseholdIdAndParentAndNormalizedNameAndArchivedAtIsNullAndIdNot(

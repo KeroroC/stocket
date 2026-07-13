@@ -12,6 +12,8 @@ interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     List<Category> findByHouseholdId(UUID householdId);
 
+    boolean existsByHouseholdIdAndParentAndArchivedAtIsNull(UUID householdId, Category parent);
+
     boolean existsByHouseholdIdAndParentAndNormalizedNameAndArchivedAtIsNull(
             UUID householdId, Category parent, String normalizedName);
 

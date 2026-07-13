@@ -61,13 +61,20 @@ class LocationService {
 
     @Transactional
     LocationResponse archive(UUID id, long version) {
-        Location location = requireCurrent(id); requireVersion(version, location.version());
+        UUID householdId = current.requireCurrent().householdId();
+        Location location = require(householdId, id); requireVersion(version, location.version());
+        if (repository.existsByHouseholdIdAndParentAndArchivedAtIsNull(householdId, location)) {
+            throw new LocationNotEmptyException();
+        }
         location.archive(Instant.now()); return response(repository.saveAndFlush(location));
     }
 
     @Transactional
     LocationResponse restore(UUID id, long version) {
         Location location = requireCurrent(id); requireVersion(version, location.version());
+        if (location.parent() != null && location.parent().archived()) {
+            throw new LocationParentArchivedException();
+        }
         location.restore(Instant.now()); return response(repository.saveAndFlush(location));
     }
 
@@ -120,4 +127,6 @@ class LocationService {
     static class LocationNameConflictException extends RuntimeException { }
     static class LocationCycleException extends RuntimeException { }
     static class LocationVersionConflictException extends RuntimeException { }
+    static class LocationNotEmptyException extends RuntimeException { }
+    static class LocationParentArchivedException extends RuntimeException { }
 }

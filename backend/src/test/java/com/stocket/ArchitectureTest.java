@@ -1,11 +1,14 @@
 package com.stocket;
 
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModule;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.test.context.aot.DisabledInAotMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 @DisabledInAotMode
 class ArchitectureTest {
@@ -52,5 +55,13 @@ class ArchitectureTest {
         ApplicationModule identityModule = modules.getModuleByName("identity").orElseThrow();
 
         assertThat(identityModule.getDependencies(modules).containsModuleNamed("audit")).isFalse();
+    }
+
+    @Test
+    void catalogAndLocationDoNotUseIdentityInternals() {
+        noClasses().that().resideInAnyPackage("com.stocket.catalog..", "com.stocket.location..")
+                .should().dependOnClassesThat().resideInAPackage("com.stocket.identity.internal..")
+                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                        .importPackages("com.stocket"));
     }
 }

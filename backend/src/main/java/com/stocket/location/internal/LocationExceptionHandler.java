@@ -17,6 +17,10 @@ class LocationExceptionHandler {
     ProblemDetail cycle() { return problem(HttpStatus.CONFLICT, "LOCATION_CYCLE"); }
     @ExceptionHandler(LocationService.LocationVersionConflictException.class)
     ProblemDetail version() { return problem(HttpStatus.CONFLICT, "VERSION_CONFLICT"); }
+    @ExceptionHandler(LocationService.LocationNotEmptyException.class)
+    ProblemDetail notEmpty() { return problem(HttpStatus.CONFLICT, "LOCATION_NOT_EMPTY"); }
+    @ExceptionHandler(LocationService.LocationParentArchivedException.class)
+    ProblemDetail parentArchived() { return problem(HttpStatus.CONFLICT, "LOCATION_PARENT_ARCHIVED"); }
     private ProblemDetail problem(HttpStatus status, String code) {
         ProblemDetail problem = ProblemDetail.forStatus(status); problem.setTitle(code);
         problem.setProperty("code", code); problem.setProperty("retryable", false); return problem;

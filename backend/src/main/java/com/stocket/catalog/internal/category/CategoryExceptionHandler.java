@@ -33,6 +33,11 @@ class CategoryExceptionHandler {
         return problem(HttpStatus.CONFLICT, "Category is not empty", "CATEGORY_NOT_EMPTY");
     }
 
+    @ExceptionHandler(CategoryService.CategoryParentArchivedException.class)
+    ProblemDetail parentArchived() {
+        return problem(HttpStatus.CONFLICT, "Category parent is archived", "CATEGORY_PARENT_ARCHIVED");
+    }
+
     @ExceptionHandler(AttributeValidationException.class)
     ProblemDetail invalidSchema(AttributeValidationException exception) {
         ProblemDetail problem = problem(HttpStatus.UNPROCESSABLE_ENTITY,
