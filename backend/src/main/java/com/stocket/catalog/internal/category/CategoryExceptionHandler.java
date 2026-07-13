@@ -28,6 +28,22 @@ class CategoryExceptionHandler {
         return problem(HttpStatus.CONFLICT, "Category version conflict", "VERSION_CONFLICT");
     }
 
+    @ExceptionHandler(AttributeValidationException.class)
+    ProblemDetail invalidSchema(AttributeValidationException exception) {
+        ProblemDetail problem = problem(HttpStatus.UNPROCESSABLE_ENTITY,
+                "Invalid attribute schema", "ATTRIBUTE_SCHEMA_INVALID");
+        problem.setDetail(exception.getMessage());
+        return problem;
+    }
+
+    @ExceptionHandler(CategoryService.AttributeSchemaIncompatibleException.class)
+    ProblemDetail incompatibleSchema(CategoryService.AttributeSchemaIncompatibleException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT,
+                "Attribute schema is incompatible", "ATTRIBUTE_SCHEMA_INCOMPATIBLE");
+        problem.setDetail("Item " + exception.itemId() + " is incompatible at key " + exception.key());
+        return problem;
+    }
+
     private ProblemDetail problem(HttpStatus status, String title, String code) {
         ProblemDetail problem = ProblemDetail.forStatus(status);
         problem.setTitle(title);

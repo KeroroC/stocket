@@ -149,6 +149,33 @@ class CategoryIntegrationTest {
                 .andExpect(jsonPath("$.code").value("CATEGORY_NOT_FOUND"));
     }
 
+    @Test
+    void rejectsSchemaChangesThatInvalidateActiveItems() throws Exception {
+        String adminCookie = initializeAdmin();
+        UUID householdId = jdbc.queryForObject("select id from household", UUID.class);
+        UUID categoryId = createCategory(adminCookie, "食品", null);
+        UUID itemId = UUID.randomUUID();
+        jdbc.update("""
+                insert into item_definition(id, household_id, category_id, name, normalized_name,
+                    default_unit, custom_attributes)
+                values (?, ?, ?, '牛奶', '牛奶', '盒', '{"temperature":4}'::jsonb)
+                """, itemId, householdId, categoryId);
+
+        mockMvc.perform(patch("/api/v1/categories/{id}", categoryId)
+                        .with(csrf())
+                        .cookie(sessionCookie(adminCookie))
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {"name":"食品","defaultInventoryType":"BATCH","version":0,
+                                 "attributeSchema":[{"key":"opened","label":"已开封","type":"BOOLEAN",
+                                     "required":true,"options":[],"order":0}]}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ATTRIBUTE_SCHEMA_INCOMPATIBLE"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(itemId.toString())))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("temperature")));
+    }
+
     private UUID createCategory(String cookie, String name, UUID parentId) throws Exception {
         String parent = parentId == null ? "null" : "\"" + parentId + "\"";
         MvcResult result = mockMvc.perform(post("/api/v1/categories")

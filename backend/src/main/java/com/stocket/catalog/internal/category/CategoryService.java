@@ -5,11 +5,17 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.stocket.identity.CurrentHouseholdProvider;
 
@@ -20,10 +26,16 @@ class CategoryService {
 
     private final CategoryRepository repository;
     private final CurrentHouseholdProvider currentHouseholdProvider;
+    private final AttributeSchemaValidator schemaValidator;
+    private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    CategoryService(CategoryRepository repository, CurrentHouseholdProvider currentHouseholdProvider) {
+    CategoryService(CategoryRepository repository, CurrentHouseholdProvider currentHouseholdProvider,
+                    AttributeSchemaValidator schemaValidator, JdbcTemplate jdbcTemplate) {
         this.repository = repository;
         this.currentHouseholdProvider = currentHouseholdProvider;
+        this.schemaValidator = schemaValidator;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -44,6 +56,7 @@ class CategoryService {
         String name = cleanName(request.name());
         String normalizedName = normalizeName(name);
         assertNameAvailable(householdId, parent, normalizedName, null);
+        schemaValidator.validateSchema(request.attributeSchema());
         Category category = new Category(UUID.randomUUID(), householdId, parent, name, normalizedName,
                 request.defaultInventoryType(), request.attributeSchema(), Instant.now());
         return CategoryMapper.toResponse(repository.saveAndFlush(category));
@@ -59,6 +72,8 @@ class CategoryService {
         String name = cleanName(request.name());
         String normalizedName = normalizeName(name);
         assertNameAvailable(householdId, parent, normalizedName, id);
+        schemaValidator.validateSchema(request.attributeSchema());
+        validateExistingItems(householdId, id, request.attributeSchema());
         category.update(parent, name, normalizedName, request.defaultInventoryType(),
                 request.attributeSchema(), Instant.now());
         return CategoryMapper.toResponse(repository.saveAndFlush(category));
@@ -129,6 +144,35 @@ class CategoryService {
         }
     }
 
+    private void validateExistingItems(UUID householdId, UUID categoryId, List<AttributeDefinition> schema) {
+        int offset = 0;
+        while (true) {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
+                    select id, custom_attributes::text as custom_attributes
+                    from item_definition
+                    where household_id = ? and category_id = ? and archived_at is null
+                    order by id
+                    limit 100 offset ?
+                    """, householdId, categoryId, offset);
+            for (Map<String, Object> row : rows) {
+                try {
+                    Map<String, JsonNode> values = objectMapper.readValue(
+                            row.get("custom_attributes").toString(), new TypeReference<>() { });
+                    schemaValidator.validateValues(schema, values);
+                } catch (AttributeValidationException exception) {
+                    throw new AttributeSchemaIncompatibleException(
+                            row.get("id").toString(), exception.key());
+                } catch (Exception exception) {
+                    throw new IllegalStateException("Cannot read item attributes", exception);
+                }
+            }
+            if (rows.size() < 100) {
+                return;
+            }
+            offset += rows.size();
+        }
+    }
+
     private String cleanName(String name) {
         return WHITESPACE.matcher(name.strip()).replaceAll(" ");
     }
@@ -141,4 +185,16 @@ class CategoryService {
     static class CategoryNameConflictException extends RuntimeException { }
     static class CategoryCycleException extends RuntimeException { }
     static class CategoryVersionConflictException extends RuntimeException { }
+    static class AttributeSchemaIncompatibleException extends RuntimeException {
+        private final String itemId;
+        private final String key;
+
+        AttributeSchemaIncompatibleException(String itemId, String key) {
+            this.itemId = itemId;
+            this.key = key;
+        }
+
+        String itemId() { return itemId; }
+        String key() { return key; }
+    }
 }
