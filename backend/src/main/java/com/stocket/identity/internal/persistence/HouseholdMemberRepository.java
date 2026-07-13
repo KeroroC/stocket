@@ -26,6 +26,8 @@ public interface HouseholdMemberRepository extends JpaRepository<HouseholdMember
 
     Optional<HouseholdMember> findByHouseholdIdAndId(UUID householdId, UUID memberId);
 
+    List<HouseholdMember> findByJoinedViaInviteId(UUID inviteId);
+
     @Query("select m from HouseholdMember m join m.account a " +
            "where m.household.id = :householdId and m.role = :role and a.status = 'ACTIVE'")
     @Lock(LockModeType.PESSIMISTIC_WRITE)
