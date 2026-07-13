@@ -21,7 +21,7 @@ make native-test
 
 也可以分别运行 `make backend-test` 和 `make frontend-test`。Make 的前端目标会检查 `frontend/node_modules/.package-lock.json`；依赖尚未安装或 `package.json`、`package-lock.json` 更新时，会自动运行 `npm ci`，不会在每次执行时重复安装。
 
-原生 AOT 测试集合不包含标注 `@DisabledInAotMode` 的 `DatabaseMigrationTest` 和 `ArchitectureTest`，这两项由 JVM 测试覆盖。CI 还会实际构建并启动 Native Compose 栈，通过网关对系统 API 和 readiness 端点执行 HTTP smoke。
+原生 AOT 测试集合不包含标注 `@DisabledInAotMode` 的数据库迁移、模块架构、Testcontainers 集成和纯反射形状测试；这些门禁由 JVM 测试覆盖。可在原生环境运行的领域、契约与 MVC 测试仍会进入 Native Image。CI 还会实际构建并启动 Native Compose 栈，通过网关对系统 API 和 readiness 端点执行 HTTP smoke。
 
 ## 本地启动后端
 
@@ -144,8 +144,50 @@ cd backend && ./mvnw -DskipTests package
 ./scripts/identity-maintenance-smoke.sh
 ```
 
+## 阶段三完成：目录与位置
+
+系统已实现家庭内的分类树、位置树、分类属性模式、可复用物品定义、标签、条码、位置二维码、归档规则与目录搜索投影。
+
+### API 与权限
+
+- `ADMIN`：维护分类树和位置树，也可维护物品。
+- `MEMBER`：读取分类与位置，创建、更新、归档和恢复物品。
+- `VIEWER`：只读访问分类、位置、物品与搜索。
+- 所有资源均按当前家庭隔离；未知或其他家庭资源统一按不存在处理。
+
+分类属性支持 `TEXT`、`NUMBER`、`BOOLEAN`、`DATE` 和 `ENUM`。分类模式更新会校验已有活跃物品，避免把现有数据变成无效状态。分类、位置和物品更新均使用乐观版本；父节点归档、恢复和循环规则由服务端强制执行。
+
+### 搜索与二维码
+
+- `GET /api/v1/catalog/search?q=...` 会规范化首尾空白和大小写。
+- 完整条码精确命中优先于名称、品牌、规格、标签和分类路径的文本结果。
+- 归档物品默认不进入搜索结果，目录写事务会同步更新搜索投影。
+- 位置二维码载荷使用 `stocket:location:<public-code>`；公开码不可替代认证，解析结果仍受家庭隔离约束。
+
+### 阶段三验收记录
+
+2026-07-14 在 GraalVM 25.0.1、Docker 29.4.0 和 PostgreSQL 17.5 Testcontainers 环境完成：
+
+```bash
+cd backend && ./mvnw -Dtest=CatalogLocationAcceptanceTest test
+# 1 个阶段验收测试通过
+
+make test
+# 后端 196 个测试、前端 98 个测试、类型检查和配置契约通过
+
+make build
+# JVM 可执行 JAR 与前端生产构建通过
+
+make aot
+# Spring AOT 处理通过
+
+make native-test
+# Native Image 生成成功；32 个原生适用测试通过，0 失败
+```
+
 ## 文档
 
 - [产品与技术设计规格](docs/superpowers/specs/2026-07-10-stocket-design.md)
 - [交付路线图](docs/superpowers/plans/2026-07-11-delivery-roadmap.md)
 - [基础与原生构建实施说明](docs/superpowers/plans/2026-07-11-foundation-native-baseline.md)
+- [阶段三目录与位置实施计划](docs/superpowers/plans/2026-07-12-catalog-location.md)

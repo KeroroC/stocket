@@ -32,11 +32,17 @@
 
 已知限制：原生镜像因 AOT 生成的 Servlet 相关 Bean 在无 ServletContext 环境下无法启动维护模式；JVM 维护路径正常工作。
 
-## 阶段三：目录与位置
+## 阶段三：目录与位置 ✅
 
 实现树形分类和位置、分类属性模式、物品定义、标签、条码、位置二维码、归档规则和目录搜索投影。
 
 验收切片：成员创建分类模板、位置层级和可复用物品定义，然后通过名称或精确条码检索。
+
+详细计划：`docs/superpowers/plans/2026-07-12-catalog-location.md`
+
+全链路验收：`backend/src/test/java/com/stocket/catalog/CatalogLocationAcceptanceTest.java`
+
+验收日期：2026-07-14。`make test`、`make build`、`make aot` 与 `make native-test` 均通过。
 
 ## 阶段四：库存台账
 
