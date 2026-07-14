@@ -1,0 +1,6 @@
+# Trivy accepts one CVE identifier per non-comment line.
+# Every waiver must be immediately preceded by these four fields:
+# impact: why the vulnerable code is or is not reachable
+# mitigation: compensating control and remediation plan
+# owner: accountable team or person
+# expires: YYYY-MM-DD, no more than 30 days from the validation date

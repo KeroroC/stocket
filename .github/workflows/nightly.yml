@@ -1,0 +1,153 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: '23 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native-recovery-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: graalvm-community
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Prepare report directory
+        run: mkdir -p artifacts
+      - name: Run native tests
+        run: cd backend && ./mvnw -PnativeTest test | tee ../artifacts/native-test.log
+      - name: Compile native executable
+        run: cd backend && ./mvnw -Pnative -DskipTests native:compile | tee ../artifacts/native-build.log
+      - name: Install frontend and Chromium
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run browser acceptance tests
+        working-directory: frontend
+        run: npm run test:e2e
+      - name: Run backup tests and native restore drill
+        run: |
+          make backup-test | tee artifacts/backup-test.log
+          KEEP_SMOKE_ENV=false make restore-smoke | tee artifacts/restore-smoke.log
+      - name: Upload deep-verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-verification-${{ github.run_id }}
+          path: |
+            artifacts
+            backend/target/surefire-reports
+            frontend/test-results
+            frontend/playwright-report
+          if-no-files-found: ignore
+          retention-days: 14
+
+  vulnerability-and-sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate waiver policy
+        run: |
+          bash scripts/test-validate-trivyignore.sh
+          python3 scripts/validate-trivyignore.py .trivyignore
+      - name: Build release-shaped images
+        run: |
+          mkdir -p artifacts
+          docker build -t stocket-app:nightly -f deploy/app/Dockerfile .
+          docker build -t stocket-gateway:nightly -f deploy/frontend/Dockerfile .
+          docker build -t stocket-backup:nightly -f deploy/backup/Dockerfile .
+      - name: Scan repository filesystem
+        id: trivy-fs
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: json
+          output: artifacts/trivy-fs.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          trivyignores: .trivyignore
+      - name: Scan application image
+        id: trivy-app
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: stocket-app:nightly
+          format: json
+          output: artifacts/trivy-app.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          trivyignores: .trivyignore
+      - name: Scan Gateway image
+        id: trivy-gateway
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: stocket-gateway:nightly
+          format: json
+          output: artifacts/trivy-gateway.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          trivyignores: .trivyignore
+      - name: Scan backup image
+        id: trivy-backup
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: stocket-backup:nightly
+          format: json
+          output: artifacts/trivy-backup.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          trivyignores: .trivyignore
+      - name: Generate application SBOM
+        uses: anchore/sbom-action@v0.20.6
+        with:
+          image: stocket-app:nightly
+          format: spdx-json
+          output-file: artifacts/stocket-app.spdx.json
+          upload-artifact: false
+      - name: Upload scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-security-${{ github.run_id }}
+          path: artifacts
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Enforce vulnerability gate
+        if: always()
+        env:
+          FS: ${{ steps.trivy-fs.outcome }}
+          APP: ${{ steps.trivy-app.outcome }}
+          GATEWAY: ${{ steps.trivy-gateway.outcome }}
+          BACKUP: ${{ steps.trivy-backup.outcome }}
+        run: |
+          test "$FS" = success
+          test "$APP" = success
+          test "$GATEWAY" = success
+          test "$BACKUP" = success

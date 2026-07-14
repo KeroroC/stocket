@@ -2,100 +2,84 @@ name: ci
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
 
-jobs:
-  jvm-and-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-      - name: Set up Java 25
-        uses: actions/setup-java@v4
+jobs:
+  backend-jvm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
           cache-dependency-path: backend/pom.xml
+      - name: Run backend JVM tests
+        working-directory: backend
+        run: ./mvnw test
 
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
-      - name: Test backend
-        working-directory: backend
-        run: ./mvnw test
-
-      - name: Install frontend dependencies
+      - name: Install locked dependencies
         working-directory: frontend
         run: npm ci
-
-      - name: Test frontend
+      - name: Test, type-check and build frontend
         working-directory: frontend
-        run: npm test
+        run: npm test && npm run typecheck && npm run build
 
-      - name: Type-check frontend
-        working-directory: frontend
-        run: npm run typecheck
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-      - name: Process backend AOT
+  architecture-migration-aot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Verify modules and migration compatibility
+        working-directory: backend
+        run: ./mvnw -Dtest=ArchitectureTest,DatabaseMigrationTest,UpgradeCompatibilityTest test
+      - name: Process Spring AOT
         working-directory: backend
         run: ./mvnw -Pnative spring-boot:process-aot
 
-      - name: Validate Compose configuration
-        run: docker compose --env-file .env.example -f deploy/compose.yml config --quiet
-
-  native-test:
-    needs: jvm-and-frontend
+  deployment-contracts:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up GraalVM 25
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '25'
-          distribution: graalvm-community
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: maven
-
-      - name: Run native tests
-        working-directory: backend
-        run: ./mvnw -PnativeTest test
-
-  native-compose-smoke:
-    needs: jvm-and-frontend
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Validate Compose configuration
-        run: docker compose --env-file .env.example -f deploy/compose.yml config --quiet
-
-      - name: Start native Compose stack
-        run: docker compose --env-file .env.example -f deploy/compose.yml up --build -d
-
-      - name: Smoke-test system API
-        run: curl --fail --retry 30 --retry-delay 5 --retry-all-errors http://localhost:8088/api/v1/system
-
-      - name: Smoke-test readiness
-        run: curl --fail --retry 30 --retry-delay 5 --retry-all-errors http://localhost:8088/actuator/health/readiness
-
-      - name: Stop Compose stack
-        if: always()
-        run: docker compose --env-file .env.example -f deploy/compose.yml down
+      - uses: actions/checkout@v4
+      - name: Validate shell syntax and vulnerability waivers
+        run: |
+          bash -n deploy/backup/*.sh deploy/smoke/*.sh scripts/*.sh
+          bash scripts/test-validate-trivyignore.sh
+          python3 scripts/validate-trivyignore.py .trivyignore
+      - name: Validate production Compose and Gateway policy
+        run: |
+          docker compose --env-file .env.example \
+            -f deploy/compose.yml -f deploy/compose.production.yml \
+            --profile operations config --quiet
+          bash deploy/smoke/gateway-smoke.sh --static deploy/compose.production.yml
+      - name: Run backup shell tests
+        run: make backup-test
+      - name: Lint GitHub Actions workflows
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7
