@@ -61,6 +61,11 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <!-- 模块化单体架构核心：模块边界校验、模块间事件通信 -->
         <dependency>
             <groupId>org.springframework.modulith</groupId>

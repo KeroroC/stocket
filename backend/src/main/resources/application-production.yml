@@ -1,0 +1,21 @@
+spring:
+  application:
+    version: ${STOCKET_VERSION:dev}
+  datasource:
+    url: ${STOCKET_DB_URL}
+    username: ${STOCKET_DB_USER}
+    password: ${STOCKET_DB_PASSWORD}
+
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      context:
+        include: true
+      add:
+        service: stocket
+        version: ${STOCKET_VERSION:dev}
+
+server:
+  forward-headers-strategy: none

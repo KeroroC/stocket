@@ -65,7 +65,9 @@ class SecurityConfiguration {
                                 "/api/v1/system",
                                 "/api/v1/setup/status",
                                 "/api/v1/auth/csrf",
-                                "/api/v1/invites/*/status").permitAll()
+                                "/api/v1/invites/*/status",
+                                "/livez",
+                                "/readyz").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/setup/initialize",
                                 "/api/v1/auth/login",
