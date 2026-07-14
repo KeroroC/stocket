@@ -91,6 +91,16 @@ PWA 离线能力刻意限制为：
 
 实体手机的安装、真实摄像头和安全区验收清单见 `docs/operations/pwa-device-verification.md`。
 
+## 附件、CSV 导出与审计
+
+附件根目录由 `STOCKET_ATTACHMENT_DIR` 指定，默认位于系统临时目录下的 `stocket-attachments`，生产环境必须挂载到 Web 根目录外的持久卷。允许上传 JPEG、PNG、WebP 和 PDF，单文件上限 20 MiB；扩展名和客户端 Content-Type 仅作为提示，服务端会校验文件签名、Tika 检测结果、图片像素与 PDF 结尾，并拒绝 SVG、HTML、压缩包、可执行文件、多格式伪装和路径穿越输入。数据库只保存随机 storage key，不保存客户端路径。
+
+物品和库存条目可绑定封面、普通图片、发票和保修文件。每次读取都会重新执行家庭与对象授权；图片以内联方式响应，PDF 作为附件下载，全部带 `nosniff` 和私有禁缓存策略。元数据处于 `STAGED`、`MISSING` 或 `DELETED` 时不会返回半成品；恢复任务会完成可恢复的原子移动、标记缺失内容并清理已删除 blob。
+
+目录和库存 CSV 端点分别为 `/api/v1/exports/catalog.csv` 与 `/api/v1/exports/inventory.csv`。导出复用查询筛选，在只读 `REPEATABLE_READ` 快照中按 1,000 行批次流式生成，最多 100,000 行。文件使用 UTF-8 BOM；以 `= + - @ tab CR` 开头的单元格会添加单引号，避免电子表格公式注入。
+
+所有 HTTP 响应返回 `X-Request-Id`。合法客户端 request ID 会贯穿附件元数据、库存流水、公开审计事实、提醒事件和通知投递；非法或超长值由服务端替换。审计详情只保留事件类型对应的白名单字段，不记录密码、令牌、密钥、Authorization/Cookie、附件正文、完整请求体或通知秘密。管理员可通过 `/api/v1/admin/audit-logs` 进行稳定游标搜索，并通过 `/api/v1/admin/diagnostics` 查看数据库、附件目录、未完成事件、DEAD 投递、OPEN 对账和 MISSING 附件的安全摘要；诊断响应不包含路径、主机名、用户名、密钥或异常堆栈。
+
 ## 原生 Compose 部署
 
 ```bash

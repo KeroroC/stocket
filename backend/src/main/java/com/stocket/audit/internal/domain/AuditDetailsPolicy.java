@@ -19,7 +19,11 @@ public class AuditDetailsPolicy {
             Map.entry("AttachmentDeleted", Set.of("ownerType", "ownerId", "purpose")),
             Map.entry("InventoryReceived", Set.of("entryId", "itemId", "locationId", "quantity", "type")),
             Map.entry("InventoryTransferred", Set.of("entryId", "relatedEntryId", "fromLocationId", "toLocationId", "quantity")),
-            Map.entry("InventoryChanged", Set.of("entryId", "operation", "quantity", "status")));
+            Map.entry("InventoryChanged", Set.of("entryId", "operation", "quantity", "status")),
+            Map.entry("CatalogChanged", Set.of("method", "route")),
+            Map.entry("LocationChanged", Set.of("method", "route")),
+            Map.entry("ReminderChanged", Set.of("method", "route")),
+            Map.entry("NotificationChannelChanged", Set.of("method", "route")));
 
     public Map<String, Object> sanitize(String eventType, Map<String, Object> details) {
         Map<String, Object> source = details == null ? Map.of() : details;

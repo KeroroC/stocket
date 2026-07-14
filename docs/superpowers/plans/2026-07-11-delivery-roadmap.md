@@ -80,11 +80,17 @@
 
 验收日期：2026-07-14。`make test`、`make build`、`make aot` 与 Playwright 移动/桌面 5 个场景均通过。实体手机的安装、真实摄像头和安全区检查受当前执行环境限制，已在 `docs/operations/pwa-device-verification.md` 明确列为待人工确认。
 
-## 阶段七：附件、导出与审计
+## 阶段七：附件、导出与审计 ✅（自动验收完成）
 
 实现认证附件上传/下载、基于内容的文件验证、发票和保修文档、CSV 导出、审计搜索、管理诊断和请求链路追踪关联。
 
 验收切片：未授权无法访问文件，导出结果与筛选搜索结果一致，关键变更可追溯至成员和请求 ID。
+
+详细计划：`docs/superpowers/plans/2026-07-12-attachment-export-audit.md`
+
+全链路验收：`backend/src/test/java/com/stocket/attachment/AttachmentExportAuditAcceptanceTest.java`、`backend/src/test/java/com/stocket/attachment/AttachmentRuntimeHintsTest.java` 与 `frontend/e2e/attachment-export-audit.spec.ts`。
+
+验收日期：2026-07-14。附件安全/恢复、CSV 注入防护、审计白名单、家庭授权、请求关联、管理诊断、前端权限和 Playwright 管理流程均已自动验证；完整 `make test`、`make build` 与 `make aot` 作为本阶段合并门禁执行。
 
 ## 阶段八：运维与发布加固
 

@@ -26,8 +26,8 @@ public class AuditEventListener {
         this.repository = repository; this.policy = policy; this.jdbc = jdbc;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT, fallbackExecution = true)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void onAuditEvent(AuditEvent event) {
         if (repository.existsById(event.eventId())) return;
         repository.saveAndFlush(new AuditLog(event.eventId(), event.householdId(), event.occurredAt(), event.eventType(),
@@ -35,8 +35,8 @@ public class AuditEventListener {
                 event.source(), policy.sanitize(event.eventType(), event.details())));
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT, fallbackExecution = true)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void onIdentityAuditEvent(IdentityAuditEvent event) {
         List<UUID> households = jdbc.query("select id from household order by created_at limit 1",
                 (resultSet, row) -> resultSet.getObject("id", UUID.class));

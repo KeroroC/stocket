@@ -10,7 +10,6 @@ import javax.sql.DataSource;
 import com.stocket.identity.internal.authentication.SecureValueGenerator;
 import com.stocket.identity.internal.authentication.TokenHasher;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -62,11 +61,6 @@ abstract class InventoryCommandTestSupport {
                 values (?,?,'冰箱','冰箱',?)
                 """, locationId, householdId, UUID.randomUUID().toString());
         session = createSession("member", "MEMBER");
-    }
-
-    @AfterEach
-    void awaitPublishedEventsAfterTest() throws InterruptedException {
-        awaitEventPublications();
     }
 
     private void awaitEventPublications() throws InterruptedException {

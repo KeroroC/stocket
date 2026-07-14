@@ -10,6 +10,7 @@ import com.stocket.StocketApplication;
 import com.stocket.catalog.CatalogInventoryQuery;
 import com.stocket.identity.CurrentHousehold;
 import com.stocket.location.LocationInventoryQuery;
+import com.stocket.audit.AuditEvent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,10 +23,11 @@ class InventoryModuleTest {
 
         ApplicationModule inventory = InventoryQuery.class.getPackage().getAnnotation(ApplicationModule.class);
         assertThat(inventory.allowedDependencies())
-                .containsExactlyInAnyOrder("identity :: api", "catalog :: api", "location :: api");
+                .containsExactlyInAnyOrder("identity :: api", "catalog :: api", "location :: api", "audit :: api");
         assertApi(CurrentHousehold.class);
         assertApi(CatalogInventoryQuery.class);
         assertApi(LocationInventoryQuery.class);
+        assertApi(AuditEvent.class);
     }
 
     private void assertApi(Class<?> publicType) {
