@@ -6,7 +6,7 @@
 
 **Architecture:** `attachment` 模块拥有文件元数据和 Web 根目录外的本地 blob store，采用“临时文件写入并 fsync → 元数据事务 → 原子移动 → 状态确认”的可恢复协议；所有读取先做家庭和对象授权，再以随机存储名流式响应。`audit` 模块消费公开审计事实并提供只读搜索；请求过滤器生成/校验 request ID，并通过事件字段和通知投递 ID 延续关联。
 
-**Tech Stack:** Java 25、Spring Boot 4.0.3、Spring Security 7、Apache Tika、Spring Modulith 2.0.5、PostgreSQL 17、Flyway、Testcontainers、Commons CSV、Vue 3.5、Vitest 4、Playwright、GraalVM Native Image
+**Tech Stack:** Java 25、Spring Boot 4.0.3、Spring Security 7、Apache Tika、Spring Modulith 2.0.5、PostgreSQL 17、Flyway、Testcontainers、Commons CSV、Vue 3.5、Vitest 4、Playwright
 
 ---
 
@@ -51,7 +51,7 @@ frontend/src/
 
 - [ ] **Step 1：加入锁定的内容检测和 CSV 依赖**
 
-加入 Apache Tika core 和 Apache Commons CSV，版本固定并验证 GraalVM 元数据；不加入图像转码库、对象存储 SDK 或办公文档解析器。
+加入 Apache Tika core 和 Apache Commons CSV，版本固定；不加入图像转码库、对象存储 SDK 或办公文档解析器。
 
 - [ ] **Step 2：写迁移失败测试**
 
@@ -324,12 +324,10 @@ git diff --cached --check
 git commit -m "feat(frontend): 实现附件导出与审计界面"
 ```
 
-## Task 8：完成安全、原生和阶段验收
+## Task 8：完成安全和阶段验收
 
 **Files:**
 - Create: `backend/src/test/java/com/stocket/attachment/AttachmentExportAuditAcceptanceTest.java`
-- Create: `backend/src/test/java/com/stocket/attachment/AttachmentRuntimeHintsTest.java`
-- Create: `backend/src/main/java/com/stocket/attachment/internal/config/AttachmentRuntimeHints.java`
 - Create: `frontend/e2e/attachment-export-audit.spec.ts`
 - Modify: `README.md`
 - Modify: `docs/superpowers/plans/2026-07-11-delivery-roadmap.md`
@@ -340,13 +338,13 @@ git commit -m "feat(frontend): 实现附件导出与审计界面"
 
 - [ ] **Step 2：运行验证矩阵**
 
-Run: `cd backend && ./mvnw -Dtest=AttachmentExportAuditAcceptanceTest,AttachmentRuntimeHintsTest test`
+Run: `cd backend && ./mvnw -Dtest=AttachmentExportAuditAcceptanceTest test`
 
 Run: `cd frontend && npm run test:e2e -- attachment-export-audit.spec.ts`
 
-Run: `make test && make build && make aot`
+Run: `make test && make build`
 
-Expected: 全部 PASS，无 Tika/AOT 资源缺失，所有安全负例返回稳定 Problem Detail。
+Expected: 全部 PASS，所有安全负例返回稳定 Problem Detail。
 
 - [ ] **Step 3：更新文档并提交**
 
@@ -367,5 +365,5 @@ git commit -m "feat: 完成阶段七附件导出与审计"
 - [ ] request ID 贯穿请求、流水、事件、通知和审计。
 - [ ] 审计只追加、按家庭隔离、详情白名单不含敏感数据。
 - [ ] 管理诊断可行动但不泄露基础设施和堆栈细节。
-- [ ] `make test`、`make build`、`make aot` 和相关 E2E 通过。
+- [ ] `make test`、`make build` 和相关 E2E 通过。
 - [ ] 阶段七未引入 S3、OCR、公开附件 URL 或备份调度。

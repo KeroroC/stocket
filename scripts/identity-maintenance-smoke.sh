@@ -3,7 +3,7 @@
 # identity-maintenance-smoke.sh
 #
 # Smoke test for the local administrator recovery command.
-# Verifies both JVM and Native Image maintenance paths:
+# Verifies the JVM maintenance path:
 #   - Flyway migration runs on first startup
 #   - Recovery generates exactly one temporary password on stdout
 #   - HTTP port is never listened to
@@ -12,7 +12,6 @@
 #
 # Prerequisites:
 #   - backend/target/stocket-backend-0.1.0.jar (JVM jar)
-#   - backend/target/stocket-backend (native executable)
 #   - Docker running (for PostgreSQL container)
 #
 set -euo pipefail
@@ -20,7 +19,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 JAR="$PROJECT_ROOT/backend/target/stocket-backend-0.1.0.jar"
-NATIVE="$PROJECT_ROOT/backend/target/stocket-backend"
 
 DB_NAME="stocket_smoke_$$"
 DB_USER="stocket"
@@ -59,7 +57,7 @@ assert_port_not_listened() {
 
 # Helper: run a maintenance process, capture output, and determine exit code.
 #
-# The JVM/native process may not exit cleanly after maintenance (HikariCP
+# The JVM process may not exit cleanly after maintenance (HikariCP
 # connection pool keeps non-daemon threads alive). We handle three cases:
 #   1. Process exits naturally with a code -> return that code
 #   2. Output contains the success marker "Admin recovery successful." -> return 0
@@ -123,12 +121,6 @@ if [[ ! -f "$JAR" ]]; then
     echo "[smoke] Run: cd backend && ./mvnw -DskipTests package"
     exit 1
 fi
-if [[ ! -f "$NATIVE" ]]; then
-    echo "[smoke] ERROR: Native executable not found at $NATIVE"
-    echo "[smoke] Run: cd backend && ./mvnw -Pnative -DskipTests native:compile"
-    exit 1
-fi
-
 # ---- Start PostgreSQL ----
 echo "[smoke] Starting PostgreSQL container: $CONTAINER_NAME"
 docker run -d --name "$CONTAINER_NAME" \
@@ -148,10 +140,6 @@ done
 
 DB_URL="jdbc:postgresql://localhost:$DB_PORT/$DB_NAME"
 JVM_OPTS="--spring.main.web-application-type=none --spring.datasource.url=$DB_URL --spring.datasource.username=$DB_USER --spring.datasource.password=$DB_PASSWORD"
-# Native image uses same opts; web-application-type=none is set programmatically
-# in StocketApplication.main() when maintenance option is detected.
-NATIVE_OPTS="--spring.datasource.url=$DB_URL --spring.datasource.username=$DB_USER --spring.datasource.password=$DB_PASSWORD"
-
 # ---- Step 1: Run JVM jar with non-existent admin (triggers Flyway migration) ----
 echo "[smoke] Step 1: Running Flyway migration via JVM jar..."
 set +e
@@ -256,80 +244,6 @@ if [[ "$AUDIT_COUNT_JVM" -lt 1 ]]; then
     exit 1
 fi
 echo "[smoke] JVM assertions passed: sessions revoked, audit event present"
-
-# ---- Step 4: Re-insert test data for native recovery ----
-echo "[smoke] Step 4: Re-inserting test data for native recovery..."
-# Reset the account password and must_change_password
-psql_exec "
-    UPDATE user_account SET
-        password_hash = '{bcrypt}\$2a\$10\$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
-        must_change_password = false,
-        credentials_changed_at = now(),
-        updated_at = now(),
-        version = version + 1
-    WHERE id = '$ACCOUNT_ID';
-" >/dev/null
-# Insert a new active session
-psql_exec "
-    INSERT INTO user_session (id, account_id, token_hash, created_at, last_seen_at, idle_expires_at, absolute_expires_at, user_agent, source_address)
-    VALUES (gen_random_uuid(), '$ACCOUNT_ID', 'smoke_test_session_token_hash_2_32bytes',
-            now(), now(), now() + interval '30 days', now() + interval '90 days',
-            'smoke-test', '127.0.0.1');
-" >/dev/null
-
-# ---- Step 5: Native recovery ----
-echo "[smoke] Step 5: Running native recovery..."
-set +e
-NATIVE_OUTPUT=$(run_maintenance "$NATIVE" \
-    --stocket.maintenance.reset-admin=admin \
-    $NATIVE_OPTS 2>&1)
-NATIVE_EXIT=$?
-set -e
-
-if [[ $NATIVE_EXIT -ne 0 ]]; then
-    echo "[smoke] ERROR: Native recovery failed with exit code $NATIVE_EXIT"
-    if echo "$NATIVE_OUTPUT" | grep -q "No ServletContext set"; then
-        echo "[smoke] Root cause: AOT-compiled native image has hard-coded servlet beans"
-        echo "[smoke] that require a ServletContext. The StocketApplication.main() sets"
-        echo "[smoke] WebApplicationType.NONE for maintenance mode, but AOT-generated code"
-        echo "[smoke] cannot conditionally skip servlet beans at runtime."
-        echo "[smoke] Fix: Rebuild native image with AOT processing in NONE web mode, or"
-        echo "[smoke] use Spring Boot's conditional AOT hints to exclude servlet beans."
-    fi
-    echo "[smoke] Output: $NATIVE_OUTPUT"
-    exit 1
-fi
-
-# Assert exactly one temporary password in stdout
-TEMP_PASSWORD_COUNT_NATIVE=$(echo "$NATIVE_OUTPUT" | grep -c "Temporary password:" || true)
-if [[ $TEMP_PASSWORD_COUNT_NATIVE -ne 1 ]]; then
-    echo "[smoke] ERROR: Expected exactly 1 temp password line in native output, got $TEMP_PASSWORD_COUNT_NATIVE"
-    echo "[smoke] Output: $NATIVE_OUTPUT"
-    exit 1
-fi
-echo "[smoke] Native recovery succeeded"
-
-# Assert HTTP port not listened to during native recovery
-assert_port_not_listened "$HTTP_CHECK_PORT" "native recovery" || exit 1
-
-# Assert old sessions revoked
-ACTIVE_SESSIONS_AFTER_NATIVE=$(psql_exec "
-    SELECT COUNT(*) FROM user_session WHERE account_id = '$ACCOUNT_ID' AND revoked_at IS NULL;
-")
-if [[ "$ACTIVE_SESSIONS_AFTER_NATIVE" != "0" ]]; then
-    echo "[smoke] ERROR: Expected 0 active sessions after native recovery, got $ACTIVE_SESSIONS_AFTER_NATIVE"
-    exit 1
-fi
-
-# Assert PASSWORD_RECOVERED_LOCALLY audit event (count should be >= 2 now)
-AUDIT_COUNT_NATIVE=$(psql_exec "
-    SELECT COUNT(*) FROM audit_log WHERE event_type = 'PasswordRecoveredLocally';
-")
-if [[ "$AUDIT_COUNT_NATIVE" -lt 2 ]]; then
-    echo "[smoke] ERROR: Expected at least 2 PASSWORD_RECOVERED_LOCALLY audit events after native recovery"
-    exit 1
-fi
-echo "[smoke] Native assertions passed: sessions revoked, audit event present"
 
 echo ""
 echo "[smoke] ========================================"

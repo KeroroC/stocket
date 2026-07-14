@@ -1,5 +1,4 @@
-ARG GRAALVM_IMAGE=ghcr.io/graalvm/native-image-community:25
-FROM ${GRAALVM_IMAGE} AS build
+FROM eclipse-temurin:25-jdk AS build
 
 WORKDIR /workspace
 
@@ -8,9 +7,9 @@ COPY backend/mvnw backend/pom.xml ./
 RUN ./mvnw -B dependency:go-offline
 
 COPY backend/src ./src
-RUN ./mvnw -B -Pnative -DskipTests package native:compile
+RUN ./mvnw -B -DskipTests package
 
-FROM debian:bookworm-slim AS runtime
+FROM eclipse-temurin:25-jre AS runtime
 
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes ca-certificates curl \
@@ -21,10 +20,10 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY --from=build /workspace/target/stocket-backend ./stocket
+COPY --from=build /workspace/target/stocket-backend-*.jar ./stocket.jar
 
 USER 10001:10001
 
 EXPOSE 8080
 
-ENTRYPOINT ["./stocket"]
+ENTRYPOINT ["java", "-jar", "/app/stocket.jar"]

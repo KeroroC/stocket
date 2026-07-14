@@ -12,8 +12,7 @@ python3 "$ROOT/scripts/validate-trivyignore.py" "$TRIVYIGNORE_FILE"
 [[ -f "$MANIFEST" && -f "$RELEASE_DIR/SHA256SUMS" ]] || { printf 'manifest or checksums missing\n' >&2; exit 1; }
 
 required=(
-  release-manifest.json stocket-linux-amd64 stocket-linux-arm64
-  stocket-app-amd64.digest stocket-app-arm64.digest stocket-app-multiarch.digest
+  release-manifest.json stocket-app-multiarch.digest
   stocket-app.spdx.json provenance.json test-summary.json trivy-release.json
 )
 for file in "${required[@]}"; do
@@ -31,10 +30,7 @@ jq -e --arg tag "$EXPECTED_TAG" --arg version "$version" '
   (.builtAt | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T.*Z$")) and
   (.imageRepository | type == "string" and length > 0) and
   (.multiArchImageDigest | test("^sha256:[0-9a-f]{64}$")) and
-  ([.architectures[].name] | sort) == ["linux/amd64","linux/arm64"] and
-  (.architectures | length == 2) and
-  all(.architectures[]; (.binarySha256 | test("^[0-9a-f]{64}$")) and
-    (.imageDigest | test("^sha256:[0-9a-f]{64}$"))) and
+  (.platforms | sort) == ["linux/amd64","linux/arm64"] and
   .sbom == "stocket-app.spdx.json" and .vulnerabilityReport == "trivy-release.json" and
   .provenance == "provenance.json" and
   .testSummary == "test-summary.json"
@@ -44,14 +40,6 @@ jq -e 'type == "object"' "$RELEASE_DIR/provenance.json" "$RELEASE_DIR/test-summa
 jq -e 'type == "object"' "$RELEASE_DIR/trivy-release.json" >/dev/null
 
 repository=$(jq -r .imageRepository "$MANIFEST")
-while IFS=$'\t' read -r name binary binary_sha image_digest; do
-  actual_sha=$(sha256sum "$RELEASE_DIR/$binary" | awk '{print $1}')
-  [[ "$actual_sha" == "$binary_sha" ]] || { printf 'binary checksum mismatch: %s\n' "$binary" >&2; exit 1; }
-  arch=${name#linux/}
-  recorded_digest=$(tr -d '[:space:]' <"$RELEASE_DIR/stocket-app-$arch.digest")
-  [[ "$recorded_digest" == "$image_digest" ]] || { printf 'image digest mismatch: %s\n' "$arch" >&2; exit 1; }
-done < <(jq -r '.architectures[] | [.name,.binary,.binarySha256,.imageDigest] | @tsv' "$MANIFEST")
-
 command -v cosign >/dev/null || { printf 'cosign is required for release verification\n' >&2; exit 1; }
 issuer=${COSIGN_CERTIFICATE_OIDC_ISSUER:-https://token.actions.githubusercontent.com}
 identity=${COSIGN_CERTIFICATE_IDENTITY_REGEXP:-'^https://github.com/.+/.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'}
@@ -60,6 +48,6 @@ while read -r digest; do
     "$repository@$digest" >/dev/null
   cosign verify-attestation --type spdxjson --certificate-identity-regexp "$identity" \
     --certificate-oidc-issuer "$issuer" "$repository@$digest" >/dev/null
-done < <(jq -r '.architectures[].imageDigest, .multiArchImageDigest' "$MANIFEST")
+done < <(jq -r '.multiArchImageDigest' "$MANIFEST")
 
 printf 'release verification passed: %s\n' "$EXPECTED_TAG"

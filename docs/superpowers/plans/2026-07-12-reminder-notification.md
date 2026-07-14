@@ -6,7 +6,7 @@
 
 **Architecture:** `reminder` 模块以 `@ApplicationModuleListener` 异步消费 `InventoryChanged`，在独立事务中重算提醒；Spring Modulith JDBC Event Publication Registry 保存未完成发布并支持重启后重投。`notification` 模块把提醒展开为每成员/每渠道投递记录，后台 worker 用 `FOR UPDATE SKIP LOCKED` 领取任务；每次外部 I/O 都发生在库存事务之外，结果写回独立事务。
 
-**Tech Stack:** Java 25、Spring Boot 4.0.3、Spring Modulith 2.0.5 Events JDBC、Spring Mail、JDK HttpClient、PostgreSQL 17、Flyway、Testcontainers、AES-256-GCM、Vue 3.5、Vitest 4、GraalVM Native Image
+**Tech Stack:** Java 25、Spring Boot 4.0.3、Spring Modulith 2.0.5 Events JDBC、Spring Mail、JDK HttpClient、PostgreSQL 17、Flyway、Testcontainers、AES-256-GCM、Vue 3.5、Vitest 4
 
 ---
 
@@ -345,12 +345,10 @@ git diff --cached --check
 git commit -m "feat(frontend): 实现提醒与通知管理"
 ```
 
-## Task 8：完成可靠性、原生兼容和阶段验收
+## Task 8：完成可靠性和阶段验收
 
 **Files:**
 - Create: `backend/src/test/java/com/stocket/reminder/ReminderNotificationAcceptanceTest.java`
-- Create: `backend/src/test/java/com/stocket/notification/NotificationRuntimeHintsTest.java`
-- Modify: `backend/src/main/java/com/stocket/notification/internal/config/NotificationRuntimeHints.java`
 - Modify: `README.md`
 - Modify: `docs/superpowers/plans/2026-07-11-delivery-roadmap.md`
 
@@ -360,15 +358,15 @@ git commit -m "feat(frontend): 实现提醒与通知管理"
 
 - [ ] **Step 2：运行验收和故障注入**
 
-Run: `cd backend && ./mvnw -Dtest=ReminderNotificationAcceptanceTest,NotificationRuntimeHintsTest test`
+Run: `cd backend && ./mvnw -Dtest=ReminderNotificationAcceptanceTest test`
 
 Expected: PASS，未完成事件和过期 lease 均可恢复。
 
 - [ ] **Step 3：运行完整矩阵并更新文档**
 
-Run: `make test && make build && make aot`
+Run: `make test && make build`
 
-Expected: 全部 PASS；AOT 无邮件、HTTP client、加密或事件序列化缺失提示。
+Expected: 全部 PASS。
 
 README 记录主密钥格式、渠道配置、失败重试和敏感日志边界；路线图阶段五添加本计划链接和实际验收日期。
 
@@ -388,5 +386,5 @@ git commit -m "feat: 完成阶段五提醒通知管道"
 - [ ] 所有渠道秘密静态加密，API 和日志不泄露敏感数据。
 - [ ] 外部网络 I/O 不发生在库存事务内。
 - [ ] 模块事件使用 Spring Modulith 2.0.5 持久发布注册表，重启恢复已验证。
-- [ ] `make test`、`make build`、`make aot` 通过。
+- [ ] `make test`、`make build` 通过。
 - [ ] 阶段五未实现附件、CSV 导出、摄像头扫描或离线库存写入。

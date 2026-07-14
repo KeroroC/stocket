@@ -19,8 +19,6 @@
 | --- | --- | --- |
 | `make test` | `PENDING` | 测试摘要/artifact |
 | `make build` | `PENDING` | 构建日志 |
-| Spring AOT（如目标版本保留） | `N/A` / `PENDING` | 去留决策或 AOT 日志 |
-| Native Image/nativeTest（如目标版本保留） | `N/A` / `PENDING` | 去留决策或 runner job URL |
 | 浏览器验收 | `PENDING` | Playwright 报告 |
 | 备份 Bats | `PENDING` | artifact |
 | 干净环境恢复演练 | `PENDING` | 脱敏恢复日志 |
@@ -34,13 +32,9 @@
 
 | 产物 | digest/checksum | 验证结果 |
 | --- | --- | --- |
-| Linux AMD64 binary | `PENDING` | `PENDING` |
-| Linux ARM64 binary | `PENDING` | `PENDING` |
-| AMD64 image | `sha256:PENDING` | `PENDING` |
-| ARM64 image | `sha256:PENDING` | `PENDING` |
 | multi-arch image index | `sha256:PENDING` | `PENDING` |
 
-如目标版本仍发布 multi-arch image，记录 `docker buildx imagetools inspect` 的平台列表，确认只引用本次 workflow 生成并已扫描的单架构 digest。若目标版本已删除 Native 打包，应将 Native 项明确记为 `N/A` 并链接对应变更，不得伪造架构证据。
+记录 `docker buildx imagetools inspect` 的平台列表，确认镜像同时提供 AMD64 和 ARM64 平台。
 
 ## 恢复证据
 

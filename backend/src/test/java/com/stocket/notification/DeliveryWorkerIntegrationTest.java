@@ -13,7 +13,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.testcontainers.junit.jupiter.Container;
@@ -34,7 +33,6 @@ import static org.mockito.Mockito.doReturn;
         "STOCKET_MASTER_KEY=QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=",
         "stocket.notification.worker-enabled=false"
 })
-@DisabledInAotMode
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DeliveryWorkerIntegrationTest {
 

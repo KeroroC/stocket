@@ -45,7 +45,7 @@ jobs:
         working-directory: frontend
         run: npm test && npm run typecheck && npm run build
 
-  architecture-migration-aot:
+  architecture-migration:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -59,10 +59,6 @@ jobs:
       - name: Verify modules and migration compatibility
         working-directory: backend
         run: ./mvnw -Dtest=ArchitectureTest,DatabaseMigrationTest,UpgradeCompatibilityTest test
-      - name: Process Spring AOT
-        working-directory: backend
-        run: ./mvnw -Pnative spring-boot:process-aot
-
   deployment-contracts:
     runs-on: ubuntu-latest
     timeout-minutes: 20

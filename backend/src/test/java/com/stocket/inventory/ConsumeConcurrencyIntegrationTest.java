@@ -10,7 +10,6 @@ import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -20,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @SpringBootTest
 @AutoConfigureMockMvc
-@DisabledInAotMode
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ConsumeConcurrencyIntegrationTest extends InventoryCommandTestSupport {
 

@@ -203,51 +203,6 @@
                 </executions>
             </plugin>
 
-            <!--
-                GraalVM 原生镜像编译插件：
-                将 Java 应用编译成原生可执行文件，启动快、内存占用低。
-                -H:ConfigurationFileDirectories 指定反射/资源等元数据配置目录，
-                GraalVM 编译时需要这些信息来处理动态特性。
-            -->
-            <plugin>
-                <groupId>org.graalvm.buildtools</groupId>
-                <artifactId>native-maven-plugin</artifactId>
-                <configuration>
-                    <buildArgs>
-                        <buildArg>-H:ConfigurationFileDirectories=${project.build.outputDirectory}/META-INF/native-image/${project.groupId}/${project.artifactId}</buildArg>
-                    </buildArgs>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <!--
-            原生测试 Profile：
-            激活命令：mvnw -PnativeTest test
-            在 GraalVM 原生模式下运行测试，验证原生镜像兼容性。
-        -->
-        <profile>
-            <id>nativeTest</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.graalvm.buildtools</groupId>
-                        <artifactId>native-maven-plugin</artifactId>
-                        <configuration>
-                            <buildArgs>
-                                <!--
-                                    强制 JUnit 的 MethodSegmentResolver 在构建时初始化，
-                                    解决原生镜像下的兼容性问题（默认所有类在运行时初始化）
-                                -->
-                                <buildArg>--initialize-at-build-time=org.junit.jupiter.engine.discovery.MethodSegmentResolver</buildArg>
-                                <!-- 测试代码的反射/资源注册信息目录 -->
-                                <buildArg>-H:ConfigurationFileDirectories=${project.build.testOutputDirectory}/META-INF/native-image/${project.groupId}/${project.artifactId}</buildArg>
-                            </buildArgs>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

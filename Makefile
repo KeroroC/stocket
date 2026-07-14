@@ -1,4 +1,4 @@
-.PHONY: test backend-test frontend-test config-test build aot native-test compose-config backup-test restore-smoke release-test release-smoke
+.PHONY: test backend-test frontend-test config-test build compose-config backup-test restore-smoke release-test release-smoke
 
 test: backend-test frontend-test config-test
 
@@ -17,12 +17,6 @@ config-test:
 build: frontend/node_modules/.package-lock.json
 	cd backend && ./mvnw -DskipTests package
 	cd frontend && npm run build
-
-aot:
-	cd backend && ./mvnw -Pnative spring-boot:process-aot
-
-native-test:
-	cd backend && ./mvnw -PnativeTest test
 
 compose-config:
 	docker compose --env-file .env.example -f deploy/compose.yml config --quiet

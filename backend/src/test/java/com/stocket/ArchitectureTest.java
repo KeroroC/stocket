@@ -5,12 +5,10 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModule;
 import org.springframework.modulith.core.ApplicationModules;
-import org.springframework.test.context.aot.DisabledInAotMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-@DisabledInAotMode
 class ArchitectureTest {
 
     private final ApplicationModules modules = ApplicationModules.of(StocketApplication.class);

@@ -28,8 +28,6 @@ STOCKET_TLS_CERT_FILE=$RUN_ROOT/secrets/tls.crt
 STOCKET_TLS_KEY_FILE=$RUN_ROOT/secrets/tls.key
 STOCKET_VERSION=0.1.0-smoke
 STOCKET_TRUSTED_PROXY_CIDRS=172.16.0.0/12
-GRAALVM_IMAGE=container-registry.oracle.com/graalvm/native-image:25
-APP_DOCKERFILE=${STOCKET_SMOKE_APP_DOCKERFILE:-deploy/app/Dockerfile}
 EOF
 cat >"$RUN_ROOT/override.yml" <<EOF
 services:

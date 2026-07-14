@@ -312,9 +312,9 @@ git commit -m "test(pwa): 覆盖移动端离线工作流"
 
 - [ ] **Step 1：运行完整验证矩阵**
 
-Run: `make test && make build && make aot`
+Run: `make test && make build`
 
-Expected: JVM、前端、AOT 和全部单元/集成测试 PASS。
+Expected: JVM、前端和全部单元/集成测试 PASS。
 
 Run: `cd frontend && npm run test:e2e`
 
@@ -343,5 +343,5 @@ git commit -m "feat: 完成阶段六移动 PWA 工作流"
 - [ ] 扫描器正确释放摄像头并有手工输入后备路径。
 - [ ] 首页、搜索、目录、位置、库存、提醒和个人页在移动/桌面均可用。
 - [ ] Cache Storage 不包含认证 API 或敏感响应。
-- [ ] 单元、类型、构建、Playwright、AOT 和真实设备检查均完成。
+- [ ] 单元、类型、构建、Playwright 和真实设备检查均完成。
 - [ ] 阶段六未实现附件、导出、审计搜索或离线库存写队列。

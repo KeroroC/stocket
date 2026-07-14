@@ -12,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.aot.DisabledInAotMode;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -26,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
         "STOCKET_MASTER_KEY=QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=",
         "stocket.notification.worker-enabled=false"
 })
-@DisabledInAotMode
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DeliveryPlannerIntegrationTest {
 

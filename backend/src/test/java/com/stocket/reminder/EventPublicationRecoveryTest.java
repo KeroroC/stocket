@@ -17,7 +17,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
@@ -34,7 +33,6 @@ import static org.mockito.Mockito.doThrow;
 
 @Testcontainers
 @SpringBootTest
-@DisabledInAotMode
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class EventPublicationRecoveryTest {
 

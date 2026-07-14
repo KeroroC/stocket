@@ -1,25 +1,22 @@
 # Stocket
 
-Stocket 是面向单个家庭、多位成员的自托管家庭资产与日常物品管理系统。项目采用 Spring Boot 模块化单体后端、Vue 3 前端、PostgreSQL，并支持 GraalVM Native Image 与 Docker Compose 部署。
+Stocket 是面向单个家庭、多位成员的自托管家庭资产与日常物品管理系统。项目采用 Spring Boot 模块化单体后端、Vue 3 前端、PostgreSQL，并支持 Docker Compose 部署。
 
 ## 环境要求
 
 - JDK 25
 - Node.js 24 与 npm
 - Docker Engine 或兼容的容器 daemon，以及 Docker Compose
-- GraalVM 25（仅 `native-test` 与本地原生构建需要）
 
 ## 验证命令
 
 ```bash
 make test
 make build
-make aot
 make compose-config
-make native-test
 make backup-test
 make release-test
-STOCKET_SMOKE_APP_DOCKERFILE=deploy/app/Dockerfile.jvm make restore-smoke
+make restore-smoke
 
 # PWA 移动、离线与响应式验收
 cd frontend && npm run test:e2e
@@ -28,8 +25,6 @@ cd frontend && npm run test:e2e
 也可以分别运行 `make backend-test` 和 `make frontend-test`。Make 的前端目标会检查 `frontend/node_modules/.package-lock.json`；依赖尚未安装或 `package.json`、`package-lock.json` 更新时，会自动运行 `npm ci`，不会在每次执行时重复安装。
 
 `make test` 是完整测试门禁；`make build` 只执行后端打包和前端生产构建，避免在连续验证时重复启动整套 Testcontainers。
-
-原生 AOT 测试集合不包含标注 `@DisabledInAotMode` 的数据库迁移、模块架构、Testcontainers 集成和纯反射形状测试；这些门禁由 JVM 测试覆盖。可在原生环境运行的领域、契约与 MVC 测试仍会进入 Native Image。CI 还会实际构建并启动 Native Compose 栈，通过网关对系统 API 和 readiness 端点执行 HTTP smoke。
 
 ## 本地启动后端
 
@@ -118,11 +113,11 @@ docker compose --env-file .env \
   up -d --build postgres app gateway
 ```
 
-启动后检查公开域名的 `/livez` 与 `/readyz`。数据库、附件和备份必须使用持久卷；一致备份、空环境恢复、升级与回滚分别见 [备份恢复](docs/operations/backup-restore.md) 和 [升级回滚](docs/operations/upgrade.md)。当前仓库保留双架构原生发布工作流，但 Native 打包能力正在等待后续去留决策，不纳入本次收口门禁。正式发布仍需归档版本 tag、镜像 digest、扫描、签名、SBOM/provenance 和 Release URL 等实际证据。
+启动后检查公开域名的 `/livez` 与 `/readyz`。数据库、附件和备份必须使用持久卷；一致备份、空环境恢复、升级与回滚分别见 [备份恢复](docs/operations/backup-restore.md) 和 [升级回滚](docs/operations/upgrade.md)。正式发布仍需归档版本 tag、镜像 digest、扫描、签名、SBOM/provenance 和 Release URL 等实际证据。
 
 ## 阶段一完成
 
-JVM 测试套件、前端测试/构建、Spring AOT 处理、PostgreSQL 迁移测试、GraalVM 原生测试和原生 Docker 冒烟测试均已为工程基础通过。
+JVM 测试套件、前端测试/构建、PostgreSQL 迁移测试和 Docker 冒烟测试均已为工程基础通过。
 
 ## 阶段二完成：身份与家庭
 
@@ -205,7 +200,7 @@ cd backend && ./mvnw -DskipTests package
 
 ### 阶段三验收记录
 
-2026-07-14 在 GraalVM 25.0.1、Docker 29.4.0 和 PostgreSQL 17.5 Testcontainers 环境完成：
+2026-07-14 在 Java 25.0.1、Docker 29.4.0 和 PostgreSQL 17.5 Testcontainers 环境完成：
 
 ```bash
 cd backend && ./mvnw -Dtest=CatalogLocationAcceptanceTest test
@@ -217,11 +212,6 @@ make test
 make build
 # JVM 可执行 JAR 与前端生产构建通过
 
-make aot
-# Spring AOT 处理通过
-
-make native-test
-# Native Image 生成成功；32 个原生适用测试通过，0 失败
 ```
 
 ## 阶段四完成：库存台账
@@ -260,8 +250,6 @@ make test
 make build
 # JVM 可执行 JAR 与前端生产构建通过
 
-make aot
-# Spring AOT 处理通过
 ```
 
 ## 阶段五完成：提醒与通知管道
@@ -303,8 +291,8 @@ STOCKET_NOTIFICATION_WORKER_ENABLED=true
 2026-07-14 在 Java 25.0.1、Docker 29.4.0 和 PostgreSQL 17.5 Testcontainers 环境完成：
 
 ```bash
-cd backend && ./mvnw -Dtest=ReminderNotificationAcceptanceTest,NotificationRuntimeHintsTest,WebPushMessageEncoderTest test
-# 提醒通知全链路、原生 hints、Web Push 加密与 VAPID 验证通过
+cd backend && ./mvnw -Dtest=ReminderNotificationAcceptanceTest,WebPushMessageEncoderTest test
+# 提醒通知全链路、Web Push 加密与 VAPID 验证通过
 
 make test
 # 后端 257 个测试、前端 110 个测试、类型检查和配置契约通过
@@ -312,8 +300,6 @@ make test
 make build
 # JVM 可执行 JAR 与前端生产构建通过
 
-make aot
-# Spring AOT 处理通过
 ```
 
 ## 阶段六完成：移动优先 PWA 工作流
@@ -328,9 +314,6 @@ make test
 
 make build
 # JVM 可执行 JAR、前端生产构建、manifest 与 Service Worker 生成通过
-
-make aot
-# Spring AOT 处理通过
 
 cd frontend && npm run test:e2e
 # Playwright 移动/桌面 5 个场景通过
@@ -347,23 +330,20 @@ cd backend && ./mvnw -Dtest=PwaWorkflowAcceptanceTest test
 
 ## 阶段八实现完成：运维与发布加固
 
-系统已实现生产 HTTPS Gateway、secret file 挂载、非 root/只读容器、readiness/liveness、结构化日志、Prometheus 指标、分层限流、一致备份与恢复、升级验证、分层 CI、安全扫描和发布流水线。本次收口不执行 Native Image/nativeTest；现有双架构原生发布能力等待后续去留决策。正式发布仍需由版本 tag workflow 补齐镜像 digest、扫描、签名、SBOM/provenance 和 GitHub Release 证据。
+系统已实现生产 HTTPS Gateway、secret file 挂载、非 root/只读容器、readiness/liveness、结构化日志、Prometheus 指标、分层限流、一致备份与恢复、升级验证、分层 CI、安全扫描和发布流水线。正式发布仍需由版本 tag workflow 补齐镜像 digest、扫描、签名、SBOM/provenance 和 GitHub Release 证据。
 
 常用运维命令：
 
 ```bash
 make backup-test
 make release-test
-STOCKET_SMOKE_APP_DOCKERFILE=deploy/app/Dockerfile.jvm make restore-smoke
+make restore-smoke
 ```
-
-`make release-smoke` 会额外构建 Native 应用，仅在后续确认继续保留 Native 打包能力时使用，不属于当前收口门禁。
 
 ## 文档
 
 - [产品与技术设计规格](docs/superpowers/specs/2026-07-10-stocket-design.md)
 - [交付路线图](docs/superpowers/plans/2026-07-11-delivery-roadmap.md)
-- [基础与原生构建实施说明](docs/superpowers/plans/2026-07-11-foundation-native-baseline.md)
 - [阶段三目录与位置实施计划](docs/superpowers/plans/2026-07-12-catalog-location.md)
 - [阶段四库存台账实施计划](docs/superpowers/plans/2026-07-12-inventory-ledger.md)
 - [阶段五提醒与通知实施计划](docs/superpowers/plans/2026-07-12-reminder-notification.md)

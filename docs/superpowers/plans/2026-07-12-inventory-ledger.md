@@ -404,9 +404,9 @@ Run: `make test`
 
 Expected: 后端和前端全套测试 PASS。
 
-Run: `make build && make aot`
+Run: `make build`
 
-Expected: JVM、前端生产构建和 Spring AOT 成功。
+Expected: JVM 和前端生产构建成功。
 
 更新 README 的库存 API/一致性说明，并在路线图阶段四添加本计划链接和实际验收日期。
 
@@ -425,5 +425,5 @@ git commit -m "feat: 完成阶段四库存台账"
 - [ ] 所有库存读写都隔离家庭，角色权限由后端强制。
 - [ ] `inventory` 不引用其他模块的 `internal` 包，架构测试通过。
 - [ ] 前端数量全程保持十进制字符串，冲突和重试不丢用户输入。
-- [ ] `make test`、`make build`、`make aot` 通过。
+- [ ] `make test`、`make build` 通过。
 - [ ] 阶段四未实现提醒投递、摄像头扫码、附件或离线写队列。

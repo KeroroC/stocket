@@ -4,19 +4,17 @@
 
 **目标：** 通过小型、可独立验证的增量方式交付已批准的家庭资产设计方案，而非一次性制定庞大的实施计划。
 
-**架构：** 单一仓库包含 Java 25/Spring Boot 4 模块化单体应用、Vue 3 PWA 和 Docker Compose 部署资源。PostgreSQL 作为系统数据源；模块边界通过 Spring Modulith 强制执行。仓库暂时保留 GraalVM Native Image 能力，但它不属于当前路线图收口门禁，后续将单独决定保留或删除。
+**架构：** 单一仓库包含 Java 25/Spring Boot 4 模块化单体应用、Vue 3 PWA 和 Docker Compose 部署资源。PostgreSQL 作为系统数据源；模块边界通过 Spring Modulith 强制执行。
 
-**技术栈：** Java 25 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven、PostgreSQL、Flyway、Vue 3、TypeScript、Vite、Element Plus、Docker Compose；GraalVM Native Image 为待去留决策的可选能力。
+**技术栈：** Java 25 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven、PostgreSQL、Flyway、Vue 3、TypeScript、Vite、Element Plus、Docker Compose。
 
 ---
 
 ## 阶段一：工程基础 ✅
 
-创建后端和前端项目骨架，建立模块边界，添加 PostgreSQL 迁移、健康/版本端点、Docker Compose、CI 以及 JVM/原生验证。最终产出一个空的但具备生产形态的应用程序，可在开发环境和原生可执行文件中可靠启动。
+创建后端和前端项目骨架，建立模块边界，添加 PostgreSQL 迁移、健康/版本端点、Docker Compose、CI 以及 JVM 验证。最终产出一个空的但具备生产形态的应用程序，可在开发和容器环境中可靠启动。
 
-详细计划：`docs/superpowers/plans/2026-07-11-foundation-native-baseline.md`
-
-验收记录：`README.md` 的“阶段一完成”。工程骨架、模块边界、PostgreSQL 迁移、系统 API、Vue 应用外壳、Compose 和 CI 已实现；历史验收提交 `3f95e86` 于 2026-07-11 完成。Native 相关历史证据保留，但不作为当前路线图完成条件。
+验收记录：`README.md` 的“阶段一完成”。工程骨架、模块边界、PostgreSQL 迁移、系统 API、Vue 应用外壳、Compose 和 CI 已实现；历史验收提交 `3f95e86` 于 2026-07-11 完成。
 
 ## 阶段二：身份与家庭 ✅
 
@@ -32,8 +30,6 @@
 
 维护冒烟脚本：`scripts/identity-maintenance-smoke.sh`
 
-已知限制：原生镜像因 AOT 生成的 Servlet 相关 Bean 在无 ServletContext 环境下无法启动维护模式；JVM 维护路径正常工作。
-
 ## 阶段三：目录与位置 ✅
 
 实现树形分类和位置、分类属性模式、物品定义、标签、条码、位置二维码、归档规则和目录搜索投影。
@@ -44,7 +40,7 @@
 
 全链路验收：`backend/src/test/java/com/stocket/catalog/CatalogLocationAcceptanceTest.java`
 
-验收日期：2026-07-14。`make test`、`make build`、`make aot` 与 `make native-test` 均通过。
+验收日期：2026-07-14。`make test` 与 `make build` 均通过。
 
 ## 阶段四：库存台账 ✅
 
@@ -56,7 +52,7 @@
 
 全链路验收：`backend/src/test/java/com/stocket/inventory/InventoryLedgerAcceptanceTest.java`
 
-验收日期：2026-07-14。`make test`、`make build` 与 `make aot` 均通过。
+验收日期：2026-07-14。`make test` 与 `make build` 均通过。
 
 ## 阶段五：提醒与通知管道 ✅
 
@@ -68,7 +64,7 @@
 
 全链路验收：`backend/src/test/java/com/stocket/reminder/ReminderNotificationAcceptanceTest.java`
 
-验收日期：2026-07-14。`make test`、`make build` 与 `make aot` 均通过；Web Push 的 RFC 8291 内容加密与 VAPID 签名另由 `WebPushMessageEncoderTest` 验证。
+验收日期：2026-07-14。`make test` 与 `make build` 均通过；Web Push 的 RFC 8291 内容加密与 VAPID 签名另由 `WebPushMessageEncoderTest` 验证。
 
 ## 阶段六：移动优先 PWA 工作流 ✅（自动验收完成）
 
@@ -80,7 +76,7 @@
 
 全链路验收：`backend/src/test/java/com/stocket/pwa/PwaWorkflowAcceptanceTest.java` 与 `frontend/e2e/`
 
-验收日期：2026-07-14。`make test`、`make build`、`make aot` 与 Playwright 移动/桌面 5 个场景均通过。实体手机的安装、真实摄像头和安全区检查受当前执行环境限制，已在 `docs/operations/pwa-device-verification.md` 明确列为待人工确认。
+验收日期：2026-07-14。`make test`、`make build` 与 Playwright 移动/桌面 5 个场景均通过。实体手机的安装、真实摄像头和安全区检查受当前执行环境限制，已在 `docs/operations/pwa-device-verification.md` 明确列为待人工确认。
 
 ## 阶段七：附件、导出与审计 ✅（自动验收完成）
 
@@ -90,15 +86,15 @@
 
 详细计划：`docs/superpowers/plans/2026-07-12-attachment-export-audit.md`
 
-全链路验收：`backend/src/test/java/com/stocket/attachment/AttachmentExportAuditAcceptanceTest.java`、`backend/src/test/java/com/stocket/attachment/AttachmentRuntimeHintsTest.java` 与 `frontend/e2e/attachment-export-audit.spec.ts`。
+全链路验收：`backend/src/test/java/com/stocket/attachment/AttachmentExportAuditAcceptanceTest.java` 与 `frontend/e2e/attachment-export-audit.spec.ts`。
 
-验收日期：2026-07-14。附件安全/恢复、CSV 注入防护、审计白名单、家庭授权、请求关联、管理诊断、前端权限和 Playwright 管理流程均已自动验证；完整 `make test`、`make build` 与 `make aot` 作为本阶段合并门禁执行。
+验收日期：2026-07-14。附件安全/恢复、CSV 注入防护、审计白名单、家庭授权、请求关联、管理诊断、前端权限和 Playwright 管理流程均已自动验证；完整 `make test` 与 `make build` 作为本阶段合并门禁执行。
 
 ## 阶段八：运维与发布加固 ✅（实现与本地自动验收完成，正式发布待执行）
 
-完成 HTTPS 网关配置、密钥管理、PostgreSQL 和附件定期备份、保留策略、恢复验证、可观测性、速率限制、镜像扫描、AMD64/ARM64 原生发布、校验和、升级文档和完整验收测试。
+完成 HTTPS 网关配置、密钥管理、PostgreSQL 和附件定期备份、保留策略、恢复验证、可观测性、速率限制、镜像扫描、AMD64/ARM64 容器发布、校验和、升级文档和完整验收测试。
 
-验收切片：JVM 与前端测试、普通构建、生产 Compose 契约、备份保留、空环境恢复和发布工具验证通过，并产生有文档记录的恢复证据。Native Image、nativeTest 与双架构原生冒烟延期，不作为本次收口条件。
+验收切片：JVM 与前端测试、普通构建、生产 Compose 契约、备份保留、空环境恢复和发布工具验证通过，并产生有文档记录的恢复证据。
 
 详细计划：`docs/superpowers/plans/2026-07-12-operations-release-hardening.md`
 
@@ -106,7 +102,7 @@
 
 实现与本地自动验收日期：2026-07-14。生产 Compose 契约、就绪检查、日志与指标、限流、备份保留与安全恢复、升级兼容、分层 CI、安全门禁和 release tooling 已实现；JVM、前端、普通构建、备份、配置与发布工具门禁作为本次合并前验收执行。
 
-正式 v1 发布仍为待办，不在本地验收中宣告完成。版本 tag、镜像 digest、Trivy 报告、SPDX SBOM、签名/attestation、校验和、GitHub Release URL 和正式验收报告仍需在实际发布时归档。Native Image、nativeTest 与 AMD64/ARM64 原生发布不纳入本次收口门禁，相关发布设计将在后续决定是否删除 Native 打包能力时一并重新评估。
+正式 v1 发布仍为待办，不在本地验收中宣告完成。版本 tag、镜像 digest、Trivy 报告、SPDX SBOM、签名/attestation、校验和、GitHub Release URL 和正式验收报告仍需在实际发布时归档。
 
 ## 规划规则
 

@@ -12,7 +12,6 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.aot.DisabledInAotMode;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -32,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * and verify both stdout output and database state.
  */
 @Testcontainers
-@DisabledInAotMode
 class AdminRecoveryCommandTest {
 
     @Container

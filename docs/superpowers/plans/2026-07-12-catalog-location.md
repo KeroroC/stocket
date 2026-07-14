@@ -551,14 +551,6 @@ Run: `make build`
 
 Expected: JVM 包与前端生产构建成功。
 
-Run: `make aot`
-
-Expected: Spring AOT 处理成功，无目录/位置反射提示。
-
-Run: `make native-test`
-
-Expected: GraalVM 原生测试 PASS；若本机没有 GraalVM 25，只记录环境阻塞，不把 JVM/AOT 结果描述为原生通过。
-
 - [ ] **Step 4：更新文档**
 
 README 增加目录与位置 API 能力、角色权限和搜索行为；路线图阶段三增加本计划链接并标记实际验收日期，不提前标记阶段四。记录精确命令及结果，不粘贴临时端口、Cookie 或令牌。
@@ -583,5 +575,5 @@ git commit -m "docs: 记录阶段三目录位置验收"
 - [ ] 所有更新使用乐观版本，所有错误保持 `application/problem+json` 和稳定业务码。
 - [ ] `catalog`、`location` 不访问其他模块的 `internal` 包，`ApplicationModules.verify()` 通过。
 - [ ] 前端在手机和桌面布局下可用，键盘可完成搜索和表单，状态不只靠颜色表达。
-- [ ] `make test`、`make build`、`make aot` 通过；`make native-test` 已通过或明确记录唯一环境阻塞。
+- [ ] `make test`、`make build` 通过。
 - [ ] 阶段三未引入库存条目、流水、提醒、附件、摄像头扫码或离线写队列。

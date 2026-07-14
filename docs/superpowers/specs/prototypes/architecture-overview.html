@@ -7,7 +7,7 @@
   .node strong { display:block; color:#0f172a; margin-bottom:5px; }
   .node small { color:#64748b; line-height:1.5; }
   .primary { background:#eff6ff; border-color:#93c5fd; }
-  .native { background:#ecfdf5; border-color:#86efac; }
+  .jvm { background:#ecfdf5; border-color:#86efac; }
   .data { background:#fff7ed; border-color:#fdba74; }
   .external { background:#faf5ff; border-color:#d8b4fe; }
   .arrow { text-align:center; color:#64748b; font-size:22px; line-height:1; }
@@ -20,7 +20,7 @@
 </style>
 
 <h2>家庭资产管理系统 · 模块化单体架构</h2>
-<p class="subtitle">Java 25 LTS + Spring Boot 4 + GraalVM Native Image；一个后端进程，保持清晰模块边界</p>
+<p class="subtitle">Java 25 LTS + Spring Boot 4；一个后端进程，保持清晰模块边界</p>
 
 <div class="arch-grid">
   <div class="layer">
@@ -43,11 +43,11 @@
 
   <div class="arrow">↓ REST/JSON</div>
 
-  <div class="layer native">
-    <div class="layer-title">单个 Spring Boot Native 后端</div>
-    <div class="node native">
-      <strong>Java 25 LTS 原生可执行文件</strong>
-      <small>Spring AOT + GraalVM Native Image；同一事务内保证库存流水、数量快照与业务事件一致</small>
+  <div class="layer jvm">
+    <div class="layer-title">单个 Spring Boot JVM 后端</div>
+    <div class="node jvm">
+      <strong>Java 25 LTS 可执行 JAR</strong>
+      <small>Spring Boot JVM；同一事务内保证库存流水、数量快照与业务事件一致</small>
       <div class="modules">
         <div class="module">身份与成员</div>
         <div class="module">分类与属性</div>

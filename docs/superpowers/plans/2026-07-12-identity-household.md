@@ -6,7 +6,7 @@
 
 **Architecture:** `identity` 模块拥有家庭、账户、成员、邀请和会话，使用 Spring Security 7 自定义不透明 Cookie 会话过滤器；`audit` 模块只通过 Spring Modulith 事件接收身份审计事实。后端先形成完整、安全、可测试的 API，再由 Vue 身份状态机和页面接入；所有写请求使用 SPA Cookie CSRF。
 
-**Tech Stack:** Java 25、Spring Boot 4.0.3、Spring Security 7、Spring Data JPA、Spring Modulith 2.0.5、Flyway、PostgreSQL 17、Testcontainers、Vue 3.5、TypeScript 5.9、Element Plus、Vitest、GraalVM Native Image
+**Tech Stack:** Java 25、Spring Boot 4.0.3、Spring Security 7、Spring Data JPA、Spring Modulith 2.0.5、Flyway、PostgreSQL 17、Testcontainers、Vue 3.5、TypeScript 5.9、Element Plus、Vitest
 
 ---
 
@@ -616,20 +616,18 @@ Expected: FAIL，维护命令不存在。
 
 - [ ] **Step 3：记录运维命令**
 
-在 README 添加 JVM 和原生命令：
+在 README 添加 JVM 命令：
 
 ```bash
 java -jar backend/target/stocket-backend-0.1.0-SNAPSHOT.jar \
   --stocket.maintenance.reset-admin=owner
-
-./stocket --stocket.maintenance.reset-admin=owner
 ```
 
-- [ ] **Step 4：验证 AOT 可达性**
+- [ ] **Step 4：验证维护命令**
 
-Run: `cd backend && ./mvnw -Dtest=AdminRecoveryCommandTest test && ./mvnw -Pnative spring-boot:process-aot`
+Run: `cd backend && ./mvnw -Dtest=AdminRecoveryCommandTest test`
 
-Expected: 测试 PASS，AOT 处理 BUILD SUCCESS。
+Expected: 测试 PASS。
 
 - [ ] **Step 5：提交维护命令**
 
@@ -821,17 +819,17 @@ Run: `cd frontend && npm test && npm run typecheck && npm run build`
 
 Expected: 全部 PASS，Vite 构建成功。
 
-- [ ] **Step 4：运行 AOT、原生测试与 Compose 验证**
+- [ ] **Step 4：运行 Compose 与维护命令验证**
 
-Run: `make aot && make native-test && make compose-config`
+Run: `make compose-config`
 
-Expected: 三个目标成功。
+Expected: 目标成功。
 
-创建 `scripts/identity-maintenance-smoke.sh`：启动临时 PostgreSQL；先用 JVM jar 对不存在的管理员执行一次恢复以完成 Flyway 迁移并断言非零退出；通过 `psql` 插入单家庭、一个 ACTIVE ADMIN 和一条活跃会话；分别运行 JVM jar 与 `target/stocket-backend` 原生可执行文件进行恢复。脚本必须断言两次成功退出、每次 stdout 只有一个临时密码、HTTP 端口从未监听、旧会话被撤销且 `PASSWORD_RECOVERED_LOCALLY` 审计存在。最后用 trap 删除临时容器。
+创建 `scripts/identity-maintenance-smoke.sh`：启动临时 PostgreSQL；先用 JVM jar 对不存在的管理员执行一次恢复以完成 Flyway 迁移并断言非零退出；通过 `psql` 插入单家庭、一个 ACTIVE ADMIN 和一条活跃会话；运行 JVM jar 进行恢复。脚本必须断言成功退出、stdout 只有一个临时密码、HTTP 端口从未监听、旧会话被撤销且 `PASSWORD_RECOVERED_LOCALLY` 审计存在。最后用 trap 删除临时容器。
 
-Run: `cd backend && ./mvnw -DskipTests package && ./mvnw -Pnative -DskipTests native:compile && cd .. && ./scripts/identity-maintenance-smoke.sh`
+Run: `cd backend && ./mvnw -DskipTests package && cd .. && ./scripts/identity-maintenance-smoke.sh`
 
-Expected: JVM 与 Native Image 两条维护路径均 PASS。
+Expected: JVM 维护路径 PASS。
 
 随后运行 `docker compose --env-file .env.example -f deploy/compose.yml up --build -d`，用真实浏览器完成初始化、登录、成员和邀请冒烟，再执行 `docker compose --env-file .env.example -f deploy/compose.yml down`。
 
@@ -856,4 +854,4 @@ git commit -m "docs: complete phase two identity delivery"
 - [ ] 临时密码和邀请链接只展示一次，不进入日志、审计或浏览器持久化存储。
 - [ ] 本地恢复不启动 HTTP，撤销会话并留下审计。
 - [ ] `identity` 不依赖 `audit` 内部实现，模块验证通过。
-- [ ] JVM、前端、AOT、原生测试和 Compose 配置全部通过。
+- [ ] JVM、前端和 Compose 配置全部通过。

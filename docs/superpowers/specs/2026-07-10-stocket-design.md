@@ -23,7 +23,7 @@ Stocket 用于管理家庭中的日常消耗品和耐用电子设备。第一版
 - 重复请求不会重复增加或扣减库存。
 - 多成员并发领用不会产生负库存。
 - 外部通知发送失败不会导致库存事务失败。
-- JVM 和 GraalVM 原生程序通过同一组核心业务测试。
+- JVM 程序通过核心业务测试。
 - PostgreSQL、附件和配置能够备份并恢复。
 
 ## 2. 第一版范围
@@ -64,7 +64,7 @@ Stocket 用于管理家庭中的日常消耗品和耐用电子设备。第一版
 
 首次启动通过一次性初始化流程创建家庭和首位管理员。此后关闭公开注册，只允许管理员直接创建成员或生成一次性邀请链接。邀请有明确失效时间，使用后立即作废。
 
-已登录成员可以修改自己的密码。管理员可以为其他成员生成一次性临时密码，并要求成员下次登录时修改。唯一管理员遗忘密码时，通过原生程序提供的本机维护命令重置；该命令只能在服务器终端执行，并记录安全审计，不提供匿名 Web 找回入口。
+已登录成员可以修改自己的密码。管理员可以为其他成员生成一次性临时密码，并要求成员下次登录时修改。唯一管理员遗忘密码时，通过 JVM 程序提供的本机维护命令重置；该命令只能在服务器终端执行，并记录安全审计，不提供匿名 Web 找回入口。
 
 ### 3.2 角色
 
@@ -236,7 +236,7 @@ erDiagram
 flowchart TD
   Client["手机 PWA / 桌面浏览器"] --> Gateway["Nginx HTTPS 和静态资源"]
   Gateway --> Frontend["Vue 3 PWA"]
-  Gateway --> App["Spring Boot Native REST API"]
+  Gateway --> App["Spring Boot JVM REST API"]
   App --> PostgreSQL[(PostgreSQL)]
   App --> Files["本地附件目录"]
   App --> Push["Web Push"]
@@ -316,15 +316,13 @@ flowchart TD
 - 超过最大重试次数后进入失败列表，由管理员手工重试；
 - 外部通知故障不得回滚库存事务。
 
-## 13. 技术基线和 GraalVM
+## 13. 技术基线
 
 ### 13.1 后端
 
 - Java 25 LTS；
 - Spring Boot 4.0.3；
 - Maven Wrapper；
-- Spring AOT；
-- GraalVM Native Build Tools；
 - PostgreSQL。
 
 ### 13.2 前端
@@ -340,33 +338,21 @@ flowchart TD
 
 ### 13.3 构建产物
 
-后端同时发布：
-
-- 标准 JVM JAR，用于开发、调试和诊断；
-- Linux AMD64 原生可执行文件；
-- Linux ARM64 原生可执行文件；
-- 包含原生程序的 AMD64 和 ARM64 Docker 镜像；
-- 版本清单和 SHA-256 校验和。
-
-原生程序与操作系统和 CPU 架构绑定。Windows 和 macOS 原生包不属于第一版发布范围。
+后端发布标准 JVM JAR，以及包含该 JAR 的 AMD64 和 ARM64 Docker 镜像、版本清单和 SHA-256 校验和。
 
 构建命令必须支持：
 
 ```bash
 ./mvnw test
-./mvnw -PnativeTest test
-./mvnw -Pnative native:compile
-./mvnw -Pnative spring-boot:build-image
+./mvnw package
 ```
-
-依赖选型必须验证 GraalVM 兼容性。反射、资源、序列化和动态代理需求通过 Spring Runtime Hints 显式注册；禁止依赖无法在 AOT 阶段分析的运行时类路径扫描和动态类生成。
 
 ## 14. Docker Compose 和运维
 
 正式部署包含：
 
 - `gateway`：HTTPS、Vue 静态资源、压缩、缓存和 API 反向代理；
-- `app`：Spring Boot GraalVM 原生程序；
+- `app`：Spring Boot JVM 程序；
 - `postgres`：PostgreSQL 数据库。
 
 数据库、附件和备份使用独立持久化卷。应用提供存活、就绪和版本接口。数据库不可连接、迁移失败或主密钥缺失时，应用不得进入就绪状态。
@@ -385,8 +371,7 @@ flowchart TD
 - 模块集成测试：公开接口、事务、Outbox 和权限；
 - 真实 PostgreSQL 容器测试：锁、约束、JSONB、迁移和并发；
 - API 契约测试：成功响应和 Problem Details；
-- 原生测试：执行 `./mvnw -PnativeTest test`；
-- 原生程序冒烟测试：登录、入库、搜索、领用、转移和提醒。
+- 应用程序冒烟测试：登录、入库、搜索、领用、转移和提醒。
 
 ### 15.2 前端测试
 
@@ -399,9 +384,9 @@ flowchart TD
 
 ### 15.3 CI 分层
 
-每次提交运行 Java 编译、格式检查、JVM 测试、前端检查和构建、数据库迁移校验、AOT 处理以及模块依赖检查。
+每次提交运行 Java 编译、格式检查、JVM 测试、前端检查和构建、数据库迁移校验以及模块依赖检查。
 
-主分支和正式发布额外运行完整原生测试、AMD64/ARM64 原生构建、原生程序 API 冒烟、Docker 镜像构建与扫描，并生成发布清单。
+主分支和正式发布额外运行应用 API 冒烟、AMD64/ARM64 Docker 镜像构建与扫描，并生成发布清单。
 
 ## 16. 初始仓库结构
 
@@ -421,4 +406,4 @@ stocket/
 
 ## 17. 设计结论
 
-第一版以单家庭、多成员、移动端高频使用为中心。数据模型明确区分物品档案和实际库存，以不可变流水保证历史可追溯，以事务性快照保证查询效率，以 Outbox 解耦通知，以联网提交和离线草稿平衡 PWA 体验与库存一致性。后端从第一天接受 GraalVM Native Image 约束，并将原生测试和双架构发布纳入完成标准。
+第一版以单家庭、多成员、移动端高频使用为中心。数据模型明确区分物品档案和实际库存，以不可变流水保证历史可追溯，以事务性快照保证查询效率，以 Outbox 解耦通知，以联网提交和离线草稿平衡 PWA 体验与库存一致性。后端以 JVM JAR 运行，并将多架构容器发布纳入完成标准。

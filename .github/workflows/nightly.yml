@@ -13,17 +13,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  native-recovery-and-browser:
+  recovery-and-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      - uses: graalvm/setup-graalvm@v1
+      - uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '25'
-          distribution: graalvm-community
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: maven
+          cache-dependency-path: backend/pom.xml
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -31,10 +31,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Prepare report directory
         run: mkdir -p artifacts
-      - name: Run native tests
-        run: cd backend && ./mvnw -PnativeTest test | tee ../artifacts/native-test.log
-      - name: Compile native executable
-        run: cd backend && ./mvnw -Pnative -DskipTests native:compile | tee ../artifacts/native-build.log
+      - name: Run backend tests
+        run: cd backend && ./mvnw test | tee ../artifacts/backend-test.log
       - name: Install frontend and Chromium
         working-directory: frontend
         run: |
@@ -43,7 +41,7 @@ jobs:
       - name: Run browser acceptance tests
         working-directory: frontend
         run: npm run test:e2e
-      - name: Run backup tests and native restore drill
+      - name: Run backup tests and restore drill
         run: |
           make backup-test | tee artifacts/backup-test.log
           KEEP_SMOKE_ENV=false make restore-smoke | tee artifacts/restore-smoke.log

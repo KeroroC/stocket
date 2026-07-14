@@ -1,6 +1,6 @@
 # 依赖与镜像安全扫描
 
-Stocket 将快速合并门禁与耗时安全验证分开。PR CI 执行 JVM、模块边界、迁移兼容、AOT、前端、Compose、shell/Bats 和 workflow lint；nightly 在无仓库写权限、无部署 secret 的环境中执行 nativeTest、原生编译、浏览器验收、恢复演练、Trivy 和 SBOM。
+Stocket 将快速合并门禁与耗时安全验证分开。PR CI 执行 JVM、模块边界、迁移兼容、前端、Compose、shell/Bats 和 workflow lint；nightly 在无仓库写权限、无部署 secret 的环境中执行浏览器验收、恢复演练、Trivy 和 SBOM。
 
 ## 漏洞门禁
 
@@ -27,6 +27,6 @@ python3 scripts/validate-trivyignore.py .trivyignore
 
 ## SBOM 与报告
 
-Nightly 使用 Syft 生成 SPDX JSON SBOM，并上传 Trivy JSON、native/build/restore 日志及测试报告。artifact 不应包含 `.env`、数据库 dump、附件目录、Cookie、TLS 私钥或渠道凭据。正式发布的 SBOM、签名、provenance 和 digest 由 release workflow 生成，nightly artifact 不能替代正式发布证据。
+Nightly 使用 Syft 生成 SPDX JSON SBOM，并上传 Trivy JSON、build/restore 日志及测试报告。artifact 不应包含 `.env`、数据库 dump、附件目录、Cookie、TLS 私钥或渠道凭据。正式发布的 SBOM、签名、provenance 和 digest 由 release workflow 生成，nightly artifact 不能替代正式发布证据。
 
 Dependabot 每周分别检查 Maven、npm 和 GitHub Actions，生成独立 PR；不启用自动合并，主版本升级必须人工阅读 release notes、运行完整门禁并评估迁移影响。

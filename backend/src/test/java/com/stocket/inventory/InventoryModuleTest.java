@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.modulith.ApplicationModule;
 import org.springframework.modulith.NamedInterface;
 import org.springframework.modulith.core.ApplicationModules;
-import org.springframework.test.context.aot.DisabledInAotMode;
 
 import com.stocket.StocketApplication;
 import com.stocket.catalog.CatalogInventoryQuery;
@@ -14,7 +13,6 @@ import com.stocket.audit.AuditEvent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisabledInAotMode
 class InventoryModuleTest {
 
     @Test

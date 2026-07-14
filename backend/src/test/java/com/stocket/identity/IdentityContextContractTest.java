@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.aot.DisabledInAotMode;
 
 import com.stocket.identity.internal.security.IdentityPrincipal;
 import com.stocket.identity.internal.security.SecurityCurrentHouseholdProvider;
@@ -25,7 +24,6 @@ class IdentityContextContractTest {
     }
 
     @Test
-    @DisabledInAotMode
     void publishesCurrentHouseholdContract() throws Exception {
         Class<?> currentHouseholdType = CurrentHousehold.class;
         assertThat(currentHouseholdType.isRecord()).isTrue();
