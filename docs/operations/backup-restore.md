@@ -46,13 +46,16 @@ docker compose --env-file .env \
 
 1. 停止 app，并创建当前环境的安全备份。
 2. 准备空 PostgreSQL 数据库和空的绝对附件目录。
-3. 在 backup 容器中执行：
+3. 使用只在 `operations` profile 中启用的 `restore` 服务执行：
 
 ```bash
-/opt/stocket/backup/restore.sh /var/lib/stocket/backups/<backup-id> /var/lib/stocket/attachments
+docker compose --env-file .env \
+  -f deploy/compose.yml -f deploy/compose.production.yml \
+  --profile operations run --rm restore \
+  /var/lib/stocket/backups/<backup-id> /var/lib/stocket/attachments
 ```
 
-恢复脚本先验证 checksum、dump、tar 和 manifest，再把附件解包到同一文件系统的 staging 目录并校验逐文件 SHA-256；数据库恢复成功后才原子切换附件目录。默认拒绝非空数据库或附件目录。
+`restore` 服务以附件卷所有者 UID 运行，附件父卷可写、备份卷只读；普通 `backup` 服务仍保持附件卷只读。恢复脚本先验证 checksum、dump、tar 和 manifest，再把附件解包到同一文件系统的 staging 目录并校验逐文件 SHA-256；数据库恢复成功后才原子切换附件目录。默认拒绝非空数据库或附件目录。
 
 `--force` 仅用于事故恢复，并且必须设置独立的 `PRE_RESTORE_BACKUP_ROOT`。脚本会先创建恢复前备份；没有回滚点时不会覆盖现有数据。附件目标必须是非根绝对路径。
 

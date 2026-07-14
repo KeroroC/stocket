@@ -1,4 +1,5 @@
-FROM ghcr.io/graalvm/native-image-community:25 AS build
+ARG GRAALVM_IMAGE=ghcr.io/graalvm/native-image-community:25
+FROM ${GRAALVM_IMAGE} AS build
 
 WORKDIR /workspace
 
@@ -14,7 +15,9 @@ FROM debian:bookworm-slim AS runtime
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
+    && useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app \
+    && mkdir -p /var/lib/stocket/attachments /var/lib/stocket/backups \
+    && chown -R 10001:10001 /var/lib/stocket
 
 WORKDIR /app
 

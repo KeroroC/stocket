@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import com.stocket.identity.internal.config.IdentityProperties;
 import com.stocket.identity.internal.domain.UserAccount;
@@ -25,12 +26,14 @@ public class SessionService {
     private final Duration idleTimeout;
     private final Duration absoluteTimeout;
     private final Duration touchInterval;
+    private final EntityManager entityManager;
 
     SessionService(UserSessionRepository sessionRepository,
                    HouseholdMemberRepository householdMemberRepository,
                    SecureValueGenerator secureValueGenerator,
                    TokenHasher tokenHasher,
-                   IdentityProperties properties) {
+                   IdentityProperties properties,
+                   EntityManager entityManager) {
         this.sessionRepository = sessionRepository;
         this.householdMemberRepository = householdMemberRepository;
         this.secureValueGenerator = secureValueGenerator;
@@ -38,8 +41,10 @@ public class SessionService {
         this.idleTimeout = properties.session().idleTimeout();
         this.absoluteTimeout = properties.session().absoluteTimeout();
         this.touchInterval = properties.session().touchInterval();
+        this.entityManager = entityManager;
     }
 
+    @Transactional
     public CreatedSession create(UserAccount account, String userAgent, String sourceAddress, Instant now) {
         String token = secureValueGenerator.generateToken();
         String tokenHash = tokenHasher.sha256(token);
@@ -51,7 +56,7 @@ public class SessionService {
                 now, idleExpiresAt, absoluteExpiresAt,
                 userAgent, sourceAddress);
 
-        sessionRepository.save(session);
+        entityManager.persist(session);
         return new CreatedSession(session.getId(), token);
     }
 
@@ -72,7 +77,6 @@ public class SessionService {
                                             now.plus(idleTimeout),
                                             session.getAbsoluteExpiresAt());
                                     session.touch(now, newIdleExpiresAt);
-                                    sessionRepository.save(session);
                                 }
 
                                 return new IdentityPrincipal(

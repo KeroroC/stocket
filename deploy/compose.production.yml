@@ -6,8 +6,9 @@ services:
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: null
+    environment: !override
+      POSTGRES_DB: ${POSTGRES_DB:-stocket}
+      POSTGRES_USER: ${POSTGRES_USER:-stocket}
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     secrets:
       - postgres_password
@@ -28,10 +29,11 @@ services:
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     restart: unless-stopped
-    environment:
+    environment: !override
       SPRING_PROFILES_ACTIVE: production
       SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
-      STOCKET_DB_PASSWORD: null
+      STOCKET_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-stocket}
+      STOCKET_DB_USER: ${POSTGRES_USER:-stocket}
       STOCKET_ATTACHMENT_DIR: /var/lib/stocket/attachments
       STOCKET_FRONTEND_URL: ${STOCKET_FRONTEND_URL:?Set STOCKET_FRONTEND_URL to the public HTTPS origin}
       STOCKET_TRUSTED_PROXY_CIDRS: ${STOCKET_TRUSTED_PROXY_CIDRS:-172.16.0.0/12}
@@ -41,7 +43,7 @@ services:
       - source: master_key
         target: STOCKET_MASTER_KEY
     volumes:
-      - attachment-data:/var/lib/stocket/attachments
+      - attachment-data:/var/lib/stocket
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m,uid=10001,gid=10001
     healthcheck:
@@ -120,10 +122,46 @@ services:
     secrets:
       - postgres_password
     volumes:
-      - attachment-data:/var/lib/stocket/attachments:ro
+      - attachment-data:/var/lib/stocket:ro
       - backup-data:/var/lib/stocket/backups
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m,uid=70,gid=70
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "1.00", memory: 512M }
+        reservations: { memory: 64M }
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: "5" }
+
+  restore:
+    profiles: [operations]
+    build:
+      context: ..
+      dockerfile: deploy/backup/Dockerfile
+    image: stocket-backup:${STOCKET_VERSION:-dev}
+    entrypoint: [/opt/stocket/backup/restore.sh]
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-stocket}
+      PGUSER: ${POSTGRES_USER:-stocket}
+      STOCKET_DB_PASSWORD_FILE: /run/secrets/postgres_password
+      ATTACHMENT_DIR: /var/lib/stocket/attachments
+    secrets:
+      - postgres_password
+    volumes:
+      - attachment-data:/var/lib/stocket
+      - backup-data:/var/lib/stocket/backups:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001
     depends_on:
       postgres:
         condition: service_healthy

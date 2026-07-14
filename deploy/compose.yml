@@ -19,7 +19,9 @@ services:
   app:
     build:
       context: ..
-      dockerfile: deploy/app/Dockerfile
+      dockerfile: ${APP_DOCKERFILE:-deploy/app/Dockerfile}
+      args:
+        GRAALVM_IMAGE: ${GRAALVM_IMAGE:-ghcr.io/graalvm/native-image-community:25}
     environment:
       SPRING_PROFILES_ACTIVE: local
       STOCKET_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-stocket}
@@ -28,7 +30,7 @@ services:
       STOCKET_FRONTEND_URL: ${STOCKET_FRONTEND_URL:-}
       STOCKET_ATTACHMENT_DIR: /var/lib/stocket/attachments
     volumes:
-      - attachment-data:/var/lib/stocket/attachments
+      - attachment-data:/var/lib/stocket
     depends_on:
       postgres:
         condition: service_healthy

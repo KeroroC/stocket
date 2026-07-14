@@ -60,6 +60,11 @@ for dockerfile in (root / "deploy/app/Dockerfile", root / "deploy/frontend/Docke
     text = dockerfile.read_text()
     lowered = text.lower()
     assert "tls.key" not in lowered and "private.key" not in lowered, f"{dockerfile}: TLS key referenced by build"
+
+gateway = (root / "deploy/gateway/default.conf").read_text()
+proxy_headers = (root / "deploy/gateway/proxy-headers.conf").read_text()
+assert "map $http_x_request_id $stocket_request_id" in gateway, "validated request-id map missing"
+assert "X-Request-Id $stocket_request_id" in proxy_headers, "gateway must preserve valid request ids"
 PY
 }
 

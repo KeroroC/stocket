@@ -1,4 +1,4 @@
-.PHONY: test backend-test frontend-test config-test build aot native-test compose-config
+.PHONY: test backend-test frontend-test config-test build aot native-test compose-config backup-test restore-smoke release-smoke
 
 test: backend-test frontend-test config-test
 
@@ -26,3 +26,14 @@ native-test:
 
 compose-config:
 	docker compose --env-file .env.example -f deploy/compose.yml config --quiet
+
+backup-test:
+	docker build -t stocket-backup-test -f deploy/backup/Dockerfile .
+	docker run --rm --entrypoint bats -v "$(CURDIR):/workspace" -w /workspace stocket-backup-test deploy/backup/tests
+
+restore-smoke:
+	bash deploy/smoke/restore-smoke.sh
+
+release-smoke:
+	bash deploy/smoke/gateway-smoke.sh --static deploy/compose.production.yml
+	bash deploy/smoke/restore-smoke.sh
