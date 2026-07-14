@@ -222,7 +222,7 @@ git commit -m "feat(ops): 实现备份保留与安全恢复"
 
 新增 `make backup-test`、`make restore-smoke`、`make release-smoke`。所有目标可在非交互 CI 中运行，并在失败时保留临时日志路径但不输出 secret。
 
-Run: `make restore-smoke`
+Run: `STOCKET_SMOKE_APP_DOCKERFILE=deploy/app/Dockerfile.jvm make restore-smoke`
 
 Expected: 干净临时环境恢复和核心 API 冒烟 PASS，随后清理 project。
 
@@ -307,25 +307,25 @@ git commit -m "ci(release): 发布双架构原生产物"
 - Modify: `docs/superpowers/plans/2026-07-11-delivery-roadmap.md`
 - Create: `CHANGELOG.md`
 
-- [ ] **Step 1：运行完整测试与构建**
+- [ ] **Step 1：运行非 Native 完整测试与构建**
 
-Run: `make test && make build && make aot && make native-test`
+Run: `make test && make build`
 
-Expected: 全部 PASS；若本地架构无法执行另一架构，只能由 release matrix 的原生 runner 提供该架构证据，不得标为本地通过。
+Expected: JVM、前端、TypeScript、配置契约和普通构建全部 PASS。Native Image、AOT、`nativeTest` 与双架构原生验证不纳入本次收口门禁，待后续决定是否保留 Native 打包能力时重新评估。
 
-- [ ] **Step 2：运行生产 Compose 和恢复演练**
+- [ ] **Step 2：运行生产配置、备份和恢复验证**
 
-Run: `make release-smoke`
+Run: `make compose-config && make backup-test && make release-test`
 
-Expected: HTTPS、权限、入库、搜索、消耗、调拨、提醒、附件、导出、审计、备份和恢复全部 PASS。
+Expected: 生产 Compose 配置、备份脚本和发布工具契约全部 PASS；发布工具的负向 fixture 能拒绝篡改、缺失架构、错误 digest 和过期豁免。
 
 Run: `make restore-smoke`
 
-Expected: 从正式格式备份恢复到空环境，checksum、Flyway、附件和库存对账全部通过。
+Expected: 从正式格式备份恢复到空环境，checksum、Flyway、附件和库存对账全部通过。`make release-smoke` 会构建 Native 应用，因此不作为本次收口门禁。
 
-- [ ] **Step 3：执行发布安全门禁**
+- [ ] **Step 3：记录发布安全门禁边界**
 
-在 release workflow 中验证 AMD64/ARM64 原生 smoke、镜像扫描、SBOM、签名和 checksum。验收报告记录 workflow run、commit、image digest、备份 ID、恢复时长和所有检查结果，不记录秘密或真实家庭数据。
+本地验证 release tooling、checksum 和负向 fixture。AMD64/ARM64 原生 smoke、镜像扫描、SBOM、签名和 attestation 只在未来实际发布且 Native 能力仍被保留时执行；验收报告仅记录实际获得的 workflow run、commit、image digest、备份 ID、恢复时长和检查结果，不记录秘密或真实家庭数据。
 
 - [ ] **Step 4：完成用户和运维文档**
 
@@ -333,7 +333,7 @@ README 提供安装最短路径和受支持平台；deployment 描述 TLS/secret
 
 - [ ] **Step 5：更新路线图并提交**
 
-路线图阶段八添加本计划链接、正式验收日期和报告路径；只有所有门禁有证据时才把 v1 标记完成。
+路线图阶段八添加本计划链接、本地自动验收日期和正式验收报告模板路径；本地实现收口与正式 v1 发布分开标记，只有实际发布门禁均有证据时才宣告正式发布。
 
 ```bash
 git add README.md CHANGELOG.md docs/operations docs/superpowers/plans/2026-07-11-delivery-roadmap.md
@@ -349,7 +349,8 @@ git commit -m "chore(release): 完成 Stocket v1 发布验收"
 - [ ] 每次备份包含数据库、附件、配置摘要、manifest 和 checksum。
 - [ ] 恢复在空环境实际执行，并通过迁移、附件哈希、库存对账和核心 API 冒烟。
 - [ ] PR、nightly、release 三层 CI 分工明确且最小权限。
-- [ ] AMD64/ARM64 原生二进制和镜像在各自原生 runner 上通过测试。
-- [ ] 发布包含 SBOM、漏洞报告、签名、provenance、manifest 和 SHA-256 校验和。
-- [ ] 完整 v1 验收有可追溯证据，文档足以由新管理员部署、备份、恢复和升级。
+- [ ] JVM、前端、普通构建、生产 Compose 契约、备份与发布工具验证通过。
+- [ ] Native Image、nativeTest 和 AMD64/ARM64 原生发布明确延期，等待 Native 打包能力去留决策。
+- [ ] 正式发布时补齐 SBOM、漏洞报告、签名、provenance、manifest 和 SHA-256 校验和。
+- [ ] 本地自动验收有可追溯证据，文档足以由新管理员部署、备份、恢复和升级；不将其表述为正式 v1 发布证据。
 - [ ] 阶段八未新增业务范围，路线图中的八个阶段均有独立详细计划。

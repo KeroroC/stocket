@@ -92,11 +92,19 @@
 
 验收日期：2026-07-14。附件安全/恢复、CSV 注入防护、审计白名单、家庭授权、请求关联、管理诊断、前端权限和 Playwright 管理流程均已自动验证；完整 `make test`、`make build` 与 `make aot` 作为本阶段合并门禁执行。
 
-## 阶段八：运维与发布加固
+## 阶段八：运维与发布加固 ✅（实现与本地自动验收完成，正式发布待执行）
 
 完成 HTTPS 网关配置、密钥管理、PostgreSQL 和附件定期备份、保留策略、恢复验证、可观测性、速率限制、镜像扫描、AMD64/ARM64 原生发布、校验和、升级文档和完整验收测试。
 
-验收切片：发布版本可在干净的临时环境中恢复，在两种 Linux 架构上通过 JVM 和原生冒烟测试，并产生有文档记录的恢复证据。
+验收切片：JVM 与前端测试、普通构建、生产 Compose 契约、备份保留、空环境恢复和发布工具验证通过，并产生有文档记录的恢复证据。Native Image、nativeTest 与双架构原生冒烟延期，不作为本次收口条件。
+
+详细计划：`docs/superpowers/plans/2026-07-12-operations-release-hardening.md`
+
+正式验收报告模板：`docs/operations/acceptance-report-template.md`
+
+实现与本地自动验收日期：2026-07-14。生产 Compose 契约、就绪检查、日志与指标、限流、备份保留与安全恢复、升级兼容、分层 CI、安全门禁和 release tooling 已实现；JVM、前端、普通构建、备份、配置与发布工具门禁作为本次合并前验收执行。
+
+正式 v1 发布仍为待办，不在本地验收中宣告完成。版本 tag、镜像 digest、Trivy 报告、SPDX SBOM、签名/attestation、校验和、GitHub Release URL 和正式验收报告仍需在实际发布时归档。Native Image、nativeTest 与 AMD64/ARM64 原生发布不纳入本次收口门禁，相关发布设计将在后续决定是否删除 Native 打包能力时一并重新评估。
 
 ## 规划规则
 

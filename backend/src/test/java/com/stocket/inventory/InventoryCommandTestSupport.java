@@ -136,6 +136,7 @@ abstract class InventoryCommandTestSupport {
 
     private void insertInitialMovement(UUID entryId, String quantity) {
         UUID idempotencyId = UUID.randomUUID();
+        Instant occurredAt = Instant.now().minusSeconds(1);
         jdbc.update("""
                 insert into idempotency_record(id,household_id,account_id,operation,idempotency_key,request_hash,
                     status,http_status,response_body,created_at,expires_at)
@@ -144,9 +145,9 @@ abstract class InventoryCommandTestSupport {
         jdbc.update("""
                 insert into inventory_movement(id,household_id,entry_id,movement_type,quantity_delta,
                     to_location_id,actor_account_id,idempotency_record_id,request_id,occurred_at)
-                values (?,?,?,'RECEIVE',?::numeric,?,?,?,?,now())
+                values (?,?,?,'RECEIVE',?::numeric,?,?,?,?,?::timestamptz)
                 """, UUID.randomUUID(), householdId, entryId, quantity, locationId, accountId,
-                idempotencyId, UUID.randomUUID().toString());
+                idempotencyId, UUID.randomUUID().toString(), occurredAt.toString());
     }
 
     jakarta.servlet.http.Cookie cookie(String token) {

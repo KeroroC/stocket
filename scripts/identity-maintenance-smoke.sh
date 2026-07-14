@@ -11,7 +11,7 @@
 #   - PASSWORD_RECOVERED_LOCALLY audit event is written
 #
 # Prerequisites:
-#   - backend/target/stocket-backend-0.1.0-SNAPSHOT.jar (JVM jar)
+#   - backend/target/stocket-backend-0.1.0.jar (JVM jar)
 #   - backend/target/stocket-backend (native executable)
 #   - Docker running (for PostgreSQL container)
 #
@@ -19,7 +19,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-JAR="$PROJECT_ROOT/backend/target/stocket-backend-0.1.0-SNAPSHOT.jar"
+JAR="$PROJECT_ROOT/backend/target/stocket-backend-0.1.0.jar"
 NATIVE="$PROJECT_ROOT/backend/target/stocket-backend"
 
 DB_NAME="stocket_smoke_$$"
