@@ -17,6 +17,6 @@ class InventoryChangedListener {
 
     @ApplicationModuleListener(id = "reminder.inventory-changed")
     void on(InventoryChanged event) {
-        recalculator.recalculate(event.householdId(), event.itemId(), event.entryId());
+        recalculator.recalculate(event.householdId(), event.itemId(), event.entryId(), event.requestId());
     }
 }

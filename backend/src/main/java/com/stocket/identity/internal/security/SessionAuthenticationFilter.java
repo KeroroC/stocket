@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -67,7 +68,15 @@ class SessionAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        filterChain.doFilter(request, response);
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof IdentityPrincipal principal) {
+            MDC.put("accountId", principal.accountId().toString());
+        }
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            MDC.remove("accountId");
+        }
     }
 
     private String extractToken(HttpServletRequest request) {

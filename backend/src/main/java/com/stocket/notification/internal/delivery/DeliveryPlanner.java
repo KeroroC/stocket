@@ -69,11 +69,11 @@ public class DeliveryPlanner {
         String dedupeKey = event.reminderId() + ":" + memberId + ":" + channel.type() + ":" + channel.id();
         jdbc.update("""
                 insert into notification_delivery(id,household_id,reminder_id,member_id,channel_type,
-                    channel_id,dedupe_key,status,attempt_count,next_attempt_at,created_at,updated_at)
-                values (?,?,?,?,?,?,?,'PENDING',0,now(),now(),now())
+                    channel_id,dedupe_key,request_id,status,attempt_count,next_attempt_at,created_at,updated_at)
+                values (?,?,?,?,?,?,?,?,'PENDING',0,now(),now(),now())
                 on conflict (dedupe_key) do nothing
                 """, UUID.randomUUID(), event.householdId(), event.reminderId(), memberId,
-                channel.type(), channel.id(), dedupeKey);
+                channel.type(), channel.id(), dedupeKey, event.requestId());
     }
 
     private record Member(UUID id, String email) {

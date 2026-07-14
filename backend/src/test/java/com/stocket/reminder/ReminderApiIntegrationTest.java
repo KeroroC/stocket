@@ -9,6 +9,7 @@ import javax.sql.DataSource;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -103,6 +104,18 @@ class ReminderApiIntegrationTest {
         viewerSession = createSession("reminder-viewer", "VIEWER");
     }
 
+    @AfterEach
+    void awaitNotificationPlanning() throws InterruptedException {
+        long deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
+        while (outstandingPublications() > 0 && System.nanoTime() < deadline) Thread.sleep(25);
+        assertThat(outstandingPublications()).isZero();
+    }
+
+    private int outstandingPublications() {
+        Integer count = jdbc.queryForObject("select count(*) from event_publication where completion_date is null", Integer.class);
+        return count == null ? 0 : count;
+    }
+
     @Test
     void supportsFilteringStablePagingAcknowledgementRulesAndDueOpening() throws Exception {
         Instant sameTrigger = Instant.now().minus(2, ChronoUnit.HOURS);
@@ -132,7 +145,7 @@ class ReminderApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACKNOWLEDGED"));
         jdbc.update("update inventory_entry set available_quantity=10 where id=?", entryId);
-        recalculator.recalculate(householdId, itemId, entryId);
+        recalculator.recalculate(householdId, itemId, entryId, "api-request");
         assertThat(jdbc.queryForObject("select status from reminder where id=?", String.class, lowStock))
                 .isEqualTo("RESOLVED");
 

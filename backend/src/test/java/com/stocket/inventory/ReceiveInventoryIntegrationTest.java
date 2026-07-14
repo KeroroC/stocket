@@ -10,6 +10,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.stocket.identity.internal.authentication.SecureValueGenerator;
 import com.stocket.identity.internal.authentication.TokenHasher;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,8 +55,9 @@ class ReceiveInventoryIntegrationTest {
     private UUID locationId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws InterruptedException {
         jdbc = new JdbcTemplate(dataSource);
+        awaitEventPublications();
         jdbc.execute("truncate user_account, household cascade");
         householdId = UUID.randomUUID();
         itemId = UUID.randomUUID();
@@ -64,6 +66,22 @@ class ReceiveInventoryIntegrationTest {
                 householdId);
         insertItem(itemId, null, null, false);
         insertLocation(locationId, false);
+    }
+
+    @AfterEach
+    void awaitPublishedEventsAfterTest() throws InterruptedException {
+        awaitEventPublications();
+    }
+
+    private void awaitEventPublications() throws InterruptedException {
+        long deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
+        while (outstandingEventPublications() > 0 && System.nanoTime() < deadline) Thread.sleep(25);
+        assertThat(outstandingEventPublications()).isZero();
+    }
+
+    private int outstandingEventPublications() {
+        Integer count = jdbc.queryForObject("select count(*) from event_publication where completion_date is null", Integer.class);
+        return count == null ? 0 : count;
     }
 
     @Test
@@ -80,8 +98,14 @@ class ReceiveInventoryIntegrationTest {
                 .andReturn();
 
         UUID entryId = responseId(result);
+        assertThat(JsonPath.<String>read(result.getResponse().getContentAsString(), "$.requestId"))
+                .isEqualTo("inventory-request-123");
         assertThat(jdbc.queryForObject("select available_quantity from inventory_entry where id=?",
                 String.class, entryId)).isEqualTo("2.5000");
+        assertThat(jdbc.queryForObject("select request_id from inventory_movement where entry_id=?", String.class, entryId))
+                .isEqualTo("inventory-request-123");
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where event_type='InventoryReceived' and subject_id=? and request_id='inventory-request-123'", Integer.class, entryId))
+                .isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from inventory_movement where entry_id=? and movement_type='RECEIVE'",
                 Integer.class, entryId)).isEqualTo(1);
     }
@@ -149,7 +173,8 @@ class ReceiveInventoryIntegrationTest {
     private org.springframework.test.web.servlet.ResultActions receive(
             String token, String key, String request) throws Exception {
         return mockMvc.perform(post("/api/v1/inventory/receipts").with(csrf()).cookie(cookie(token))
-                .header("Idempotency-Key", key).contentType(APPLICATION_JSON).content(request));
+                .header("Idempotency-Key", key).header("X-Request-Id", "inventory-request-123")
+                .contentType(APPLICATION_JSON).content(request));
     }
 
     private String batchRequest(UUID item, UUID location, String quantity, String expirationDate) {

@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import com.stocket.identity.CurrentHousehold;
 import com.stocket.identity.CurrentHouseholdProvider;
+import com.stocket.identity.RequestContext;
+import com.stocket.audit.AuditEvent;
 import com.stocket.inventory.InventoryChanged;
 import com.stocket.inventory.internal.domain.BatchDetail;
 import com.stocket.inventory.internal.domain.InventoryEntry;
@@ -79,13 +81,14 @@ public class TransferInventoryService {
         Instant now = Instant.now();
         UUID sourceLocationId = source.locationId();
         MovementDraft sourceDraft = source.transfer(quantity, command.targetLocationId(), now);
-        String requestId = idempotencyRecordId.toString();
+        String requestId = RequestContext.requireRequestId();
 
         if (sourceDraft.type() == MovementType.TRANSFER) {
             InventoryMovement movement = movement(
                     source, null, sourceDraft, current, idempotencyRecordId, requestId, now);
             movements.saveAndFlush(movement);
             publish(current, source, sourceDraft.quantityDelta(), now);
+            publishAudit(current, source.id(), null, sourceLocationId, command.targetLocationId(), quantity, requestId, now);
             return result(source, requestId);
         }
 
@@ -111,6 +114,7 @@ public class TransferInventoryService {
         movements.saveAllAndFlush(java.util.List.of(sourceMovement, targetMovement));
         publish(current, source, sourceDraft.quantityDelta(), now);
         publish(current, target, targetDraft.quantityDelta(), now);
+        publishAudit(current, source.id(), target.id(), sourceLocationId, command.targetLocationId(), quantity, requestId, now);
         return result(target, requestId);
     }
 
@@ -126,7 +130,19 @@ public class TransferInventoryService {
                          BigDecimal delta, Instant now) {
         events.publishEvent(new InventoryChanged(
                 UUID.randomUUID(), current.householdId(), entry.itemDefinitionId(), entry.id(),
-                OPERATION, delta, now));
+                OPERATION, delta, now, RequestContext.requireRequestId()));
+    }
+
+    private void publishAudit(CurrentHousehold current, UUID entryId, UUID relatedEntryId, UUID fromLocationId,
+                              UUID toLocationId, Quantity quantity, String requestId, Instant now) {
+        java.util.Map<String, Object> details = new java.util.LinkedHashMap<>();
+        details.put("entryId", entryId.toString());
+        if (relatedEntryId != null) details.put("relatedEntryId", relatedEntryId.toString());
+        details.put("fromLocationId", fromLocationId.toString());
+        details.put("toLocationId", toLocationId.toString());
+        details.put("quantity", decimal(quantity.value()));
+        events.publishEvent(new AuditEvent(UUID.randomUUID(), current.householdId(), now, "InventoryTransferred", "SUCCESS",
+                current.accountId(), "INVENTORY_ENTRY", entryId, requestId, "api", details));
     }
 
     private IdempotentExecutor.Result<InventoryCommandResponse> result(

@@ -1,2 +1,2 @@
-@org.springframework.modulith.ApplicationModule(displayName = "Audit")
+@org.springframework.modulith.ApplicationModule(displayName = "Audit", allowedDependencies = "identity :: api")
 package com.stocket.audit;

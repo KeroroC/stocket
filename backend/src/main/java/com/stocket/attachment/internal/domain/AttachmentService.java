@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 
 import com.stocket.attachment.AttachmentSummary;
 import com.stocket.attachment.internal.storage.AttachmentStore;
@@ -15,6 +16,9 @@ import com.stocket.identity.CurrentHousehold;
 import com.stocket.identity.CurrentHouseholdProvider;
 import com.stocket.identity.IdentityRole;
 import com.stocket.inventory.InventoryQuery;
+import com.stocket.audit.AuditEvent;
+import com.stocket.identity.RequestContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -22,13 +26,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class AttachmentService {
     private final AttachmentRepository repository; private final AttachmentStore store;
-    private final AttachmentValidator validator; private final CurrentHouseholdProvider current;
+    private final AttachmentValidator validator; private final CurrentHouseholdProvider current; private final ApplicationEventPublisher events;
     private final CatalogInventoryQuery catalog; private final InventoryQuery inventory; private final TransactionTemplate transactions;
     public AttachmentService(AttachmentRepository repository, AttachmentStore store, AttachmentValidator validator,
-                             CurrentHouseholdProvider current, CatalogInventoryQuery catalog, InventoryQuery inventory,
+                             CurrentHouseholdProvider current, CatalogInventoryQuery catalog, InventoryQuery inventory, ApplicationEventPublisher events,
                              TransactionTemplate transactions) {
         this.repository=repository; this.store=store; this.validator=validator; this.current=current;
-        this.catalog=catalog; this.inventory=inventory; this.transactions=transactions;
+        this.catalog=catalog; this.inventory=inventory; this.events=events; this.transactions=transactions;
     }
 
     public AttachmentSummary upload(String ownerType, UUID ownerId, String purposeValue, String filename,
@@ -51,6 +55,11 @@ public class AttachmentService {
                 }
                 attachment.available(); repository.saveAndFlush(attachment);
             });
+            events.publishEvent(new AuditEvent(UUID.randomUUID(), context.householdId(), Instant.now(), "AttachmentUploaded",
+                    "SUCCESS", context.accountId(), "ATTACHMENT", attachment.getId(), requestId, "api",
+                    java.util.Map.of("ownerType", ownerType, "ownerId", ownerId.toString(), "purpose", purpose.name(),
+                            "filename", attachment.getOriginalFilename(), "mediaType", attachment.getDetectedMediaType(),
+                            "sizeBytes", attachment.getSizeBytes())));
             return summary(attachment);
         } catch (AttachmentValidationException error) {
             store.discard(staged); throw new AttachmentProblem(HttpStatus.UNPROCESSABLE_ENTITY, error.code());
@@ -65,7 +74,10 @@ public class AttachmentService {
             .findByHouseholdIdAndOwnerTypeAndOwnerIdAndStatusOrderByCreatedAtDesc(current.requireCurrent().householdId(), ownerType, ownerId, AttachmentStatus.AVAILABLE)
             .stream().map(this::summary).toList(); }
     public void delete(UUID id) throws IOException { CurrentHousehold c=current.requireCurrent(); requireWriter(c); Attachment a=get(id);
-        transactions.executeWithoutResult(s->{a.deleted();repository.save(a);}); store.delete(a.getStorageKey()); }
+        transactions.executeWithoutResult(s->{a.deleted();repository.save(a);}); store.delete(a.getStorageKey());
+        events.publishEvent(new AuditEvent(UUID.randomUUID(), c.householdId(), Instant.now(), "AttachmentDeleted", "SUCCESS",
+                c.accountId(), "ATTACHMENT", a.getId(), RequestContext.requireRequestId(), "api",
+                java.util.Map.of("ownerType", a.getOwnerType(), "ownerId", a.getOwnerId().toString(), "purpose", a.getPurpose().name()))); }
     public InputStream content(Attachment attachment) throws IOException {
         if (!store.exists(attachment.getStorageKey())) { transactions.executeWithoutResult(s->{attachment.missing();repository.save(attachment);});
             throw new AttachmentProblem(HttpStatus.GONE,"ATTACHMENT_CONTENT_MISSING"); }

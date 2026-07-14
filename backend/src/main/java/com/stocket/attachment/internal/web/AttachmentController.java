@@ -10,6 +10,7 @@ import com.stocket.attachment.AttachmentSummary;
 import com.stocket.attachment.internal.domain.Attachment;
 import com.stocket.attachment.internal.domain.AttachmentProblem;
 import com.stocket.attachment.internal.domain.AttachmentService;
+import com.stocket.identity.RequestContext;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,9 +22,8 @@ public class AttachmentController {
     private final AttachmentService service;
     public AttachmentController(AttachmentService service){this.service=service;}
     @PostMapping public ResponseEntity<AttachmentSummary> upload(@RequestParam String ownerType,@RequestParam UUID ownerId,
-            @RequestParam String purpose,@RequestPart MultipartFile file,@RequestHeader(value="X-Request-Id",required=false) String requestId) throws IOException {
-        String id=requestId!=null&&requestId.matches("[A-Za-z0-9._-]{8,80}")?requestId:UUID.randomUUID().toString();
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.upload(ownerType,ownerId,purpose,file.getOriginalFilename(),file.getContentType(),file.getInputStream(),id));
+            @RequestParam String purpose,@RequestPart MultipartFile file) throws IOException {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.upload(ownerType,ownerId,purpose,file.getOriginalFilename(),file.getContentType(),file.getInputStream(),RequestContext.requireRequestId()));
     }
     @GetMapping public List<AttachmentSummary> list(@RequestParam String ownerType,@RequestParam UUID ownerId){return service.list(ownerType,ownerId);}
     @GetMapping("/{id}") public AttachmentSummary get(@PathVariable UUID id){return service.summary(id);}

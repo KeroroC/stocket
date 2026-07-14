@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.stocket.identity.CurrentHousehold;
+import com.stocket.identity.RequestContext;
+import com.stocket.audit.AuditEvent;
 import com.stocket.inventory.InventoryChanged;
 import com.stocket.inventory.internal.domain.InventoryEntry;
 import com.stocket.inventory.internal.domain.InventoryMovement;
@@ -52,14 +54,19 @@ public class InventoryOperationExecutor {
                 .orElseThrow(() -> new InventoryCommandException(HttpStatus.NOT_FOUND, "INVENTORY_ENTRY_NOT_FOUND"));
         Instant now = Instant.now();
         MovementDraft draft = operationWork.apply(entry, now);
-        String requestId = idempotencyRecordId.toString();
+        String requestId = RequestContext.requireRequestId();
         InventoryMovement movement = new InventoryMovement(
                 UUID.randomUUID(), current.householdId(), entry.id(), null, draft,
                 current.accountId(), idempotencyRecordId, requestId, now);
         movements.saveAndFlush(movement);
         events.publishEvent(new InventoryChanged(
                 UUID.randomUUID(), current.householdId(), entry.itemDefinitionId(), entry.id(),
-                operation, draft.quantityDelta(), now));
+                operation, draft.quantityDelta(), now, requestId));
+        events.publishEvent(new AuditEvent(UUID.randomUUID(), current.householdId(), now, "InventoryChanged", "SUCCESS",
+                current.accountId(), "INVENTORY_ENTRY", entry.id(), requestId, "api", java.util.Map.of(
+                        "entryId", entry.id().toString(), "operation", operation,
+                        "quantity", decimal(draft.quantityDelta()),
+                        "status", entry.assetStatus().map(Enum::name).orElse("ACTIVE"))));
         InventoryCommandResponse response = new InventoryCommandResponse(
                 entry.id(), entry.inventoryType(), decimal(entry.availableQuantity()), entry.locationId(),
                 entry.expirationDate(), entry.assetStatus().orElse(null), entry.version(), requestId);

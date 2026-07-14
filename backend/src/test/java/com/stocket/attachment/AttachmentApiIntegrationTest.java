@@ -76,6 +76,10 @@ class AttachmentApiIntegrationTest {
     @Test void memberLifecycleViewerReadOnlyCoverReplacementAndRange() throws Exception {
         String member = createSession("member", "MEMBER");
         UUID first = upload(member, "COVER_IMAGE");
+        assertThat(jdbc.queryForObject("select request_id from attachment where id=?", String.class, first))
+                .isEqualTo("attachment-test-request");
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where event_type='AttachmentUploaded' and subject_id=? and request_id='attachment-test-request'", Integer.class, first))
+                .isEqualTo(1);
         mockMvc.perform(get("/api/v1/attachments/{id}", first).cookie(cookie(member)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.purpose").value("COVER_IMAGE"));
         MvcResult pendingContent = mockMvc.perform(get("/api/v1/attachments/{id}/content", first).cookie(cookie(member)))

@@ -79,23 +79,23 @@ class ReminderLifecycleIntegrationTest {
 
     @Test
     void maintainsExpirationAndLowStockReminderLifecycleWithoutDuplicates() {
-        recalculator.recalculate(householdId, itemId, entryId);
+        recalculator.recalculate(householdId, itemId, entryId, "lifecycle-request");
         assertThat(activeCount("EXPIRING")).isEqualTo(3);
         assertThat(activeCount("LOW_STOCK")).isZero();
 
         jdbc.update("update inventory_entry set available_quantity=3 where id=?", entryId);
-        recalculator.recalculate(householdId, itemId, entryId);
-        recalculator.recalculate(householdId, itemId, entryId);
+        recalculator.recalculate(householdId, itemId, entryId, "lifecycle-request");
+        recalculator.recalculate(householdId, itemId, entryId, "lifecycle-request");
         assertThat(activeCount("LOW_STOCK")).isOne();
 
         jdbc.update("update inventory_entry set available_quantity=5 where id=?", entryId);
-        recalculator.recalculate(householdId, itemId, entryId);
+        recalculator.recalculate(householdId, itemId, entryId, "lifecycle-request");
         assertThat(activeCount("LOW_STOCK")).isZero();
         assertThat(statusCount("LOW_STOCK", "RESOLVED")).isOne();
 
         LocalDate changedExpiration = LocalDate.now().plusDays(20);
         jdbc.update("update inventory_entry set expiration_date=? where id=?", changedExpiration, entryId);
-        recalculator.recalculate(householdId, itemId, entryId);
+        recalculator.recalculate(householdId, itemId, entryId, "lifecycle-request");
 
         assertThat(activeCount("EXPIRING")).isEqualTo(3);
         assertThat(jdbc.queryForObject("""

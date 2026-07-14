@@ -38,7 +38,8 @@ public class ReminderDueJob {
                 """, (result, row) -> new OpenedReminder(
                 result.getObject("id", UUID.class), result.getObject("household_id", UUID.class)));
         opened.forEach(reminder -> events.publishEvent(
-                new NotificationRequested(reminder.id(), reminder.householdId(), java.time.Instant.now())));
+                new NotificationRequested(reminder.id(), reminder.householdId(), java.time.Instant.now(),
+                        "scheduled-" + reminder.id())));
         return opened.size();
     }
 

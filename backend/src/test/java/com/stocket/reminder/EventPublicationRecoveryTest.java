@@ -87,13 +87,13 @@ class EventPublicationRecoveryTest {
     void keepsFailedPublicationAndCreatesReminderExactlyOnceAfterResubmission() throws Exception {
         doThrow(new IllegalStateException("first attempt fails"))
                 .doCallRealMethod()
-                .when(recalculator).recalculate(any(), any(), any());
+                .when(recalculator).recalculate(any(), any(), any(), any());
 
         transactions.executeWithoutResult(status -> {
             jdbc.update("update inventory_entry set available_quantity=4 where id=?", entryId);
             events.publishEvent(new InventoryChanged(
                     UUID.randomUUID(), householdId, itemId, entryId,
-                    "ADJUST", BigDecimal.ONE.negate(), Instant.now()));
+                    "ADJUST", BigDecimal.ONE.negate(), Instant.now(), "recovery-request-123"));
         });
 
         await(() -> incompletePublicationCount() == 1);
@@ -102,7 +102,7 @@ class EventPublicationRecoveryTest {
                 BigDecimal.class, entryId)).isEqualByComparingTo("4");
         assertThat(reminderCount()).isZero();
 
-        doCallRealMethod().when(recalculator).recalculate(any(), any(), any());
+        doCallRealMethod().when(recalculator).recalculate(any(), any(), any(), any());
         incompletePublications.resubmitIncompletePublications(event -> true);
 
         await(() -> completedPublicationCount() == 1 && reminderCount() == 1);

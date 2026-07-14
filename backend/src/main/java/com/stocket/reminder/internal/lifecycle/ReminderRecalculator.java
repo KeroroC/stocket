@@ -38,7 +38,7 @@ public class ReminderRecalculator {
     }
 
     @Transactional
-    public void recalculate(UUID householdId, UUID itemId, UUID entryId) {
+    public void recalculate(UUID householdId, UUID itemId, UUID entryId, String requestId) {
         ItemContext item = loadItem(householdId, itemId);
         EntrySnapshot entry = loadEntry(householdId, itemId, entryId);
         EffectiveReminderRule rule = ReminderRuleService.select(
@@ -68,7 +68,7 @@ public class ReminderRecalculator {
 
         for (DesiredReminder candidate : desired) {
             if (active.stream().noneMatch(candidate::matches)) {
-                insert(householdId, itemId, candidate, now);
+                insert(householdId, itemId, candidate, now, requestId);
             }
         }
     }
@@ -112,7 +112,7 @@ public class ReminderRecalculator {
                 """, BigDecimal.class, householdId, itemId);
     }
 
-    private void insert(UUID householdId, UUID itemId, DesiredReminder reminder, Instant now) {
+    private void insert(UUID householdId, UUID itemId, DesiredReminder reminder, Instant now, String requestId) {
         UUID reminderId = UUID.randomUUID();
         int inserted = jdbc.update("""
                 insert into reminder(id, household_id, item_definition_id, inventory_entry_id,
@@ -124,7 +124,7 @@ public class ReminderRecalculator {
                 "OPEN".equals(reminder.status()) ? Timestamp.from(now) : null,
                 Timestamp.from(now), Timestamp.from(now));
         if (inserted == 1 && "OPEN".equals(reminder.status())) {
-            events.publishEvent(new NotificationRequested(reminderId, householdId, now));
+            events.publishEvent(new NotificationRequested(reminderId, householdId, now, requestId));
         }
     }
 

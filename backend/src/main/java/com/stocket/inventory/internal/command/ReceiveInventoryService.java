@@ -10,6 +10,8 @@ import com.stocket.catalog.CatalogInventoryItem;
 import com.stocket.catalog.CatalogInventoryQuery;
 import com.stocket.identity.CurrentHousehold;
 import com.stocket.identity.CurrentHouseholdProvider;
+import com.stocket.identity.RequestContext;
+import com.stocket.audit.AuditEvent;
 import com.stocket.inventory.InventoryChanged;
 import com.stocket.inventory.internal.domain.AssetDetail;
 import com.stocket.inventory.internal.domain.AssetStatus;
@@ -108,7 +110,7 @@ public class ReceiveInventoryService {
         MovementDraft draft = new MovementDraft(
                 MovementType.RECEIVE, quantity.value(), BigDecimal.ZERO, quantity.value(),
                 null, command.locationId(), null);
-        String requestId = idempotencyRecordId.toString();
+        String requestId = RequestContext.requireRequestId();
         InventoryMovement movement = new InventoryMovement(
                 UUID.randomUUID(), current.householdId(), entryId, null, draft,
                 current.accountId(), idempotencyRecordId, requestId, now);
@@ -124,7 +126,12 @@ public class ReceiveInventoryService {
 
         events.publishEvent(new InventoryChanged(
                 UUID.randomUUID(), current.householdId(), command.itemId(), entryId,
-                OPERATION, quantity.value(), now));
+                OPERATION, quantity.value(), now, requestId));
+        events.publishEvent(new AuditEvent(UUID.randomUUID(), current.householdId(), now, "InventoryReceived", "SUCCESS",
+                current.accountId(), "INVENTORY_ENTRY", entryId, requestId, "api", Map.of(
+                        "entryId", entryId.toString(), "itemId", command.itemId().toString(),
+                        "locationId", command.locationId().toString(), "quantity", decimal(quantity.value()),
+                        "type", command.type().name())));
         InventoryCommandResponse response = new InventoryCommandResponse(
                 entryId, command.type(), decimal(quantity.value()), command.locationId(), expirationDate,
                 entry.assetStatus().orElse(null), entry.version(), requestId);

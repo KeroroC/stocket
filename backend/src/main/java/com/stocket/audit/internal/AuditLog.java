@@ -28,6 +28,9 @@ public class AuditLog {
     @Column(name = "occurred_at", nullable = false)
     private Instant occurredAt;
 
+    @Column(name = "household_id")
+    private UUID householdId;
+
     @Column(name = "event_type", nullable = false, length = 80)
     private String eventType;
 
@@ -62,10 +65,11 @@ public class AuditLog {
     /**
      * Creates a new audit log entry from an audit event.
      */
-    public AuditLog(UUID id, Instant occurredAt, String eventType, String outcome,
+    public AuditLog(UUID id, UUID householdId, Instant occurredAt, String eventType, String outcome,
                     UUID actorAccountId, String subjectType, UUID subjectId,
                     String requestId, String source, Map<String, Object> details) {
         this.id = id;
+        this.householdId = householdId;
         this.occurredAt = occurredAt;
         this.eventType = eventType;
         this.outcome = outcome;
@@ -84,6 +88,8 @@ public class AuditLog {
     public Instant getOccurredAt() {
         return occurredAt;
     }
+
+    public UUID getHouseholdId() { return householdId; }
 
     public String getEventType() {
         return eventType;

@@ -67,7 +67,7 @@ class DeliveryPlannerIntegrationTest {
 
     @Test
     void expandsPerMemberAndChannelWithoutDuplicatingRepeatedEvents() {
-        NotificationRequested event = new NotificationRequested(reminderId, householdId, Instant.now());
+        NotificationRequested event = new NotificationRequested(reminderId, householdId, Instant.now(), "delivery-request-123");
 
         planner.plan(event);
         planner.plan(event);
@@ -79,6 +79,8 @@ class DeliveryPlannerIntegrationTest {
         assertThat(jdbc.queryForList("""
                 select channel_type from notification_delivery order by channel_type,member_id
                 """, String.class)).containsExactly("IN_APP", "IN_APP", "WEBHOOK", "WEBHOOK");
+        assertThat(jdbc.queryForObject("select count(*) from notification_delivery where request_id='delivery-request-123'", Integer.class))
+                .isEqualTo(4);
     }
 
     private void insertMember(String username, String email) {

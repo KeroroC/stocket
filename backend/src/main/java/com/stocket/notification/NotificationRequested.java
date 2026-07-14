@@ -4,5 +4,5 @@ import java.time.Instant;
 import java.util.UUID;
 
 @org.springframework.modulith.NamedInterface("api")
-public record NotificationRequested(UUID reminderId, UUID householdId, Instant requestedAt) {
+public record NotificationRequested(UUID reminderId, UUID householdId, Instant requestedAt, String requestId) {
 }

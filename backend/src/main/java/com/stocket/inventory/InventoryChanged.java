@@ -12,6 +12,7 @@ public record InventoryChanged(
         UUID entryId,
         String operation,
         BigDecimal quantityDelta,
-        Instant occurredAt
+        Instant occurredAt,
+        String requestId
 ) {
 }
