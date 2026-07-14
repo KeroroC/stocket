@@ -6,6 +6,10 @@ export interface ApiProblem {
   fieldErrors?: Array<{ field: string; message: string }>
 }
 
+export interface ApiRequestInit extends RequestInit {
+  mutation?: boolean
+}
+
 function getCookie(name: string): string | undefined {
   const match = document.cookie.match(
     new RegExp(`(?:^|; )${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;]*)`),
@@ -66,23 +70,34 @@ async function parseProblem(response: Response): Promise<ApiProblem> {
 
 export async function apiRequest<T>(
   path: string,
-  init: RequestInit = {},
+  init: ApiRequestInit = {},
   retryCsrf = true,
 ): Promise<T> {
   const url = path.startsWith('/') ? path : `/${path}`
   const method = (init.method ?? 'GET').toUpperCase()
+  const { mutation = !isSafeMethod(method), ...requestInit } = init
+
+  if (mutation) {
+    const { ensureOnlineForMutation } = await import('../offline/onlineGuard')
+    ensureOnlineForMutation()
+  }
 
   const response = await fetch(url, {
-    ...init,
+    ...requestInit,
     credentials: 'same-origin',
-    headers: buildHeaders(init),
+    headers: buildHeaders(requestInit),
   })
+
+  if (response.status === 401) {
+    const { handleSessionExpired } = await import('../offline/sessionCleanup')
+    await handleSessionExpired()
+  }
 
   if (response.status === 403 && retryCsrf && !isSafeMethod(method)) {
     const problem = await parseProblem(response)
     const { refreshCsrf } = await import('./identity')
     await refreshCsrf()
-    return apiRequest<T>(path, { ...init, method }, false)
+    return apiRequest<T>(path, { ...init, method, mutation }, false)
   }
 
   if (!response.ok) {

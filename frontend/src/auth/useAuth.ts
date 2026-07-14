@@ -2,12 +2,21 @@ import { ref } from 'vue'
 import { getCurrentAccount, getSetupStatus, initialize as apiInitialize, login as apiLogin, logout as apiLogout, refreshCsrf, changePassword as apiChangePassword } from '../api/identity'
 import type { AuthState, CurrentAccount } from './AuthState'
 import type { ChangePasswordRequest, InitializeRequest, LoginRequest } from '../api/identity'
+import {
+  clearActiveSessionData,
+  registerSessionExpiredHandler,
+  setActiveSessionAccount,
+} from '../offline/sessionCleanup'
 
 export const authState = ref<AuthState>({ kind: 'checking-setup' })
 
 export function useAuth() {
   const state = authState
   state.value = { kind: 'checking-setup' }
+  setActiveSessionAccount(undefined)
+  registerSessionExpiredHandler(() => {
+    state.value = { kind: 'anonymous' }
+  })
 
   function mapAccount(raw: { id: string; username: string; displayName: string; role: string; mustChangePassword: boolean }): CurrentAccount {
     return {
@@ -36,6 +45,7 @@ export function useAuth() {
         state.value = { kind: 'password-change-required', account: mapAccount(account) }
       } else {
         state.value = { kind: 'authenticated', account: mapAccount(account) }
+        setActiveSessionAccount(account.id)
       }
     } catch {
       state.value = { kind: 'anonymous' }
@@ -51,6 +61,7 @@ export function useAuth() {
       state.value = { kind: 'password-change-required', account: mapAccount(account) }
     } else {
       state.value = { kind: 'authenticated', account: mapAccount(account) }
+      setActiveSessionAccount(account.id)
     }
   }
 
@@ -62,6 +73,7 @@ export function useAuth() {
       state.value = { kind: 'password-change-required', account: mapAccount(account) }
     } else {
       state.value = { kind: 'authenticated', account: mapAccount(account) }
+      setActiveSessionAccount(account.id)
     }
   }
 
@@ -71,12 +83,14 @@ export function useAuth() {
     } catch {
       // ignore logout failure
     }
+    await clearActiveSessionData()
     state.value = { kind: 'anonymous' }
   }
 
   async function passwordChanged(): Promise<void> {
     const account = await getCurrentAccount()
     state.value = { kind: 'authenticated', account: mapAccount(account) }
+    setActiveSessionAccount(account.id)
   }
 
   return {
