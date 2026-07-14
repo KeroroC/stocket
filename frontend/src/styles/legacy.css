@@ -24,6 +24,7 @@ body {
 
 .app-shell--authenticated {
   display: block;
+  width: 100%;
   padding: 0;
 }
 

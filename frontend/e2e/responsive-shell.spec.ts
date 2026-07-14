@@ -56,3 +56,59 @@ for (const route of routes) {
     }
   })
 }
+
+const primaryTabs = [
+  { label: '首页', path: '/', heading: '今天需要关注什么？' },
+  { label: '物品', path: '/items', heading: '物品目录' },
+  { label: '入库', path: '/receive', heading: '把物品放到正确的位置' },
+  { label: '提醒', path: '/reminders', heading: '提醒中心' },
+  { label: '我的', path: '/profile', heading: '我的账户' },
+]
+
+test('主 Tab 切换保持应用外壳稳定', async ({ page }, testInfo) => {
+  const viewport = testInfo.project.name === 'mobile-chromium'
+    ? { width: 390, height: 844, navigationName: '移动主导航' }
+    : { width: 1440, height: 900, navigationName: '桌面主导航' }
+  await installApiFixture(page)
+  await page.setViewportSize({ width: viewport.width, height: viewport.height })
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: primaryTabs[0].heading })).toBeVisible()
+
+  const readShellGeometry = () => page.evaluate(() => {
+    const shell = document.querySelector('.pwa-shell')!.getBoundingClientRect()
+    const content = document.querySelector('.pwa-shell__content')!.getBoundingClientRect()
+    const navigation = document.querySelector(
+      getComputedStyle(document.querySelector('.mobile-tab-bar')!).display === 'none'
+        ? '.desktop-sidebar'
+        : '.mobile-tab-bar',
+    )!.getBoundingClientRect()
+    return {
+      shell: { left: shell.left, width: shell.width },
+      content: { left: content.left, width: content.width },
+      navigation: { left: navigation.left, top: navigation.top, width: navigation.width, height: navigation.height },
+    }
+  })
+
+  const baseline = await readShellGeometry()
+  for (const tab of primaryTabs.slice(1)) {
+    await page.getByRole('navigation', { name: viewport.navigationName })
+      .getByRole('link', { name: tab.label, exact: true })
+      .click()
+    await expect(page).toHaveURL(tab.path)
+    await expect(page.getByRole('heading', { name: tab.heading })).toBeVisible()
+    expect(await readShellGeometry(), `${tab.label} 不应改变应用外壳几何`).toEqual(baseline)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width)
+  }
+
+  await page.getByRole('navigation', { name: viewport.navigationName })
+    .getByRole('link', { name: '我的', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: '我的账户' })).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  await page.getByRole('navigation', { name: viewport.navigationName })
+    .getByRole('link', { name: '首页', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: primaryTabs[0].heading })).toBeVisible()
+  expect(await page.evaluate(() => window.scrollY), '切换 Tab 后应从新页面顶部开始').toBe(0)
+})

@@ -28,6 +28,9 @@ export async function installApiFixture(page: Page, options: { role?: 'ADMIN' | 
     if (path === '/api/v1/setup/status') return json({ initialized: true })
     if (path === '/api/v1/auth/csrf') return route.fulfill({ status: 204 })
     if (path === '/api/v1/account') return json(account)
+    if (path === '/api/v1/account/sessions') return json([
+      { id: 'session-1', createdAt: '2026-07-14T00:00:00Z', lastSeenAt: '2026-07-14T00:00:00Z', userAgent: 'E2E Browser', current: true },
+    ])
     if (path === '/api/v1/dashboard') return json({ summary: { expiring: 1, expired: 0, lowStock: 1, openTotal: 2 }, search: [] })
     if (path === '/api/v1/catalog/search') return json({
       items: [{ id: item.id, name: item.name, categoryPath: '食品', brand: null, model: null, specification: null, tags: item.tags, barcodes: item.barcodes, matchType: 'BARCODE_EXACT' }],
