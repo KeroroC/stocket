@@ -22,7 +22,7 @@
         <!-- 编译目标 Java 版本 -->
         <java.version>25</java.version>
         <!-- Spring Modulith 版本，用于模块化单体架构 -->
-        <spring-modulith.version>2.0.5</spring-modulith.version>
+        <spring-modulith.version>2.1.0</spring-modulith.version>
         <apache-tika.version>3.2.3</apache-tika.version>
         <commons-csv.version>1.14.1</commons-csv.version>
     </properties>
