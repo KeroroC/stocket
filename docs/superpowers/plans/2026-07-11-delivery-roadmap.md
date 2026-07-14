@@ -4,17 +4,19 @@
 
 **目标：** 通过小型、可独立验证的增量方式交付已批准的家庭资产设计方案，而非一次性制定庞大的实施计划。
 
-**架构：** 单一仓库包含 Java 25/Spring Boot 4 模块化单体应用、Vue 3 PWA 和 Docker Compose 部署资源。PostgreSQL 作为系统数据源；模块边界通过 Spring Modulith 强制执行，GraalVM Native Image 兼容性从第一阶段开始即进行验证。
+**架构：** 单一仓库包含 Java 25/Spring Boot 4 模块化单体应用、Vue 3 PWA 和 Docker Compose 部署资源。PostgreSQL 作为系统数据源；模块边界通过 Spring Modulith 强制执行。仓库暂时保留 GraalVM Native Image 能力，但它不属于当前路线图收口门禁，后续将单独决定保留或删除。
 
-**技术栈：** Java 25 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven、PostgreSQL、Flyway、Vue 3、TypeScript、Vite、Element Plus、Docker Compose、GraalVM Native Image
+**技术栈：** Java 25 LTS、Spring Boot 4.0.3、Spring Modulith 2.0.5、Maven、PostgreSQL、Flyway、Vue 3、TypeScript、Vite、Element Plus、Docker Compose；GraalVM Native Image 为待去留决策的可选能力。
 
 ---
 
-## 阶段一：工程基础
+## 阶段一：工程基础 ✅
 
 创建后端和前端项目骨架，建立模块边界，添加 PostgreSQL 迁移、健康/版本端点、Docker Compose、CI 以及 JVM/原生验证。最终产出一个空的但具备生产形态的应用程序，可在开发环境和原生可执行文件中可靠启动。
 
 详细计划：`docs/superpowers/plans/2026-07-11-foundation-native-baseline.md`
+
+验收记录：`README.md` 的“阶段一完成”。工程骨架、模块边界、PostgreSQL 迁移、系统 API、Vue 应用外壳、Compose 和 CI 已实现；历史验收提交 `3f95e86` 于 2026-07-11 完成。Native 相关历史证据保留，但不作为当前路线图完成条件。
 
 ## 阶段二：身份与家庭 ✅
 
