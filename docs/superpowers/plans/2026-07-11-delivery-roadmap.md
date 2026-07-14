@@ -68,11 +68,17 @@
 
 验收日期：2026-07-14。`make test`、`make build` 与 `make aot` 均通过；Web Push 的 RFC 8291 内容加密与 VAPID 签名另由 `WebPushMessageEncoderTest` 验证。
 
-## 阶段六：移动优先 PWA 工作流
+## 阶段六：移动优先 PWA 工作流 ✅（自动验收完成）
 
 实现面向任务的首页、全局搜索、物品/位置浏览、四步入库向导、条码和二维码扫描、库存操作、提醒视图、IndexedDB 草稿、七天过期、会话级清理、离线应用外壳和响应式桌面管理界面。
 
 验收切片：在手机上接收现有物品可在 30 秒内完成，断网时草稿得以保留，在线前写入操作被阻止。
+
+详细计划：`docs/superpowers/plans/2026-07-12-mobile-pwa-workflows.md`
+
+全链路验收：`backend/src/test/java/com/stocket/pwa/PwaWorkflowAcceptanceTest.java` 与 `frontend/e2e/`
+
+验收日期：2026-07-14。`make test`、`make build`、`make aot` 与 Playwright 移动/桌面 5 个场景均通过。实体手机的安装、真实摄像头和安全区检查受当前执行环境限制，已在 `docs/operations/pwa-device-verification.md` 明确列为待人工确认。
 
 ## 阶段七：附件、导出与审计
 

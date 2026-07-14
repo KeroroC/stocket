@@ -17,6 +17,9 @@ make build
 make aot
 make compose-config
 make native-test
+
+# PWA 移动、离线与响应式验收
+cd frontend && npm run test:e2e
 ```
 
 也可以分别运行 `make backend-test` 和 `make frontend-test`。Make 的前端目标会检查 `frontend/node_modules/.package-lock.json`；依赖尚未安装或 `package.json`、`package-lock.json` 更新时，会自动运行 `npm ci`，不会在每次执行时重复安装。
@@ -73,6 +76,20 @@ npm run dev
 ```
 
 Vite 开发服务器会把 `/api` 请求代理到 `http://localhost:8080`。
+
+## PWA 安装与离线边界
+
+生产环境必须通过 HTTPS 提供 Stocket；`localhost` 仅用于本地开发。浏览器需要支持 Service Worker、IndexedDB、MediaDevices 和 Web Crypto。登录后可使用浏览器的“安装应用”或“添加到主屏幕”入口安装 Stocket。
+
+PWA 离线能力刻意限制为：
+
+- 打开带版本的静态应用壳；
+- 恢复当前标签页已认证账号的非敏感摘要；
+- 编辑并恢复按账号隔离、七天过期的 IndexedDB 入库草稿。
+
+所有 `/api/**` 请求使用 `NetworkOnly`，Cache Storage 不保存会话、CSRF、Problem Detail、附件或通知密钥。消耗、调拨、调整和入库等库存写入在离线时会被阻止；系统不实现 Background Sync、离线写队列或自动冲突合并。扫码只在 HTTPS/localhost 且用户主动点击后申请摄像头，权限拒绝或无摄像头时可使用手工输入。
+
+实体手机的安装、真实摄像头和安全区验收清单见 `docs/operations/pwa-device-verification.md`。
 
 ## 原生 Compose 部署
 
@@ -279,6 +296,31 @@ make aot
 # Spring AOT 处理通过
 ```
 
+## 阶段六完成：移动优先 PWA 工作流
+
+系统已实现可安装应用壳、移动五栏导航和桌面侧栏、任务首页、全局搜索、分类/位置浏览、四步入库向导、商品/位置扫码、库存 bottom sheet 操作、提醒与个人页，以及账号隔离的七天 IndexedDB 草稿。断网刷新可恢复草稿，所有库存写入在重新联网前被阻止。
+
+2026-07-14 自动验收记录：
+
+```bash
+make test
+# 后端、前端、类型检查和配置契约通过
+
+make build
+# JVM 可执行 JAR、前端生产构建、manifest 与 Service Worker 生成通过
+
+make aot
+# Spring AOT 处理通过
+
+cd frontend && npm run test:e2e
+# Playwright 移动/桌面 5 个场景通过
+
+cd backend && ./mvnw -Dtest=PwaWorkflowAcceptanceTest test
+# 条码、位置码、入库、dashboard 与权限边界验收通过
+```
+
+实体手机的安装、真实摄像头释放和安全区布局仍需按设备验证文档人工确认。
+
 ## 文档
 
 - [产品与技术设计规格](docs/superpowers/specs/2026-07-10-stocket-design.md)
@@ -287,3 +329,5 @@ make aot
 - [阶段三目录与位置实施计划](docs/superpowers/plans/2026-07-12-catalog-location.md)
 - [阶段四库存台账实施计划](docs/superpowers/plans/2026-07-12-inventory-ledger.md)
 - [阶段五提醒与通知实施计划](docs/superpowers/plans/2026-07-12-reminder-notification.md)
+- [阶段六移动优先 PWA 实施计划](docs/superpowers/plans/2026-07-12-mobile-pwa-workflows.md)
+- [PWA 实体设备验证记录](docs/operations/pwa-device-verification.md)
