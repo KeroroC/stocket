@@ -7,7 +7,8 @@ frontend/node_modules
 frontend/dist
 frontend/.vite
 frontend/coverage
-backend/target
+backend/target/*
+!backend/target/stocket-backend
 
 *.log
 **/*.log

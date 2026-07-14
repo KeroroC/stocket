@@ -1,4 +1,4 @@
-.PHONY: test backend-test frontend-test config-test build aot native-test compose-config backup-test restore-smoke release-smoke
+.PHONY: test backend-test frontend-test config-test build aot native-test compose-config backup-test restore-smoke release-test release-smoke
 
 test: backend-test frontend-test config-test
 
@@ -33,6 +33,9 @@ backup-test:
 
 restore-smoke:
 	bash deploy/smoke/restore-smoke.sh
+
+release-test:
+	bash scripts/test-release-tools.sh
 
 release-smoke:
 	bash deploy/smoke/gateway-smoke.sh --static deploy/compose.production.yml
