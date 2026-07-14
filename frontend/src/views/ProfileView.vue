@@ -14,9 +14,9 @@ const emit = defineEmits<{ logout: []; forcePasswordChange: []; profileUpdated: 
       @force-password-change="emit('forcePasswordChange')"
       @profile-updated="emit('profileUpdated')"
     />
-    <nav aria-label="个人设置">
-      <a href="/notification-settings">通知设置</a>
+    <nav class="profile-view__actions" aria-label="个人设置">
+      <RouterLink to="/notification-settings">通知设置</RouterLink>
     </nav>
-    <button type="button" @click="emit('logout')">退出登录</button>
+    <button class="st-button" type="button" @click="emit('logout')">退出登录</button>
   </section>
 </template>

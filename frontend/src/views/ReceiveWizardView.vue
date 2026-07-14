@@ -81,13 +81,18 @@ onMounted(async () => {
 
 <template>
   <section class="receive-wizard">
+    <header class="receive-wizard__header">
+      <p>快速入库</p>
+      <h1>把物品放到正确的位置</h1>
+      <span>跟随步骤完成识别、数量和位置确认，草稿会自动保存。</span>
+    </header>
     <WizardProgress :current="wizard.state.value.kind" />
-    <p v-if="wizard.state.value.error" role="alert">{{ wizard.state.value.error }}</p>
+    <p v-if="wizard.state.value.error" class="st-feedback st-feedback--error" role="alert">{{ wizard.state.value.error }}</p>
     <IdentifyStep v-if="wizard.state.value.kind === 'IDENTIFY'" @next="wizard.next" @scan="scannerOpen = true" />
     <MatchStep v-else-if="wizard.state.value.kind === 'MATCH'" :draft="wizard.draft.value" @next="wizard.next" @back="wizard.back" />
     <DetailsStep v-else-if="wizard.state.value.kind === 'DETAILS'" :draft="wizard.draft.value" @update="wizard.updateDetails" @next="wizard.next" @back="wizard.back" @scan-location="scannerOpen = true" />
     <ConfirmStep v-else-if="['CONFIRM', 'SUBMITTING', 'CONFLICT'].includes(wizard.state.value.kind)" :draft="wizard.draft.value" :current="wizard.preview.value.current" @submit="wizard.submit()" @back="wizard.back" />
-    <p v-else-if="wizard.state.value.kind === 'COMPLETED'">入库完成</p>
+    <section v-else-if="wizard.state.value.kind === 'COMPLETED'" class="receive-completed" role="status"><strong>入库完成</strong><p>库存数量和流水已经更新。</p></section>
     <ScannerSheet v-model="scannerOpen" :scanner="scanner" @result="handleScan" />
   </section>
 </template>

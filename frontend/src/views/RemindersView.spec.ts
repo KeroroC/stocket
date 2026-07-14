@@ -35,6 +35,8 @@ describe('RemindersView', () => {
     expect(screen.getByText(/冰箱/)).toBeInTheDocument()
     expect(screen.getAllByText(/剩余 2/).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/2026/).length).toBeGreaterThan(0)
+    expect(document.querySelector('.reminder-kind--expiring')).toHaveTextContent('临期')
+    expect(document.querySelector('.reminder-kind--low-stock')).toHaveTextContent('低库存')
 
     await fireEvent.click(screen.getByRole('button', { name: '确认 牛奶' }))
     expect(acknowledgeReminder).toHaveBeenCalledWith('reminder-open')

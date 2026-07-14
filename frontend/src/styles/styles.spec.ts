@@ -20,4 +20,15 @@ describe('Stocket design tokens', () => {
     expect(base).toContain(':focus-visible')
     expect(base).toContain('@media (prefers-reduced-motion: reduce)')
   })
+
+  it('为业务页面提供响应式布局基线', () => {
+    const css = readStyle('pages.css')
+    expect(css).toContain('.catalog-page')
+    expect(css).toContain('.receive-wizard')
+    expect(css).toContain('.reminders-page')
+    expect(css).toContain('.reminder-kind--expired')
+    expect(css).toContain('flex-wrap: wrap')
+    expect(css).not.toContain('.st-page-header__actions button:first-child')
+    expect(css).toContain('@media (max-width: 767px)')
+  })
 })

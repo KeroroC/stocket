@@ -68,12 +68,12 @@ async function completed() {
 </script>
 
 <template>
-  <section>
+  <section class="st-page">
     <StPageHeader title="库存台账" description="查看批次、资产、可用量与不可变流水">
       <template #actions>
         <ExportDialog kind="inventory" label="导出库存" />
         <template v-if="canWrite">
-          <button type="button" @click="mode = 'receive'">新增入库</button>
+          <button class="st-button st-button--primary" type="button" @click="mode = 'receive'">新增入库</button>
           <button v-if="selected" type="button" @click="sheet = 'consume'">消耗</button>
           <button v-if="selected" type="button" @click="sheet = 'transfer'">调拨</button>
           <button v-if="selected" type="button" @click="sheet = 'adjust'">调整</button>

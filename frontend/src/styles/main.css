@@ -2,6 +2,7 @@
 @import './element-theme.css';
 @import './base.css';
 @import './legacy.css';
+@import './pages.css';
 
 .pwa-shell {
   min-height: 100dvh;

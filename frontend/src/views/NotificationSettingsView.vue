@@ -48,7 +48,7 @@ async function enablePush() {
 </script>
 
 <template>
-  <section>
+  <section class="st-page settings-page">
     <StPageHeader title="通知设置" description="管理浏览器通知与外部发送渠道" />
     <p v-if="message" role="status">{{ message }}</p>
     <p v-if="error" role="alert">{{ error }}</p>
