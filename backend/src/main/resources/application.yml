@@ -11,6 +11,9 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  modulith:
+    events:
+      republish-outstanding-events-on-restart: true
 stocket:
   identity:
     cookie:
@@ -26,6 +29,11 @@ stocket:
     login:
       rate-limit-window: 15m
       max-failures: 10
+  notification:
+    worker-batch-size: 50
+    max-attempts: 8
+    initial-backoff: 30s
+    max-backoff: 24h
 management:
   endpoints:
     web:
