@@ -76,11 +76,13 @@ public class NotificationChannel {
         this.updatedAt = now;
     }
 
-    UUID id() { return id; }
-    UUID householdId() { return householdId; }
-    String type() { return type; }
-    boolean enabled() { return enabled; }
-    Map<String, Object> configuration() { return Map.copyOf(configuration); }
-    boolean hasSecret() { return encryptedSecret != null; }
-    long version() { return version; }
+    public UUID id() { return id; }
+    public UUID householdId() { return householdId; }
+    public String type() { return type; }
+    public boolean enabled() { return enabled; }
+    public Map<String, Object> configuration() { return Map.copyOf(configuration); }
+    public boolean hasSecret() { return encryptedSecret != null; }
+    public String encryptedSecret() { return encryptedSecret; }
+    public Integer keyVersion() { return keyVersion; }
+    public long version() { return version; }
 }
