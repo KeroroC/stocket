@@ -14,13 +14,13 @@ FROM debian:bookworm-slim AS runtime
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --uid 10001 --create-home --shell /usr/sbin/nologin app
+    && useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
 
 WORKDIR /app
 
 COPY --from=build /workspace/target/stocket-backend ./stocket
 
-USER 10001
+USER 10001:10001
 
 EXPOSE 8080
 
