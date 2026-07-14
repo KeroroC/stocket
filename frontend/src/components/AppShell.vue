@@ -8,6 +8,9 @@ import CategoryAdminView from '../views/CategoryAdminView.vue'
 import LocationAdminView from '../views/LocationAdminView.vue'
 import ItemsView from '../views/ItemsView.vue'
 import InventoryEntryView from '../views/InventoryEntryView.vue'
+import RemindersView from '../views/RemindersView.vue'
+import NotificationSettingsView from '../views/NotificationSettingsView.vue'
+import DeliveryFailuresView from '../views/DeliveryFailuresView.vue'
 
 const props = defineProps<{
   account: CurrentAccount
@@ -18,7 +21,7 @@ const emit = defineEmits<{
   forcePasswordChange: []
 }>()
 
-type ViewName = 'account' | 'items' | 'inventory' | 'members' | 'invites' | 'categories' | 'locations'
+type ViewName = 'account' | 'items' | 'inventory' | 'reminders' | 'members' | 'invites' | 'categories' | 'locations' | 'notification-settings' | 'delivery-failures'
 
 const currentView = ref<ViewName>('account')
 
@@ -52,6 +55,7 @@ function handleForcePasswordChange() {
       <ul class="shell-nav">
         <li><button :class="['shell-nav-item', { active: currentView === 'items' }]" @click="navigateTo('items')">物品目录</button></li>
         <li><button :class="['shell-nav-item', { active: currentView === 'inventory' }]" @click="navigateTo('inventory')">库存台账</button></li>
+        <li><button :class="['shell-nav-item', { active: currentView === 'reminders' }]" @click="navigateTo('reminders')">提醒中心</button></li>
         <li>
           <button
             :class="['shell-nav-item', { active: currentView === 'account' }]"
@@ -68,6 +72,8 @@ function handleForcePasswordChange() {
             成员管理
           </button>
         </li>
+        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'notification-settings' }]" @click="navigateTo('notification-settings')">通知设置</button></li>
+        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'delivery-failures' }]" @click="navigateTo('delivery-failures')">通知失败</button></li>
         <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'categories' }]" @click="navigateTo('categories')">分类管理</button></li>
         <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'locations' }]" @click="navigateTo('locations')">位置管理</button></li>
         <li v-if="isAdmin">
@@ -94,6 +100,7 @@ function handleForcePasswordChange() {
       />
       <ItemsView v-else-if="currentView === 'items'" :role="account.role" />
       <InventoryEntryView v-else-if="currentView === 'inventory'" :role="account.role" />
+      <RemindersView v-else-if="currentView === 'reminders'" />
       <AdminMembersView
         v-else-if="currentView === 'members'"
         @logout="handleChildLogout"
@@ -106,6 +113,8 @@ function handleForcePasswordChange() {
       />
       <CategoryAdminView v-else-if="currentView === 'categories'" />
       <LocationAdminView v-else-if="currentView === 'locations'" />
+      <NotificationSettingsView v-else-if="currentView === 'notification-settings'" />
+      <DeliveryFailuresView v-else-if="currentView === 'delivery-failures'" />
     </main>
   </div>
 </template>

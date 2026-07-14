@@ -100,12 +100,23 @@ describe('AppShell', () => {
     }
   })
 
+  it('all roles see reminder navigation', () => {
+    for (const account of [adminAccount, memberAccount, viewerAccount]) {
+      const { unmount } = render(AppShell, { props: { account } })
+      const nav = screen.getByRole('navigation', { name: /主导航/ })
+      expect(within(nav).getByText('提醒中心')).toBeInTheDocument()
+      unmount()
+    }
+  })
+
   it('ADMIN sees "成员管理" and "邀请管理" navigation items', () => {
     render(AppShell, { props: { account: adminAccount } })
 
     const nav = screen.getByRole('navigation', { name: /主导航/ })
     expect(within(nav).getByText(/成员管理/)).toBeInTheDocument()
     expect(within(nav).getByText(/邀请管理/)).toBeInTheDocument()
+    expect(within(nav).getByText('通知设置')).toBeInTheDocument()
+    expect(within(nav).getByText('通知失败')).toBeInTheDocument()
   })
 
   it('MEMBER does not see management navigation items', () => {
@@ -114,6 +125,8 @@ describe('AppShell', () => {
     const nav = screen.getByRole('navigation', { name: /主导航/ })
     expect(within(nav).queryByText(/成员管理/)).not.toBeInTheDocument()
     expect(within(nav).queryByText(/邀请管理/)).not.toBeInTheDocument()
+    expect(within(nav).queryByText('通知设置')).not.toBeInTheDocument()
+    expect(within(nav).queryByText('通知失败')).not.toBeInTheDocument()
   })
 
   it('VIEWER does not see management navigation items', () => {
@@ -122,6 +135,8 @@ describe('AppShell', () => {
     const nav = screen.getByRole('navigation', { name: /主导航/ })
     expect(within(nav).queryByText(/成员管理/)).not.toBeInTheDocument()
     expect(within(nav).queryByText(/邀请管理/)).not.toBeInTheDocument()
+    expect(within(nav).queryByText('通知设置')).not.toBeInTheDocument()
+    expect(within(nav).queryByText('通知失败')).not.toBeInTheDocument()
   })
 
   it('shows logout button', () => {
