@@ -87,7 +87,7 @@ export function createReceiveWizard(
     if (nextKind === 'CONFIRM' && draft.value.item) {
       void services.getAvailability(draft.value.item.id).then((value) => {
         availability.value = value.totalAvailable
-      })
+      }).catch(() => undefined)
     }
   }
 
@@ -103,7 +103,7 @@ export function createReceiveWizard(
     if (draft.value.item) {
       void services.getAvailability(draft.value.item.id).then((value) => {
         availability.value = value.totalAvailable
-      })
+      }).catch(() => undefined)
     }
   }
 
@@ -127,6 +127,11 @@ export function createReceiveWizard(
     const selectedLocation = draft.value.location
     if (!selectedItem || !selectedLocation) {
       state.value = { kind: 'CONFIRM', error: '请选择物品和位置。' }
+      return
+    }
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      state.value = { kind: 'CONFIRM', error: '当前离线，请联网后再提交；草稿已保留。' }
+      await flush()
       return
     }
     state.value = { kind: 'SUBMITTING' }

@@ -11,11 +11,26 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  sessionStorage.clear()
+  vi.unstubAllGlobals()
   cookieSpy.mockRestore()
   vi.restoreAllMocks()
 })
 
 describe('身份启动状态', () => {
+  it('离线刷新时恢复当前标签页的非敏感账号摘要', async () => {
+    sessionStorage.setItem('stocket:session-account', JSON.stringify({
+      id: 'a1', username: 'member', displayName: '离线成员', role: 'MEMBER',
+    }))
+    vi.stubGlobal('navigator', { ...navigator, onLine: false })
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+
+    render(App)
+
+    expect(await screen.findByText('离线成员')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '退出登录' })).toBeInTheDocument()
+  })
+
   it('setup status 未初始化时显示 setup-required 视图', async () => {
     const fetch = vi.fn((url: string) => {
       if (url === '/api/v1/setup/status') {

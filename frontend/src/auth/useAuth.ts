@@ -9,12 +9,31 @@ import {
 } from '../offline/sessionCleanup'
 
 export const authState = ref<AuthState>({ kind: 'checking-setup' })
+const SESSION_ACCOUNT_KEY = 'stocket:session-account'
+
+function cacheAccount(account: CurrentAccount): void {
+  sessionStorage.setItem(SESSION_ACCOUNT_KEY, JSON.stringify(account))
+}
+
+function readCachedAccount(): CurrentAccount | undefined {
+  try {
+    const value = sessionStorage.getItem(SESSION_ACCOUNT_KEY)
+    return value ? JSON.parse(value) as CurrentAccount : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function clearCachedAccount(): void {
+  sessionStorage.removeItem(SESSION_ACCOUNT_KEY)
+}
 
 export function useAuth() {
   const state = authState
   state.value = { kind: 'checking-setup' }
   setActiveSessionAccount(undefined)
   registerSessionExpiredHandler(() => {
+    clearCachedAccount()
     state.value = { kind: 'anonymous' }
   })
 
@@ -29,10 +48,20 @@ export function useAuth() {
 
   async function bootstrap(): Promise<void> {
     state.value = { kind: 'checking-setup' }
-
-    const setupStatus = await getSetupStatus()
-
-    await refreshCsrf()
+    let setupStatus
+    try {
+      setupStatus = await getSetupStatus()
+      await refreshCsrf()
+    } catch (cause) {
+      const cached = readCachedAccount()
+      if (navigator.onLine === false && cached) {
+        state.value = { kind: 'authenticated', account: cached }
+        setActiveSessionAccount(cached.id)
+        return
+      }
+      state.value = { kind: 'anonymous' }
+      return
+    }
 
     if (!setupStatus.initialized) {
       state.value = { kind: 'setup-required' }
@@ -44,10 +73,13 @@ export function useAuth() {
       if (account.mustChangePassword) {
         state.value = { kind: 'password-change-required', account: mapAccount(account) }
       } else {
-        state.value = { kind: 'authenticated', account: mapAccount(account) }
+        const mapped = mapAccount(account)
+        state.value = { kind: 'authenticated', account: mapped }
+        cacheAccount(mapped)
         setActiveSessionAccount(account.id)
       }
     } catch {
+      clearCachedAccount()
       state.value = { kind: 'anonymous' }
     }
   }
@@ -60,7 +92,9 @@ export function useAuth() {
     if (account.mustChangePassword) {
       state.value = { kind: 'password-change-required', account: mapAccount(account) }
     } else {
-      state.value = { kind: 'authenticated', account: mapAccount(account) }
+      const mapped = mapAccount(account)
+      state.value = { kind: 'authenticated', account: mapped }
+      cacheAccount(mapped)
       setActiveSessionAccount(account.id)
     }
   }
@@ -72,7 +106,9 @@ export function useAuth() {
     if (account.mustChangePassword) {
       state.value = { kind: 'password-change-required', account: mapAccount(account) }
     } else {
-      state.value = { kind: 'authenticated', account: mapAccount(account) }
+      const mapped = mapAccount(account)
+      state.value = { kind: 'authenticated', account: mapped }
+      cacheAccount(mapped)
       setActiveSessionAccount(account.id)
     }
   }
@@ -84,12 +120,15 @@ export function useAuth() {
       // ignore logout failure
     }
     await clearActiveSessionData()
+    clearCachedAccount()
     state.value = { kind: 'anonymous' }
   }
 
   async function passwordChanged(): Promise<void> {
     const account = await getCurrentAccount()
-    state.value = { kind: 'authenticated', account: mapAccount(account) }
+    const mapped = mapAccount(account)
+    state.value = { kind: 'authenticated', account: mapped }
+    cacheAccount(mapped)
     setActiveSessionAccount(account.id)
   }
 
