@@ -98,6 +98,43 @@ services:
       driver: json-file
       options: { max-size: 10m, max-file: "5" }
 
+  backup:
+    profiles: [operations]
+    build:
+      context: ..
+      dockerfile: deploy/backup/Dockerfile
+    image: stocket-backup:${STOCKET_VERSION:-dev}
+    user: "70:70"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-stocket}
+      PGUSER: ${POSTGRES_USER:-stocket}
+      STOCKET_DB_PASSWORD_FILE: /run/secrets/postgres_password
+      BACKUP_ROOT: /var/lib/stocket/backups
+      ATTACHMENT_DIR: /var/lib/stocket/attachments
+      STOCKET_VERSION: ${STOCKET_VERSION:-dev}
+    secrets:
+      - postgres_password
+    volumes:
+      - attachment-data:/var/lib/stocket/attachments:ro
+      - backup-data:/var/lib/stocket/backups
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=70,gid=70
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "1.00", memory: 512M }
+        reservations: { memory: 64M }
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: "5" }
+
 secrets:
   postgres_password:
     file: ${POSTGRES_PASSWORD_FILE:-../secrets/postgres-password.txt}
