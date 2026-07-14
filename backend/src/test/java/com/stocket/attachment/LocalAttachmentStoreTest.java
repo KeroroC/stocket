@@ -44,5 +44,9 @@ class LocalAttachmentStoreTest {
         Files.createSymbolicLink(link, real);
         assertThatThrownBy(() -> new LocalAttachmentStore(link, 100))
                 .hasMessageContaining("ATTACHMENT_STORAGE_SYMLINK");
+
+        Files.createDirectory(real.resolve("existing-child"));
+        assertThatThrownBy(() -> new LocalAttachmentStore(link.resolve("existing-child"), 100))
+                .hasMessageContaining("ATTACHMENT_STORAGE_SYMLINK");
     }
 }

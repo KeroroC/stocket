@@ -24,13 +24,14 @@ public final class LocalAttachmentStore implements AttachmentStore {
 
     public LocalAttachmentStore(Path configuredRoot, long maxSize) throws IOException {
         Path absolute = configuredRoot.toAbsolutePath().normalize();
+        rejectSymbolicLinks(absolute);
         Path existing = absolute;
         while (existing != null && !Files.exists(existing, LinkOption.NOFOLLOW_LINKS)) existing = existing.getParent();
-        if (existing == null || Files.isSymbolicLink(existing)) throw new IOException("ATTACHMENT_STORAGE_SYMLINK");
-        Path canonical = existing.toRealPath(LinkOption.NOFOLLOW_LINKS).resolve(existing.relativize(absolute)).normalize();
+        if (existing == null) throw new IOException("ATTACHMENT_STORAGE_SYMLINK");
+        Path canonical = existing.toRealPath().resolve(existing.relativize(absolute)).normalize();
         Files.createDirectories(canonical);
-        if (Files.isSymbolicLink(canonical)) throw new IOException("ATTACHMENT_STORAGE_SYMLINK");
-        this.root = canonical.toRealPath(LinkOption.NOFOLLOW_LINKS);
+        rejectSymbolicLinks(canonical);
+        this.root = canonical.toRealPath();
         this.staging = root.resolve(".staging");
         Files.createDirectories(staging);
         this.maxSize = maxSize;
@@ -116,6 +117,21 @@ public final class LocalAttachmentStore implements AttachmentStore {
         Path normalized = candidate.toAbsolutePath().normalize();
         if (!normalized.startsWith(root)) throw new IllegalArgumentException("ATTACHMENT_PATH_INVALID");
         return normalized;
+    }
+
+    private static void rejectSymbolicLinks(Path path) throws IOException {
+        Path current = path.getRoot();
+        for (Path segment : path) {
+            current = current == null ? segment : current.resolve(segment);
+            if (Files.exists(current, LinkOption.NOFOLLOW_LINKS) && Files.isSymbolicLink(current)
+                    && !isSystemRootAlias(current)) {
+                throw new IOException("ATTACHMENT_STORAGE_SYMLINK");
+            }
+        }
+    }
+
+    private static boolean isSystemRootAlias(Path path) {
+        return path.getParent() != null && path.getParent().getParent() == null;
     }
 
     private String randomKey() {

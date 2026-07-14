@@ -27,7 +27,9 @@ class AttachmentValidatorTest {
     void acceptsAllowedSignaturesAndSanitizesFilename() throws Exception {
         assertThat(validate(image("jpg"), "photo.jpg", "image/jpeg").detectedMediaType()).isEqualTo("image/jpeg");
         assertThat(validate(image("png"), "photo.png", "image/png").detectedMediaType()).isEqualTo("image/png");
-        assertThat(validate(webp(2, 3), "photo.webp", "image/webp").detectedMediaType()).isEqualTo("image/webp");
+        assertThat(validate(webpExtended(2, 3), "extended.webp", "image/webp").detectedMediaType()).isEqualTo("image/webp");
+        assertThat(validate(webpLossy(4, 5), "lossy.webp", "image/webp").detectedMediaType()).isEqualTo("image/webp");
+        assertThat(validate(webpLossless(6, 7), "lossless.webp", "image/webp").detectedMediaType()).isEqualTo("image/webp");
         assertThat(validate("%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n".getBytes(), "invoice.pdf", "application/pdf").detectedMediaType()).isEqualTo("application/pdf");
         assertThat(validate(image("png"), "../\u0001hidden.png", "image/png").safeFilename()).isEqualTo("hidden.png");
     }
@@ -63,10 +65,26 @@ class AttachmentValidatorTest {
         return output.toByteArray();
     }
 
-    private byte[] webp(int width, int height) {
+    private byte[] webpExtended(int width, int height) {
         ByteBuffer buffer = ByteBuffer.allocate(30).order(ByteOrder.LITTLE_ENDIAN);
         buffer.put("RIFF".getBytes()).putInt(22).put("WEBPVP8X".getBytes()).putInt(10).putInt(0);
         put24(buffer, width - 1); put24(buffer, height - 1);
+        return buffer.array();
+    }
+
+    private byte[] webpLossy(int width, int height) {
+        ByteBuffer buffer = ByteBuffer.allocate(30).order(ByteOrder.LITTLE_ENDIAN);
+        buffer.put("RIFF".getBytes()).putInt(22).put("WEBPVP8 ".getBytes()).putInt(10);
+        buffer.put(new byte[]{0x10, 0, 0, (byte) 0x9d, 0x01, 0x2a});
+        buffer.putShort((short) width).putShort((short) height);
+        return buffer.array();
+    }
+
+    private byte[] webpLossless(int width, int height) {
+        ByteBuffer buffer = ByteBuffer.allocate(26).order(ByteOrder.LITTLE_ENDIAN);
+        buffer.put("RIFF".getBytes()).putInt(18).put("WEBPVP8L".getBytes()).putInt(5).put((byte) 0x2f);
+        buffer.putInt((width - 1) | ((height - 1) << 14));
+        buffer.put((byte) 0);
         return buffer.array();
     }
 

@@ -74,16 +74,18 @@ class CatalogSearchService implements CatalogExportQuery {
     public long countForExport(UUID householdId, CatalogFilter filter) {
         filter.validate(false);
         String query = filter.normalizedQuery();
+        boolean exactBarcode = hasExactBarcode(householdId, filter, query);
         Long total = jdbc.queryForObject("""
                 select count(*)
                 from catalog_search_projection p
                 join item_definition i on i.id = p.item_definition_id
                 where p.household_id = ? and (? or not p.archived)
                   and (cast(? as uuid) is null or i.category_id = ?)
-                  and (? = '' or ? = any(p.normalized_barcodes)
-                       or p.searchable_text like '%' || ? || '%' or similarity(p.searchable_text, ?) >= 0.15)
+                  and ((? and ? = any(p.normalized_barcodes))
+                       or (not ? and (? = '' or p.searchable_text like '%' || ? || '%'
+                           or similarity(p.searchable_text, ?) >= 0.15)))
                 """, Long.class, householdId, filter.includeArchived(), filter.categoryId(), filter.categoryId(),
-                query, query.toUpperCase(Locale.ROOT), query, query);
+                exactBarcode, query.toUpperCase(Locale.ROOT), exactBarcode, query, query, query);
         return total == null ? 0 : total;
     }
 
@@ -91,6 +93,7 @@ class CatalogSearchService implements CatalogExportQuery {
     public List<CatalogExportRow> exportPage(UUID householdId, CatalogFilter filter, UUID afterId, int size) {
         filter.validate(false);
         String query = filter.normalizedQuery();
+        boolean exactBarcode = hasExactBarcode(householdId, filter, query);
         return jdbc.query("""
                 select p.item_definition_id, p.display_name, p.category_path, p.brand, p.model,
                        p.specification, p.tags, p.raw_barcodes
@@ -98,8 +101,9 @@ class CatalogSearchService implements CatalogExportQuery {
                 join item_definition i on i.id = p.item_definition_id
                 where p.household_id = ? and (? or not p.archived)
                   and (cast(? as uuid) is null or i.category_id = ?)
-                  and (? = '' or ? = any(p.normalized_barcodes)
-                       or p.searchable_text like '%' || ? || '%' or similarity(p.searchable_text, ?) >= 0.15)
+                  and ((? and ? = any(p.normalized_barcodes))
+                       or (not ? and (? = '' or p.searchable_text like '%' || ? || '%'
+                           or similarity(p.searchable_text, ?) >= 0.15)))
                   and (cast(? as uuid) is null or p.item_definition_id > ?)
                 order by p.item_definition_id
                 limit ?
@@ -108,8 +112,23 @@ class CatalogSearchService implements CatalogExportQuery {
                         resultSet.getString("category_path"), resultSet.getString("brand"), resultSet.getString("model"),
                         resultSet.getString("specification"), array(resultSet.getArray("tags")),
                         array(resultSet.getArray("raw_barcodes"))),
-                householdId, filter.includeArchived(), filter.categoryId(), filter.categoryId(), query,
-                query.toUpperCase(Locale.ROOT), query, query, afterId, afterId, size);
+                householdId, filter.includeArchived(), filter.categoryId(), filter.categoryId(), exactBarcode,
+                query.toUpperCase(Locale.ROOT), exactBarcode, query, query, query, afterId, afterId, size);
+    }
+
+    private boolean hasExactBarcode(UUID householdId, CatalogFilter filter, String query) {
+        if (query.isBlank()) return false;
+        Boolean exact = jdbc.queryForObject("""
+                select exists(
+                    select 1 from catalog_search_projection p
+                    join item_definition i on i.id = p.item_definition_id
+                    where p.household_id = ? and (? or not p.archived)
+                      and (cast(? as uuid) is null or i.category_id = ?)
+                      and ? = any(p.normalized_barcodes)
+                )
+                """, Boolean.class, householdId, filter.includeArchived(), filter.categoryId(), filter.categoryId(),
+                query.toUpperCase(Locale.ROOT));
+        return Boolean.TRUE.equals(exact);
     }
 
     private CatalogSearchResult.SearchItem map(java.sql.ResultSet resultSet, String matchType) throws SQLException {

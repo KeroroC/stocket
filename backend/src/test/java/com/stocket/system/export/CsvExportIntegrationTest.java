@@ -84,6 +84,20 @@ class CsvExportIntegrationTest {
         assertThat(inventoryCsv.lines().filter(line -> line.matches("[0-9a-f-]{36},.*")).count()).isEqualTo(2);
     }
 
+    @Test void exactBarcodeExportMatchesExactBarcodeSearch() throws Exception {
+        UUID textOnlyMatch = UUID.randomUUID();
+        jdbc.update("insert into item_definition(id,household_id,name,normalized_name,default_unit,custom_attributes) values (?,?, '6901 收纳盒','6901 收纳盒','个','{}'::jsonb)", textOnlyMatch, householdId);
+        jdbc.update("insert into catalog_search_projection(item_definition_id,household_id,display_name,category_path,tags,raw_barcodes,normalized_barcodes,searchable_text,archived) values (?,?, '6901 收纳盒','杂物',array[]::varchar[],array['OTHER'],array['OTHER'],'6901 收纳盒 杂物',false)", textOnlyMatch, householdId);
+
+        MvcResult search = mockMvc.perform(get("/api/v1/catalog/search").queryParam("q", "6901").cookie(cookie()))
+                .andExpect(status().isOk()).andReturn();
+        List<String> searchIds = JsonPath.read(search.getResponse().getContentAsString(), "$.items[*].id");
+        String catalogCsv = csv("/api/v1/exports/catalog.csv", "q", "6901");
+
+        assertThat(searchIds).containsExactly(itemId.toString());
+        assertThat(catalogCsv).contains(itemId.toString()).doesNotContain(textOnlyMatch.toString());
+    }
+
     private String csv(String path, String parameter, String value) throws Exception {
         MvcResult pending = mockMvc.perform(get(path).queryParam(parameter, value).cookie(cookie()))
                 .andExpect(request().asyncStarted()).andReturn();

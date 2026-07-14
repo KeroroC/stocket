@@ -68,8 +68,18 @@ public final class AttachmentValidator {
     }
 
     private int[] webpDimensions(byte[] bytes) {
-        if (bytes.length < 30 || !ascii(bytes, 12, "VP8X")) throw problem("ATTACHMENT_INVALID_CONTENT");
-        return new int[]{read24(bytes, 24) + 1, read24(bytes, 27) + 1};
+        if (ascii(bytes, 12, "VP8X") && bytes.length >= 30) {
+            return new int[]{read24(bytes, 24) + 1, read24(bytes, 27) + 1};
+        }
+        if (ascii(bytes, 12, "VP8 ") && bytes.length >= 30
+                && unsigned(bytes[23]) == 0x9d && unsigned(bytes[24]) == 0x01 && unsigned(bytes[25]) == 0x2a) {
+            return new int[]{read16(bytes, 26) & 0x3fff, read16(bytes, 28) & 0x3fff};
+        }
+        if (ascii(bytes, 12, "VP8L") && bytes.length >= 25 && unsigned(bytes[20]) == 0x2f) {
+            int dimensions = read32(bytes, 21);
+            return new int[]{(dimensions & 0x3fff) + 1, ((dimensions >>> 14) & 0x3fff) + 1};
+        }
+        throw problem("ATTACHMENT_INVALID_CONTENT");
     }
 
     private boolean hasPdfEof(byte[] bytes) {
@@ -104,6 +114,14 @@ public final class AttachmentValidator {
 
     private int read24(byte[] bytes, int offset) {
         return unsigned(bytes[offset]) | unsigned(bytes[offset + 1]) << 8 | unsigned(bytes[offset + 2]) << 16;
+    }
+
+    private int read16(byte[] bytes, int offset) {
+        return unsigned(bytes[offset]) | unsigned(bytes[offset + 1]) << 8;
+    }
+
+    private int read32(byte[] bytes, int offset) {
+        return read16(bytes, offset) | read16(bytes, offset + 2) << 16;
     }
 
     private int unsigned(byte value) { return value & 0xff; }
