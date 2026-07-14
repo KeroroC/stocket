@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stocket.identity.internal.invite.InviteService;
+import com.stocket.identity.ClientAddressProvider;
 
 @RestController
 @RequestMapping("/api/v1/invites")
@@ -25,10 +27,13 @@ class InviteAcceptanceController {
 
     private final InviteService inviteService;
     private final Clock clock;
+    private final ObjectProvider<ClientAddressProvider> clientAddresses;
 
-    InviteAcceptanceController(InviteService inviteService, Clock clock) {
+    InviteAcceptanceController(InviteService inviteService, Clock clock,
+                               ObjectProvider<ClientAddressProvider> clientAddresses) {
         this.inviteService = inviteService;
         this.clock = clock;
+        this.clientAddresses = clientAddresses;
     }
 
     @GetMapping("/{token}/status")
@@ -47,7 +52,7 @@ class InviteAcceptanceController {
             @PathVariable String token,
             @Valid @RequestBody AcceptInviteRequest request,
             HttpServletRequest httpRequest) {
-        String sourceAddress = httpRequest.getRemoteAddr();
+        String sourceAddress = clientAddresses.getIfAvailable(() -> HttpServletRequest::getRemoteAddr).resolve(httpRequest);
 
         try {
             InviteService.AcceptanceResult result = inviteService.acceptInvite(

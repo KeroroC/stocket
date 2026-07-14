@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.web.csrf.CsrfLogoutHandler;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stocket.identity.IdentityRole;
+import com.stocket.identity.ClientAddressProvider;
 import com.stocket.identity.internal.authentication.AuthenticationService;
 import com.stocket.identity.internal.authentication.AuthenticationService.LoginResult;
 import com.stocket.identity.internal.authentication.SessionCookieService;
@@ -35,15 +37,18 @@ class AuthenticationController {
     private final SessionCookieService sessionCookieService;
     private final CsrfTokenRepository csrfTokenRepository;
     private final HouseholdMemberRepository householdMemberRepository;
+    private final ObjectProvider<ClientAddressProvider> clientAddresses;
 
     AuthenticationController(AuthenticationService authenticationService,
                               SessionCookieService sessionCookieService,
                               CsrfTokenRepository csrfTokenRepository,
-                              HouseholdMemberRepository householdMemberRepository) {
+                              HouseholdMemberRepository householdMemberRepository,
+                              ObjectProvider<ClientAddressProvider> clientAddresses) {
         this.authenticationService = authenticationService;
         this.sessionCookieService = sessionCookieService;
         this.csrfTokenRepository = csrfTokenRepository;
         this.householdMemberRepository = householdMemberRepository;
+        this.clientAddresses = clientAddresses;
     }
 
     @PostMapping("/login")
@@ -52,7 +57,7 @@ class AuthenticationController {
                             HttpServletResponse httpResponse) {
         Instant now = Instant.now();
         String userAgent = httpRequest.getHeader("User-Agent");
-        String sourceAddress = httpRequest.getRemoteAddr();
+        String sourceAddress = clientAddresses.getIfAvailable(() -> HttpServletRequest::getRemoteAddr).resolve(httpRequest);
 
         LoginResult result = authenticationService.login(
                 request.username(), request.password(),

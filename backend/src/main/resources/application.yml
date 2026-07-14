@@ -46,6 +46,14 @@ stocket:
   attachment:
     directory: "${STOCKET_ATTACHMENT_DIR:${java.io.tmpdir}/stocket-attachments}"
     max-size-bytes: 20971520
+  trusted-proxy-cidrs: "${STOCKET_TRUSTED_PROXY_CIDRS:}"
+  rate-limit:
+    max-keys: 50000
+    policies:
+      setup: { capacity: 5, window: 1h }
+      upload: { capacity: 30, window: 1m }
+      channel-test: { capacity: 5, window: 15m }
+      general: { capacity: 300, window: 1m }
 management:
   endpoints:
     web:
