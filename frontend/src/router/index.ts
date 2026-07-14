@@ -1,4 +1,4 @@
-import { defineComponent, h, type Ref } from 'vue'
+import type { Ref } from 'vue'
 import {
   createRouter,
   createWebHistory,
@@ -11,20 +11,13 @@ import RemindersView from '../views/RemindersView.vue'
 import AccountView from '../views/AccountView.vue'
 import LoginView from '../views/LoginView.vue'
 import PasswordChangeView from '../views/PasswordChangeView.vue'
-
-const HomePlaceholder = defineComponent({
-  name: 'HomePlaceholder',
-  setup: () => () => h('section', { class: 'route-placeholder' }, [
-    h('h1', '首页'),
-    h('p', '家庭资产任务概览将在此显示。'),
-  ]),
-})
+import HomeView from '../views/HomeView.vue'
 
 export function createStocketRouter(authState: Ref<AuthState>, history: RouterHistory = createWebHistory()) {
   const router = createRouter({
     history,
     routes: [
-      { path: '/', name: 'home', component: HomePlaceholder, meta: { requiresAuth: true } },
+      { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },
       { path: '/items', name: 'items', component: ItemsView, meta: { requiresAuth: true } },
       { path: '/receive', name: 'receive', component: ReceiveWizardView, meta: { requiresAuth: true } },
       { path: '/reminders', name: 'reminders', component: RemindersView, meta: { requiresAuth: true } },

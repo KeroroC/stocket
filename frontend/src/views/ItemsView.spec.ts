@@ -1,9 +1,11 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { searchCatalog } from '../api/catalog'
+import { listLocations } from '../api/location'
 import ItemsView from './ItemsView.vue'
 
 vi.mock('../api/catalog', () => ({ searchCatalog: vi.fn(), listCategories: vi.fn().mockResolvedValue([]), createItem: vi.fn() }))
+vi.mock('../api/location', () => ({ listLocations: vi.fn().mockResolvedValue([]) }))
 vi.mock('./ItemDetailView.vue', () => ({ default: { template: '<div>详情</div>' } }))
 afterEach(() => { cleanup(); vi.useRealTimers() })
 
@@ -21,5 +23,13 @@ describe('ItemsView', () => {
   it('只读角色不显示创建操作', () => {
     render(ItemsView, { props: { role: 'VIEWER' } })
     expect(screen.queryByRole('button', { name: '创建物品' })).not.toBeInTheDocument()
+  })
+
+  it('可以切换分类和位置浏览', async () => {
+    vi.mocked(listLocations).mockResolvedValue([{ id: 'loc-1', parentId: null, name: '冰箱', fullPath: '冰箱', publicCode: 'FRIDGE', version: 0, archived: false }])
+    render(ItemsView, { props: { role: 'VIEWER' } })
+    expect(screen.getByRole('button', { name: '按分类' })).toBeInTheDocument()
+    await fireEvent.click(screen.getByRole('button', { name: '按位置' }))
+    expect(await screen.findByText('冰箱')).toBeInTheDocument()
   })
 })
