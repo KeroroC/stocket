@@ -9,6 +9,7 @@ import {
   transferInventory,
 } from '../api/inventory'
 import { listLocations, resolveLocationCode } from '../api/location'
+import { listAttachments } from '../api/attachment'
 import AdjustSheet from '../components/inventory/AdjustSheet.vue'
 import ConsumeSheet from '../components/inventory/ConsumeSheet.vue'
 import TransferSheet from '../components/inventory/TransferSheet.vue'
@@ -24,6 +25,8 @@ vi.mock('../api/inventory', () => ({
   adjustInventory: vi.fn(),
 }))
 vi.mock('../api/location', () => ({ listLocations: vi.fn(), resolveLocationCode: vi.fn() }))
+vi.mock('../api/attachment', () => ({ listAttachments: vi.fn(), uploadAttachment: vi.fn(), deleteAttachment: vi.fn(), downloadAttachment: vi.fn() }))
+vi.mock('../api/export', () => ({ downloadCsv: vi.fn() }))
 
 afterEach(() => {
   cleanup()
@@ -47,12 +50,14 @@ describe('InventoryEntryView', () => {
       actorAccountId: 'account-1', actorDisplayName: '管理员', requestId: 'request-1',
       occurredAt: '2026-07-14T01:00:00Z',
     }])
+    vi.mocked(listAttachments).mockResolvedValue([{ id:'doc-1',ownerType:'INVENTORY_ENTRY',ownerId:'entry-1',purpose:'WARRANTY',filename:'保修单.pdf',mediaType:'application/pdf',sizeBytes:12,status:'AVAILABLE',createdAt:'2026-07-14T00:00:00Z' }])
 
     render(InventoryEntryView, { props: { role: 'VIEWER' } })
 
     expect(await screen.findByText('最早到期：2026-07-20')).toBeInTheDocument()
     expect(screen.getByText(/盘点差异/)).toBeInTheDocument()
     expect(screen.getByText(/管理员/)).toBeInTheDocument()
+    expect(await screen.findByText('保修单.pdf')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '新增入库' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '库存操作' })).not.toBeInTheDocument()
   })
@@ -66,6 +71,7 @@ describe('InventoryEntryView', () => {
     } as never)
     vi.mocked(getInventoryAvailability).mockResolvedValue({ itemId: 'item-1', totalAvailable: '3', earliestExpiration: '2026-07-20', activeEntryCount: 2 })
     vi.mocked(getInventoryMovements).mockResolvedValue([])
+    vi.mocked(listAttachments).mockResolvedValue([])
     render(InventoryEntryView, { props: { role: 'MEMBER' } })
 
     expect(await screen.findByText('推荐：最早到期 2026-07-20')).toBeInTheDocument()

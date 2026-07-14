@@ -14,6 +14,8 @@ import NotificationSettingsView from '../views/NotificationSettingsView.vue'
 import LoginView from '../views/LoginView.vue'
 import PasswordChangeView from '../views/PasswordChangeView.vue'
 import HomeView from '../views/HomeView.vue'
+import AuditLogView from '../views/AuditLogView.vue'
+import DiagnosticsView from '../views/DiagnosticsView.vue'
 
 export function createStocketRouter(authState: Ref<AuthState>, history: RouterHistory = createWebHistory()) {
   const router = createRouter({
@@ -26,6 +28,8 @@ export function createStocketRouter(authState: Ref<AuthState>, history: RouterHi
       { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
       { path: '/inventory/:id?', name: 'inventory', component: InventoryEntryView, meta: { requiresAuth: true, roles: ['ADMIN', 'MEMBER', 'VIEWER'] } },
       { path: '/notification-settings', name: 'notification-settings', component: NotificationSettingsView, meta: { requiresAuth: true } },
+      { path: '/admin/audit-logs', name: 'audit-logs', component: AuditLogView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
+      { path: '/admin/diagnostics', name: 'diagnostics', component: DiagnosticsView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
       { path: '/login', name: 'login', component: LoginView },
       { path: '/change-password', name: 'change-password', component: PasswordChangeView },
     ],
@@ -45,6 +49,10 @@ export function createStocketRouter(authState: Ref<AuthState>, history: RouterHi
         : { name: 'login', query: { redirect: to.fullPath } }
     }
     if (to.name === 'login' && state.kind === 'authenticated') {
+      return { name: 'home' }
+    }
+    const roles = to.meta.roles as string[] | undefined
+    if (roles && state.kind === 'authenticated' && !roles.includes(state.account.role)) {
       return { name: 'home' }
     }
     return true

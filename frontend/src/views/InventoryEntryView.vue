@@ -10,6 +10,8 @@ import StEmptyState from '../components/StEmptyState.vue'
 import StPageHeader from '../components/StPageHeader.vue'
 import type { InventoryAvailability, InventoryEntry, InventoryMovement } from '../inventory/inventoryModels'
 import InventoryReceiveView from './InventoryReceiveView.vue'
+import DocumentList from '../components/attachment/DocumentList.vue'
+import ExportDialog from '../components/export/ExportDialog.vue'
 
 const props = defineProps<{ role: string }>()
 const entries = ref<InventoryEntry[]>([])
@@ -68,11 +70,14 @@ async function completed() {
 <template>
   <section>
     <StPageHeader title="库存台账" description="查看批次、资产、可用量与不可变流水">
-      <template v-if="canWrite" #actions>
-        <button type="button" @click="mode = 'receive'">新增入库</button>
-        <button v-if="selected" type="button" @click="sheet = 'consume'">消耗</button>
-        <button v-if="selected" type="button" @click="sheet = 'transfer'">调拨</button>
-        <button v-if="selected" type="button" @click="sheet = 'adjust'">调整</button>
+      <template #actions>
+        <ExportDialog kind="inventory" label="导出库存" />
+        <template v-if="canWrite">
+          <button type="button" @click="mode = 'receive'">新增入库</button>
+          <button v-if="selected" type="button" @click="sheet = 'consume'">消耗</button>
+          <button v-if="selected" type="button" @click="sheet = 'transfer'">调拨</button>
+          <button v-if="selected" type="button" @click="sheet = 'adjust'">调整</button>
+        </template>
       </template>
     </StPageHeader>
     <p v-if="error" role="alert">{{ error }}</p>
@@ -87,6 +92,7 @@ async function completed() {
         <p>可用量：{{ availability?.totalAvailable ?? selected.quantity }}</p>
         <p v-if="availability?.earliestExpiration">最早到期：{{ availability.earliestExpiration }}</p>
         <MovementTimeline :movements="movements" />
+        <DocumentList :key="selected.id" owner-type="INVENTORY_ENTRY" :owner-id="selected.id" :can-write="canWrite" />
       </aside>
     </div>
     <ConsumeSheet v-if="selected" :entry-id="selected.id" :open="sheet === 'consume'" @close="sheet = undefined" @completed="completed" />

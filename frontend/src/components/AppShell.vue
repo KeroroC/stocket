@@ -11,6 +11,8 @@ import InventoryEntryView from '../views/InventoryEntryView.vue'
 import RemindersView from '../views/RemindersView.vue'
 import NotificationSettingsView from '../views/NotificationSettingsView.vue'
 import DeliveryFailuresView from '../views/DeliveryFailuresView.vue'
+import AuditLogView from '../views/AuditLogView.vue'
+import DiagnosticsView from '../views/DiagnosticsView.vue'
 
 const props = defineProps<{
   account: CurrentAccount
@@ -21,7 +23,7 @@ const emit = defineEmits<{
   forcePasswordChange: []
 }>()
 
-type ViewName = 'account' | 'items' | 'inventory' | 'reminders' | 'members' | 'invites' | 'categories' | 'locations' | 'notification-settings' | 'delivery-failures'
+type ViewName = 'account' | 'items' | 'inventory' | 'reminders' | 'members' | 'invites' | 'categories' | 'locations' | 'notification-settings' | 'delivery-failures' | 'audit-logs' | 'diagnostics'
 
 const currentView = ref<ViewName>('account')
 
@@ -76,6 +78,8 @@ function handleForcePasswordChange() {
         <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'delivery-failures' }]" @click="navigateTo('delivery-failures')">通知失败</button></li>
         <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'categories' }]" @click="navigateTo('categories')">分类管理</button></li>
         <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'locations' }]" @click="navigateTo('locations')">位置管理</button></li>
+        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'audit-logs' }]" @click="navigateTo('audit-logs')">审计日志</button></li>
+        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'diagnostics' }]" @click="navigateTo('diagnostics')">系统诊断</button></li>
         <li v-if="isAdmin">
           <button
             :class="['shell-nav-item', { active: currentView === 'invites' }]"
@@ -115,6 +119,8 @@ function handleForcePasswordChange() {
       <LocationAdminView v-else-if="currentView === 'locations'" />
       <NotificationSettingsView v-else-if="currentView === 'notification-settings'" />
       <DeliveryFailuresView v-else-if="currentView === 'delivery-failures'" />
+      <AuditLogView v-else-if="currentView === 'audit-logs'" />
+      <DiagnosticsView v-else-if="currentView === 'diagnostics'" />
     </main>
   </div>
 </template>

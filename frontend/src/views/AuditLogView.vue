@@ -1,0 +1,12 @@
+<script setup lang="ts">
+import { onMounted, reactive, ref } from 'vue'
+import { listAuditLogs, type AuditEntry } from '../api/audit'
+import StPageHeader from '../components/StPageHeader.vue'
+const items=ref<AuditEntry[]>([]);const nextCursor=ref<string>();const loading=ref(false);const error=ref('');const copied=ref('')
+const filters=reactive({eventType:'',outcome:'',requestId:''})
+onMounted(()=>load(false))
+async function load(more:boolean){loading.value=true;error.value='';try{const page=await listAuditLogs({eventType:filters.eventType||undefined,outcome:filters.outcome||undefined,requestId:filters.requestId||undefined,cursor:more?nextCursor.value:undefined,size:50});items.value=more?[...items.value,...page.items]:page.items;nextCursor.value=page.nextCursor}catch(problem){error.value=(problem as {detail?:string}).detail??'审计日志加载失败'}finally{loading.value=false}}
+async function copy(value:string){await navigator.clipboard.writeText(value);copied.value=value}
+const detailLabel:Record<string,string>={ownerType:'对象类型',ownerId:'对象 ID',purpose:'用途',filename:'文件名',quantity:'数量',operation:'操作',status:'状态'}
+</script>
+<template><section><StPageHeader title="审计日志" description="按请求、操作者和事件追踪关键变更"/><form class="audit-filters" @submit.prevent="load(false)"><label>事件类型<input v-model="filters.eventType"/></label><label>结果<select v-model="filters.outcome"><option value="">全部</option><option>SUCCESS</option><option>FAILURE</option></select></label><label>Request ID<input v-model="filters.requestId"/></label><button type="submit">筛选</button></form><p v-if="error" role="alert">{{error}}</p><ul class="audit-list"><li v-for="item in items" :key="item.id"><header><strong>{{item.eventType}}</strong><span>{{item.outcome}}</span><time :datetime="item.occurredAt">{{new Date(item.occurredAt).toLocaleString()}}</time></header><p>操作人：{{item.actorDisplayName??'系统'}}</p><p>对象：{{item.subjectType}} {{item.subjectId??''}}</p><p v-if="item.requestId">Request ID：<code>{{item.requestId}}</code> <button type="button" aria-label="复制 request ID" @click="copy(item.requestId)">复制</button><span v-if="copied===item.requestId">已复制</span></p><dl v-if="Object.keys(item.details).length"><template v-for="(value,key) in item.details" :key="key"><dt>{{detailLabel[key]??key}}</dt><dd>{{value}}</dd></template></dl></li></ul><p v-if="!loading&&!items.length">没有匹配的审计记录</p><button v-if="nextCursor" type="button" :disabled="loading" @click="load(true)">加载更多</button></section></template>
