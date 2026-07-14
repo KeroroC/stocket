@@ -26,7 +26,6 @@ create index idx_attachment_sha256 on attachment(household_id, sha256);
 create index idx_attachment_status on attachment(status, created_at, id);
 
 alter table notification_delivery add column request_id varchar(80) not null default 'system';
-alter table notification_delivery alter column request_id drop default;
 create index idx_notification_delivery_request on notification_delivery(household_id, request_id, created_at desc, id desc);
 
 alter table audit_log add column household_id uuid references household(id);
