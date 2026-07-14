@@ -39,7 +39,7 @@ public final class LocalAttachmentStore implements AttachmentStore {
     @Override
     public StoredObject stage(InputStream input) throws IOException {
         String key = randomKey();
-        Path temporary = safe(staging.resolve(UUID.randomUUID().toString()));
+        Path temporary = safe(staging.resolve(key));
         MessageDigest digest = sha256();
         long total = 0;
         try (FileChannel channel = FileChannel.open(temporary, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
@@ -86,6 +86,13 @@ public final class LocalAttachmentStore implements AttachmentStore {
         return Files.isRegularFile(path(storageKey), LinkOption.NOFOLLOW_LINKS);
     }
 
+    @Override public boolean stagedExists(String storageKey) { return Files.isRegularFile(stagedPath(storageKey), LinkOption.NOFOLLOW_LINKS); }
+    @Override public void commitStaged(String storageKey) throws IOException {
+        Path staged = stagedPath(storageKey);
+        commit(new StoredObject(storageKey, staged, Files.size(staged), ""));
+    }
+    @Override public void discard(StoredObject object) throws IOException { Files.deleteIfExists(object.stagingPath()); }
+
     public static String sanitizeFilename(String value) {
         if (value == null) return "attachment";
         String normalized = value.replace('\\', '/').replace('∕', '/').replace('⁄', '/');
@@ -98,6 +105,11 @@ public final class LocalAttachmentStore implements AttachmentStore {
     private Path path(String key) {
         if (key == null || !key.matches("[0-9a-f]{64}")) throw new IllegalArgumentException("ATTACHMENT_STORAGE_KEY_INVALID");
         return safe(root.resolve(key.substring(0, 2)).resolve(key.substring(2, 4)).resolve(key));
+    }
+
+    private Path stagedPath(String key) {
+        if (key == null || !key.matches("[0-9a-f]{64}")) throw new IllegalArgumentException("ATTACHMENT_STORAGE_KEY_INVALID");
+        return safe(staging.resolve(key));
     }
 
     private Path safe(Path candidate) {

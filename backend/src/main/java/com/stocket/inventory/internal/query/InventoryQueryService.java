@@ -67,6 +67,10 @@ public class InventoryQueryService implements InventoryQuery {
         return repository.availability(householdId, itemId);
     }
 
+    @Override public boolean existsEntry(UUID householdId, UUID entryId) {
+        return repository.findEntry(householdId, entryId).isPresent();
+    }
+
     private void validate(String type, String assetStatus, LocalDate expiresFrom,
                           LocalDate expiresTo, int page, int size) {
         if (page < 0 || size < 1 || size > 100

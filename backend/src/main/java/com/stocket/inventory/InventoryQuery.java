@@ -7,4 +7,5 @@ import java.util.UUID;
 public interface InventoryQuery {
 
     Optional<InventoryItemAvailability> availability(UUID householdId, UUID itemId);
+    boolean existsEntry(UUID householdId, UUID entryId);
 }

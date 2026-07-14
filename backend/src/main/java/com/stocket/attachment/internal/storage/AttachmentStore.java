@@ -9,4 +9,7 @@ public interface AttachmentStore {
     InputStream open(String storageKey) throws IOException;
     void delete(String storageKey) throws IOException;
     boolean exists(String storageKey);
+    boolean stagedExists(String storageKey);
+    void commitStaged(String storageKey) throws IOException;
+    void discard(StoredObject object) throws IOException;
 }

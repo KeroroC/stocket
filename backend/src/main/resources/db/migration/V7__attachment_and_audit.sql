@@ -8,7 +8,7 @@ create table attachment (
     storage_key varchar(80) not null unique,
     detected_media_type varchar(80) not null,
     size_bytes bigint not null check (size_bytes between 1 and 20971520),
-    sha256 char(64) not null,
+    sha256 varchar(64) not null check (length(sha256) = 64),
     status varchar(16) not null check (status in ('STAGED','AVAILABLE','MISSING','DELETED')),
     uploaded_by uuid not null references user_account(id),
     request_id varchar(80) not null,
