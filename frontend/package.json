@@ -23,7 +23,7 @@
     "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/vue": "8.1.0",
-    "@types/node": "25.3.0",
+    "@types/node": "26.1.1",
     "@vitejs/plugin-vue": "6.0.7",
     "@vue/test-utils": "2.4.6",
     "@vue/tsconfig": "0.8.1",
