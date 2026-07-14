@@ -76,7 +76,7 @@ class DatabaseMigrationTest {
                 where success = true
                 order by installed_rank
                 """, String.class))
-                .containsExactly("1", "2", "3", "4", "5", "6");
+                .containsExactly("1", "2", "3", "4", "5", "6", "7");
 
         assertThat(jdbc.queryForList("""
                 select table_name

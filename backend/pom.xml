@@ -23,6 +23,8 @@
         <java.version>25</java.version>
         <!-- Spring Modulith 版本，用于模块化单体架构 -->
         <spring-modulith.version>2.0.5</spring-modulith.version>
+        <apache-tika.version>3.2.3</apache-tika.version>
+        <commons-csv.version>1.14.1</commons-csv.version>
     </properties>
 
     <!-- 依赖版本管理：统一管理 Spring Modulith 各模块的版本 -->
@@ -110,6 +112,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>${apache-tika.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commons-csv.version}</version>
         </dependency>
 
         <!-- ==================== 测试依赖 ==================== -->

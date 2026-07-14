@@ -11,6 +11,10 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
   modulith:
     events:
       republish-outstanding-events-on-restart: true
@@ -39,6 +43,9 @@ stocket:
   reminder:
     due-job-enabled: "${STOCKET_REMINDER_DUE_JOB_ENABLED:false}"
     due-job-cron: "${STOCKET_REMINDER_DUE_JOB_CRON:0 * * * * *}"
+  attachment:
+    directory: "${STOCKET_ATTACHMENT_DIR:${java.io.tmpdir}/stocket-attachments}"
+    max-size-bytes: 20971520
 management:
   endpoints:
     web:
