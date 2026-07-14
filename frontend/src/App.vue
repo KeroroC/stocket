@@ -5,7 +5,7 @@ import SetupView from './views/SetupView.vue'
 import LoginView from './views/LoginView.vue'
 import InviteAcceptView from './views/InviteAcceptView.vue'
 import PasswordChangeView from './views/PasswordChangeView.vue'
-import AppShell from './components/AppShell.vue'
+import PwaAppShell from './components/PwaAppShell.vue'
 
 const { state, bootstrap, logout, passwordChanged, initialize } = useAuth()
 
@@ -85,7 +85,7 @@ function handleForcePasswordChange() {
     />
 
     <!-- authenticated: full management shell -->
-    <AppShell
+    <PwaAppShell
       v-else-if="state.kind === 'authenticated'"
       :account="state.account"
       @logout="handleLogout"

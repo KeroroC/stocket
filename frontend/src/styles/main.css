@@ -2,3 +2,136 @@
 @import './element-theme.css';
 @import './base.css';
 @import './legacy.css';
+
+.pwa-shell {
+  min-height: 100dvh;
+  background: var(--st-color-bg);
+}
+
+.pwa-shell__content {
+  min-width: 0;
+  padding: var(--st-space-4);
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+
+.mobile-tab-bar {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-height: 4.5rem;
+  padding: 0.35rem 0.35rem calc(0.35rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--st-color-border);
+  background: color-mix(in srgb, var(--st-color-surface) 94%, transparent);
+  box-shadow: var(--st-shadow-card);
+  backdrop-filter: blur(12px);
+}
+
+.mobile-tab-bar__item {
+  display: flex;
+  min-width: 0;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--st-color-text-muted);
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.mobile-tab-bar__item svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.mobile-tab-bar__item[aria-current='page'] {
+  color: var(--st-color-primary);
+  font-weight: 650;
+}
+
+.mobile-tab-bar__item--primary svg {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.65rem;
+  border-radius: 999px;
+  background: var(--st-color-primary);
+  color: white;
+  box-shadow: var(--st-shadow-card);
+}
+
+.desktop-sidebar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .pwa-shell {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+
+  .desktop-sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100dvh;
+    padding: var(--st-space-6) var(--st-space-4);
+    flex-direction: column;
+    gap: var(--st-space-6);
+    border-right: 1px solid var(--st-color-border);
+    background: var(--st-color-surface);
+  }
+
+  .desktop-sidebar__brand {
+    color: var(--st-color-primary);
+    font-size: 1.25rem;
+    font-weight: 750;
+  }
+
+  .desktop-sidebar__account {
+    display: flex;
+    flex-direction: column;
+    color: var(--st-color-text-muted);
+  }
+
+  .desktop-sidebar nav {
+    display: grid;
+    gap: var(--st-space-2);
+  }
+
+  .desktop-sidebar__logout {
+    margin-top: auto;
+  }
+
+  .desktop-sidebar__link {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: var(--st-space-3);
+    padding: 0 var(--st-space-3);
+    border-radius: var(--st-radius-control);
+    color: var(--st-color-text-muted);
+    text-decoration: none;
+  }
+
+  .desktop-sidebar__link svg {
+    width: 1.25rem;
+  }
+
+  .desktop-sidebar__link[aria-current='page'] {
+    background: var(--st-color-primary-soft);
+    color: var(--st-color-primary);
+    font-weight: 650;
+  }
+
+  .pwa-shell__content {
+    padding: var(--st-space-6);
+  }
+
+  .mobile-tab-bar {
+    display: none;
+  }
+}

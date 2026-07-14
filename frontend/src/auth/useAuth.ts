@@ -3,8 +3,11 @@ import { getCurrentAccount, getSetupStatus, initialize as apiInitialize, login a
 import type { AuthState, CurrentAccount } from './AuthState'
 import type { ChangePasswordRequest, InitializeRequest, LoginRequest } from '../api/identity'
 
+export const authState = ref<AuthState>({ kind: 'checking-setup' })
+
 export function useAuth() {
-  const state = ref<AuthState>({ kind: 'checking-setup' })
+  const state = authState
+  state.value = { kind: 'checking-setup' }
 
   function mapAccount(raw: { id: string; username: string; displayName: string; role: string; mustChangePassword: boolean }): CurrentAccount {
     return {
