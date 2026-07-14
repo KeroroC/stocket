@@ -1,8 +1,6 @@
 package com.stocket.inventory.internal.query;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,9 +13,12 @@ import com.stocket.identity.CurrentHouseholdProvider;
 import com.stocket.identity.IdentityRole;
 import com.stocket.inventory.InventoryItemAvailability;
 import com.stocket.inventory.InventoryQuery;
+import com.stocket.inventory.InventoryExportQuery;
+import com.stocket.inventory.InventoryExportRow;
+import com.stocket.inventory.InventoryFilter;
 
 @Service
-public class InventoryQueryService implements InventoryQuery {
+public class InventoryQueryService implements InventoryQuery, InventoryExportQuery {
 
     private final InventoryQueryRepository repository;
     private final CurrentHouseholdProvider currentHouseholdProvider;
@@ -28,18 +29,13 @@ public class InventoryQueryService implements InventoryQuery {
         this.currentHouseholdProvider = currentHouseholdProvider;
     }
 
-    InventoryQueryRepository.EntryPage entries(UUID itemId, UUID locationId, String type,
-                                                String assetStatus, LocalDate expiresFrom,
-                                                LocalDate expiresTo, boolean includeArchived,
-                                                int page, int size) {
+    InventoryQueryRepository.EntryPage entries(InventoryFilter filter, int page, int size) {
         CurrentHousehold current = currentHouseholdProvider.requireCurrent();
-        if (includeArchived && current.role() != IdentityRole.ADMIN) {
+        if (filter.includeArchived() && current.role() != IdentityRole.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
-        validate(type, assetStatus, expiresFrom, expiresTo, page, size);
-        return repository.findEntries(current.householdId(), new InventoryQueryRepository.EntryFilter(
-                itemId, locationId, normalize(type), normalize(assetStatus), expiresFrom, expiresTo,
-                includeArchived, page, size));
+        validate(filter, page, size);
+        return repository.findEntries(current.householdId(), entryFilter(filter, page, size));
     }
 
     InventoryEntryResponse entry(UUID entryId) {
@@ -71,18 +67,30 @@ public class InventoryQueryService implements InventoryQuery {
         return repository.findEntry(householdId, entryId).isPresent();
     }
 
-    private void validate(String type, String assetStatus, LocalDate expiresFrom,
-                          LocalDate expiresTo, int page, int size) {
-        if (page < 0 || size < 1 || size > 100
-                || (type != null && !type.equalsIgnoreCase("BATCH") && !type.equalsIgnoreCase("ASSET"))
-                || (assetStatus != null && !List.of("AVAILABLE", "IN_USE", "LOANED", "LOST", "RETIRED")
-                        .contains(assetStatus.toUpperCase(Locale.ROOT)))
-                || (expiresFrom != null && expiresTo != null && expiresFrom.isAfter(expiresTo))) {
+    @Override public long countForExport(UUID householdId, InventoryFilter filter) {
+        filter.validate();
+        return repository.countEntries(householdId, entryFilter(filter, 0, 1));
+    }
+
+    @Override public List<InventoryExportRow> exportPage(UUID householdId, InventoryFilter filter, UUID afterId, int size) {
+        filter.validate();
+        return repository.exportEntries(householdId, entryFilter(filter, 0, size), afterId, size).stream()
+                .map(row -> new InventoryExportRow(row.id(), row.itemId(), row.itemName(), row.locationId(),
+                        row.locationName(), row.type(), row.quantity(), row.receivedAt(), row.productionDate(),
+                        row.expirationDate(), row.batchNumber(), row.assetNumber(), row.serialNumber(),
+                        row.assetStatus(), row.archived()))
+                .toList();
+    }
+
+    private void validate(InventoryFilter filter, int page, int size) {
+        try { filter.validate(); } catch (IllegalArgumentException error) { throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY); }
+        if (page < 0 || size < 1 || size > 100) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
         }
     }
 
-    private String normalize(String value) {
-        return value == null ? null : value.toUpperCase(Locale.ROOT);
+    private InventoryQueryRepository.EntryFilter entryFilter(InventoryFilter filter, int page, int size) {
+        return new InventoryQueryRepository.EntryFilter(filter.itemId(), filter.locationId(), filter.normalizedType(),
+                filter.normalizedAssetStatus(), filter.expiresFrom(), filter.expiresTo(), filter.includeArchived(), page, size);
     }
 }

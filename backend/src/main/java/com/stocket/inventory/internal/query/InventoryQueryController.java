@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stocket.inventory.InventoryItemAvailability;
+import com.stocket.inventory.InventoryFilter;
 
 @RestController
 @RequestMapping("/api/v1/inventory")
@@ -34,8 +35,8 @@ class InventoryQueryController {
             @RequestParam(defaultValue = "false") boolean includeArchived,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return service.entries(itemId, locationId, type, assetStatus, expiresFrom, expiresTo,
-                includeArchived, page, size);
+        return service.entries(new InventoryFilter(itemId, locationId, type, assetStatus, expiresFrom, expiresTo,
+                includeArchived), page, size);
     }
 
     @GetMapping("/entries/{id}")

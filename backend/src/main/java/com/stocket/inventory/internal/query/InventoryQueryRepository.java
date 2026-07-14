@@ -65,6 +65,28 @@ class InventoryQueryRepository {
         return new EntryPage(items, filter.page(), filter.size(), total == null ? 0 : total);
     }
 
+    long countEntries(UUID householdId, EntryFilter filter) {
+        Long total = jdbc.queryForObject("""
+                select count(*)
+                from inventory_entry e
+                left join asset_detail a on a.inventory_entry_id = e.id
+                where e.household_id = :householdId
+                """ + predicates(filter), parameters(householdId, filter), Long.class);
+        return total == null ? 0 : total;
+    }
+
+    List<InventoryEntryResponse> exportEntries(UUID householdId, EntryFilter filter, UUID afterId, int size) {
+        MapSqlParameterSource parameters = parameters(householdId, filter)
+                .addValue("afterId", afterId).addValue("limit", size);
+        return jdbc.query(ENTRY_SELECT + """
+                where e.household_id = :householdId
+                """ + predicates(filter) + """
+                  and (cast(:afterId as uuid) is null or e.id > :afterId)
+                order by e.id
+                limit :limit
+                """, parameters, this::mapEntry);
+    }
+
     Optional<InventoryEntryResponse> findEntry(UUID householdId, UUID entryId) {
         return jdbc.query(ENTRY_SELECT + """
                 where e.household_id = :householdId
