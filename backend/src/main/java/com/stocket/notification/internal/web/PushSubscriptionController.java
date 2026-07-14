@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.stocket.identity.CurrentHousehold;
 import com.stocket.identity.CurrentHouseholdProvider;
+import com.stocket.notification.internal.channel.PublicEndpointPolicy;
 import com.stocket.notification.internal.crypto.EncryptedSecret;
 import com.stocket.notification.internal.crypto.SecretCipher;
 
@@ -31,12 +32,14 @@ class PushSubscriptionController {
     private final JdbcTemplate jdbc;
     private final CurrentHouseholdProvider currentHousehold;
     private final SecretCipher cipher;
+    private final PublicEndpointPolicy endpointPolicy;
 
     PushSubscriptionController(JdbcTemplate jdbc, CurrentHouseholdProvider currentHousehold,
-                               SecretCipher cipher) {
+                               SecretCipher cipher, PublicEndpointPolicy endpointPolicy) {
         this.jdbc = jdbc;
         this.currentHousehold = currentHousehold;
         this.cipher = cipher;
+        this.endpointPolicy = endpointPolicy;
     }
 
     @PutMapping
@@ -90,7 +93,10 @@ class PushSubscriptionController {
                     || request.auth() == null || request.auth().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
             }
-        } catch (IllegalArgumentException | NullPointerException exception) {
+            endpointPolicy.requirePublic(request.endpoint());
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
         }
     }

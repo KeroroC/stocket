@@ -56,11 +56,17 @@
 
 验收日期：2026-07-14。`make test`、`make build` 与 `make aot` 均通过。
 
-## 阶段五：提醒与通知管道
+## 阶段五：提醒与通知管道 ✅
 
 实现过期和低库存规则、提醒生命周期、事务性 Outbox 处理、应用内通知、Web Push、SMTP 邮件、通用 Webhook 投递、去重、指数退避重试、加密渠道密钥和投递失败管理。
 
 验收切片：库存变更创建正确的提醒；外部渠道失败不会回滚库存操作，且可安全重试。
+
+详细计划：`docs/superpowers/plans/2026-07-12-reminder-notification.md`
+
+全链路验收：`backend/src/test/java/com/stocket/reminder/ReminderNotificationAcceptanceTest.java`
+
+验收日期：2026-07-14。`make test`、`make build` 与 `make aot` 均通过；Web Push 的 RFC 8291 内容加密与 VAPID 签名另由 `WebPushMessageEncoderTest` 验证。
 
 ## 阶段六：移动优先 PWA 工作流
 

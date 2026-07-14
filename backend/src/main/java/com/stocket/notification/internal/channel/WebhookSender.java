@@ -25,14 +25,17 @@ public class WebhookSender implements ChannelSender {
 
     private final NotificationChannelRepository channels;
     private final SecretCipher cipher;
+    private final PublicEndpointPolicy endpointPolicy;
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
-    WebhookSender(NotificationChannelRepository channels, SecretCipher cipher) {
+    WebhookSender(NotificationChannelRepository channels, SecretCipher cipher,
+                  PublicEndpointPolicy endpointPolicy) {
         this.channels = channels;
         this.cipher = cipher;
+        this.endpointPolicy = endpointPolicy;
     }
 
     @Override
@@ -50,6 +53,7 @@ public class WebhookSender implements ChannelSender {
         String body = "{\"deliveryId\":\"" + attempt.deliveryKey() + "\",\"reminderId\":\""
                 + attempt.reminderId() + "\"}";
         try {
+            endpointPolicy.requireStable(url, channel.configuration().get("resolvedAddresses"));
             HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(url))
                     .timeout(Duration.ofSeconds(15))
                     .header("Content-Type", "application/json")

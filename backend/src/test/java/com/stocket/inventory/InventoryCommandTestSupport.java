@@ -1,6 +1,7 @@
 package com.stocket.inventory;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -42,8 +43,9 @@ abstract class InventoryCommandTestSupport {
     String session;
 
     @BeforeEach
-    void setUpInventoryFixture() {
+    void setUpInventoryFixture() throws InterruptedException {
         jdbc = new JdbcTemplate(dataSource);
+        awaitEventPublications();
         jdbc.execute("truncate user_account, household cascade");
         householdId = UUID.randomUUID();
         itemId = UUID.randomUUID();
@@ -59,6 +61,22 @@ abstract class InventoryCommandTestSupport {
                 values (?,?,'冰箱','冰箱',?)
                 """, locationId, householdId, UUID.randomUUID().toString());
         session = createSession("member", "MEMBER");
+    }
+
+    private void awaitEventPublications() throws InterruptedException {
+        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (outstandingEventPublications() > 0 && System.nanoTime() < deadline) {
+            Thread.sleep(25);
+        }
+        if (outstandingEventPublications() > 0) {
+            throw new AssertionError("Timed out waiting for inventory event publications to complete");
+        }
+    }
+
+    private int outstandingEventPublications() {
+        Integer count = jdbc.queryForObject(
+                "select count(*) from event_publication where completion_date is null", Integer.class);
+        return count == null ? 0 : count;
     }
 
     UUID insertBatch(String quantity) {

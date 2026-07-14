@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisabledInAotMode
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class SetupIntegrationTest {
 
     @Container

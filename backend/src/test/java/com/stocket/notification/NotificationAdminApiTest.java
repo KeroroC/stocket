@@ -88,14 +88,14 @@ class NotificationAdminApiTest {
     @Test
     void managesCurrentPushSubscriptionAndAdminDeadDeliveriesWithoutExposingSecrets() throws Exception {
         String subscription = """
-                {"endpoint":"https://push.example.com/subscriptions/very-secret-endpoint",
+                {"endpoint":"https://93.184.216.34/subscriptions/very-secret-endpoint",
                  "p256dh":"public-key-material","auth":"auth-secret"}
                 """;
         mockMvc.perform(put("/api/v1/notification/push-subscription")
                         .with(csrf()).cookie(cookie(memberSession)).contentType(APPLICATION_JSON)
                         .content(subscription))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.endpointSummary").value(org.hamcrest.Matchers.startsWith("https://push.example.com/")))
+                .andExpect(jsonPath("$.endpointSummary").value(org.hamcrest.Matchers.startsWith("https://93.184.216.34/")))
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("very-secret-endpoint"))))
                 .andExpect(content().string(org.hamcrest.Matchers.not(
@@ -136,6 +136,31 @@ class NotificationAdminApiTest {
                 String.class, deliveryId)).isNull();
         assertThat(jdbc.queryForObject("select last_error_at from notification_delivery where id=?",
                 java.time.OffsetDateTime.class, deliveryId).toInstant()).isEqualTo(historicalErrorAt);
+    }
+
+    @Test
+    void rejectsPrivateWebPushEndpoints() throws Exception {
+        mockMvc.perform(put("/api/v1/notification/push-subscription")
+                        .with(csrf()).cookie(cookie(memberSession)).contentType(APPLICATION_JSON)
+                        .content("""
+                                {"endpoint":"https://127.0.0.1/internal",
+                                 "p256dh":"public-key-material","auth":"auth-secret"}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
+
+        assertThat(jdbc.queryForObject("select count(*) from push_subscription where member_id=?",
+                Integer.class, memberId)).isZero();
+    }
+
+    @Test
+    void rejectsUniqueLocalIpv6WebPushEndpoints() throws Exception {
+        mockMvc.perform(put("/api/v1/notification/push-subscription")
+                        .with(csrf()).cookie(cookie(memberSession)).contentType(APPLICATION_JSON)
+                        .content("""
+                                {"endpoint":"https://[fc00::1]/internal",
+                                 "p256dh":"public-key-material","auth":"auth-secret"}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
     }
 
     private UUID insertDeadDelivery() {

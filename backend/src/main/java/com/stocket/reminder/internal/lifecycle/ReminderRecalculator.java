@@ -10,12 +10,14 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.stocket.reminder.internal.rule.EffectiveReminderRule;
 import com.stocket.reminder.internal.rule.ReminderRuleRepository;
 import com.stocket.reminder.internal.rule.ReminderRuleService;
+import com.stocket.notification.NotificationRequested;
 
 @Service
 public class ReminderRecalculator {
@@ -24,13 +26,15 @@ public class ReminderRecalculator {
     private final ReminderRuleRepository ruleRepository;
     private final ReminderRepository reminderRepository;
     private final ReminderCalculator calculator;
+    private final ApplicationEventPublisher events;
 
     ReminderRecalculator(JdbcTemplate jdbc, ReminderRuleRepository ruleRepository,
-                         ReminderRepository reminderRepository) {
+                         ReminderRepository reminderRepository, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.ruleRepository = ruleRepository;
         this.reminderRepository = reminderRepository;
         this.calculator = new ReminderCalculator();
+        this.events = events;
     }
 
     @Transactional
@@ -109,15 +113,19 @@ public class ReminderRecalculator {
     }
 
     private void insert(UUID householdId, UUID itemId, DesiredReminder reminder, Instant now) {
-        jdbc.update("""
+        UUID reminderId = UUID.randomUUID();
+        int inserted = jdbc.update("""
                 insert into reminder(id, household_id, item_definition_id, inventory_entry_id,
                     reminder_type, trigger_key, trigger_at, status, opened_at, created_at, updated_at)
                 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 on conflict do nothing
-                """, UUID.randomUUID(), householdId, itemId, reminder.entryId(), reminder.type(),
+                """, reminderId, householdId, itemId, reminder.entryId(), reminder.type(),
                 reminder.triggerKey(), Timestamp.from(reminder.triggerAt()), reminder.status(),
                 "OPEN".equals(reminder.status()) ? Timestamp.from(now) : null,
                 Timestamp.from(now), Timestamp.from(now));
+        if (inserted == 1 && "OPEN".equals(reminder.status())) {
+            events.publishEvent(new NotificationRequested(reminderId, householdId, now));
+        }
     }
 
     private String normalized(BigDecimal value) {

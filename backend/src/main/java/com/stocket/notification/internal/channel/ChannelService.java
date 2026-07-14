@@ -1,7 +1,5 @@
 package com.stocket.notification.internal.channel;
 
-import java.net.InetAddress;
-import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -26,13 +24,15 @@ public class ChannelService {
     private final NotificationChannelRepository channels;
     private final CurrentHouseholdProvider currentHousehold;
     private final SecretCipher cipher;
+    private final PublicEndpointPolicy endpointPolicy;
     private final Map<UUID, Instant> lastTest = new ConcurrentHashMap<>();
 
     ChannelService(NotificationChannelRepository channels, CurrentHouseholdProvider currentHousehold,
-                   SecretCipher cipher) {
+                   SecretCipher cipher, PublicEndpointPolicy endpointPolicy) {
         this.channels = channels;
         this.currentHousehold = currentHousehold;
         this.cipher = cipher;
+        this.endpointPolicy = endpointPolicy;
     }
 
     @Transactional(readOnly = true)
@@ -46,8 +46,8 @@ public class ChannelService {
                                   String secret, long version) {
         UUID householdId = currentHousehold.requireCurrent().householdId();
         String type = normalizeType(requestedType);
-        Map<String, Object> safeConfiguration = configuration == null ? Map.of() : Map.copyOf(configuration);
-        validate(type, safeConfiguration);
+        Map<String, Object> safeConfiguration = sanitize(type,
+                configuration == null ? Map.of() : Map.copyOf(configuration));
         Instant now = Instant.now();
         NotificationChannel channel = channels.findByHouseholdIdAndType(householdId, type)
                 .map(existing -> {
@@ -61,9 +61,11 @@ public class ChannelService {
                             enabled, safeConfiguration, now);
                 });
         if (secret != null && !secret.isBlank()) {
+            if ("WEB_PUSH".equals(type)) validateWebPushPrivateKey(secret);
             EncryptedSecret encrypted = cipher.encrypt(secret, aad(channel));
             channel.changeSecret(encrypted.ciphertext(), encrypted.keyVersion(), now);
         }
+        if ("WEB_PUSH".equals(type) && !channel.hasSecret()) throw new InvalidChannelException();
         return response(channels.saveAndFlush(channel));
     }
 
@@ -85,18 +87,20 @@ public class ChannelService {
         return type;
     }
 
-    private void validate(String type, Map<String, Object> configuration) {
-        switch (type) {
-            case "SMTP" -> validateSmtp(configuration);
-            case "WEBHOOK" -> validateWebhook(configuration);
-            default -> { }
-        }
+    private Map<String, Object> sanitize(String type, Map<String, Object> configuration) {
+        return switch (type) {
+            case "SMTP" -> sanitizeSmtp(configuration);
+            case "WEBHOOK" -> sanitizeWebhook(configuration);
+            case "WEB_PUSH" -> sanitizeWebPush(configuration);
+            default -> Map.of();
+        };
     }
 
-    private void validateSmtp(Map<String, Object> configuration) {
+    private Map<String, Object> sanitizeSmtp(Map<String, Object> configuration) {
         String host = string(configuration, "host");
         String tlsMode = string(configuration, "tlsMode");
         String fromAddress = string(configuration, "fromAddress");
+        String username = string(configuration, "username");
         Object portValue = configuration.get("port");
         int port = portValue instanceof Number number ? number.intValue() : -1;
         if (host.isBlank() || port < 1 || port > 65535
@@ -104,25 +108,39 @@ public class ChannelService {
                 || !fromAddress.contains("@")) {
             throw new InvalidChannelException();
         }
+        return Map.of("host", host, "port", port, "tlsMode", tlsMode,
+                "username", username, "fromAddress", fromAddress);
     }
 
-    private void validateWebhook(Map<String, Object> configuration) {
+    private Map<String, Object> sanitizeWebhook(Map<String, Object> configuration) {
         try {
-            URI uri = URI.create(string(configuration, "url"));
-            if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
-                    || uri.getUserInfo() != null || uri.getHost().toLowerCase(Locale.ROOT).endsWith(".local")) {
+            PublicEndpointPolicy.ResolvedEndpoint endpoint = endpointPolicy.resolve(string(configuration, "url"));
+            return Map.of("url", endpoint.url(), "resolvedAddresses", endpoint.addresses());
+        } catch (Exception exception) {
+            throw new InvalidChannelException();
+        }
+    }
+
+    private Map<String, Object> sanitizeWebPush(Map<String, Object> configuration) {
+        String publicKey = string(configuration, "publicKey");
+        String subject = string(configuration, "subject");
+        try {
+            if (java.util.Base64.getUrlDecoder().decode(publicKey).length != 65
+                    || !(subject.startsWith("mailto:") || subject.startsWith("https://"))) {
                 throw new InvalidChannelException();
             }
-            for (InetAddress address : InetAddress.getAllByName(uri.getHost())) {
-                if (address.isAnyLocalAddress() || address.isLoopbackAddress()
-                        || address.isLinkLocalAddress() || address.isSiteLocalAddress()
-                        || address.isMulticastAddress()) {
-                    throw new InvalidChannelException();
-                }
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidChannelException();
+        }
+        return Map.of("publicKey", publicKey, "subject", subject);
+    }
+
+    private void validateWebPushPrivateKey(String privateKey) {
+        try {
+            if (java.util.Base64.getUrlDecoder().decode(privateKey).length != 32) {
+                throw new InvalidChannelException();
             }
-        } catch (InvalidChannelException exception) {
-            throw exception;
-        } catch (Exception exception) {
+        } catch (IllegalArgumentException exception) {
             throw new InvalidChannelException();
         }
     }

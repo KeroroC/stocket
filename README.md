@@ -227,6 +227,58 @@ make aot
 # Spring AOT 处理通过
 ```
 
+## 阶段五完成：提醒与通知管道
+
+系统已实现家庭时区下的临期、过期和低库存规则，提醒确认与到点打开，Spring Modulith JDBC 持久事件恢复，以及应用内、Web Push、SMTP 和 Webhook 四类独立投递。投递使用去重键、租约领取、`FOR UPDATE SKIP LOCKED`、确定性抖动指数退避和八次失败转 DEAD；外部 I/O 不参与库存事务。
+
+### 主密钥与后台任务
+
+`STOCKET_MASTER_KEY` 必须是 Base64 编码的 32 字节随机值，用于 AES-256-GCM 加密 SMTP 密码、Webhook 密钥、VAPID 私钥和 Push subscription。缺失或格式错误时 readiness 为 DOWN。可用以下命令生成：
+
+```bash
+openssl rand -base64 32
+```
+
+提醒到点任务和投递 worker 默认关闭，生产部署必须显式启用：
+
+```bash
+STOCKET_REMINDER_DUE_JOB_ENABLED=true
+STOCKET_NOTIFICATION_WORKER_ENABLED=true
+```
+
+可通过 `STOCKET_REMINDER_DUE_JOB_CRON` 和 `STOCKET_NOTIFICATION_WORKER_DELAY` 调整执行频率。默认分别为每分钟和 5 秒。
+
+### 渠道配置与安全边界
+
+- `IN_APP`：无需外部配置。
+- `SMTP`：只保存 `host`、`port`、`tlsMode`、`username`、`fromAddress` 白名单字段；密码通过请求的 `secret` 字段传入并加密。
+- `WEBHOOK`：只允许 HTTPS 公网地址；保存首次解析的公网 IP 集合，投递前重新解析并拒绝结果漂移；不跟随重定向，响应体最多读取 4 KiB，签名使用 `X-Stocket-Signature: sha256=...`。
+- `WEB_PUSH`：配置包含 Base64URL 无填充的 P-256 VAPID 公钥和 `mailto:`/HTTPS subject，VAPID 私钥通过 `secret` 加密保存；前端 `VITE_STOCKET_VAPID_PUBLIC_KEY` 必须使用同一公钥。消息使用 RFC 8291 `aes128gcm` 内容编码和 ES256 VAPID JWT。
+
+渠道配置中的未知字段会被丢弃，API 不回显任何秘密。日志、Problem Detail、失败管理和审计详情只记录标识与错误分类，不记录通知正文、完整 Push endpoint、凭据、签名头或解密值。
+
+### 重试与失败处理
+
+网络错误、HTTP `408`、`429` 和 `5xx` 可重试；其他 `4xx` 永久失败。退避为 `min(24h, 30s * 2^attempt)`，附加 0..20% 确定性抖动，最多尝试 8 次。管理员可在失败投递页查看 DEAD 记录并手工重试；历史错误时间保留用于审计。
+
+### 阶段五验收记录
+
+2026-07-14 在 Java 25.0.1、Docker 29.4.0 和 PostgreSQL 17.5 Testcontainers 环境完成：
+
+```bash
+cd backend && ./mvnw -Dtest=ReminderNotificationAcceptanceTest,NotificationRuntimeHintsTest,WebPushMessageEncoderTest test
+# 提醒通知全链路、原生 hints、Web Push 加密与 VAPID 验证通过
+
+make test
+# 后端 257 个测试、前端 110 个测试、类型检查和配置契约通过
+
+make build
+# JVM 可执行 JAR 与前端生产构建通过
+
+make aot
+# Spring AOT 处理通过
+```
+
 ## 文档
 
 - [产品与技术设计规格](docs/superpowers/specs/2026-07-10-stocket-design.md)
@@ -234,3 +286,4 @@ make aot
 - [基础与原生构建实施说明](docs/superpowers/plans/2026-07-11-foundation-native-baseline.md)
 - [阶段三目录与位置实施计划](docs/superpowers/plans/2026-07-12-catalog-location.md)
 - [阶段四库存台账实施计划](docs/superpowers/plans/2026-07-12-inventory-ledger.md)
+- [阶段五提醒与通知实施计划](docs/superpowers/plans/2026-07-12-reminder-notification.md)

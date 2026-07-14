@@ -5,15 +5,12 @@ import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.stocket.notification.NotificationRequested;
 
 @Component
-@EnableScheduling
 public class ReminderDueJob {
 
     private final JdbcTemplate jdbc;
@@ -24,7 +21,6 @@ public class ReminderDueJob {
         this.events = events;
     }
 
-    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public int openDue() {
         List<OpenedReminder> opened = jdbc.query("""

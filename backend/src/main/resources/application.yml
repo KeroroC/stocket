@@ -30,10 +30,15 @@ stocket:
       rate-limit-window: 15m
       max-failures: 10
   notification:
+    worker-enabled: "${STOCKET_NOTIFICATION_WORKER_ENABLED:false}"
+    worker-delay: "${STOCKET_NOTIFICATION_WORKER_DELAY:5s}"
     worker-batch-size: 50
     max-attempts: 8
     initial-backoff: 30s
     max-backoff: 24h
+  reminder:
+    due-job-enabled: "${STOCKET_REMINDER_DUE_JOB_ENABLED:false}"
+    due-job-cron: "${STOCKET_REMINDER_DUE_JOB_CRON:0 * * * * *}"
 management:
   endpoints:
     web:

@@ -71,7 +71,8 @@ class ChannelApiIntegrationTest {
         String create = """
                 {"enabled":true,"version":0,
                  "configuration":{"host":"smtp.example.com","port":587,"tlsMode":"STARTTLS",
-                                  "username":"mailer","fromAddress":"stocket@example.com"},
+                                  "username":"mailer","fromAddress":"stocket@example.com",
+                                  "password":"must-not-be-stored"},
                  "secret":"smtp-password"}
                 """;
         String body = mockMvc.perform(put("/api/v1/notification/channels/SMTP")
@@ -82,6 +83,7 @@ class ChannelApiIntegrationTest {
                 .andExpect(jsonPath("$.secret").doesNotExist())
                 .andReturn().getResponse().getContentAsString();
         assertThat(body).doesNotContain("smtp-password");
+        assertThat(body).doesNotContain("must-not-be-stored");
 
         UUID channelId = jdbc.queryForObject(
                 "select id from notification_channel where household_id=? and type='SMTP'",
@@ -89,6 +91,10 @@ class ChannelApiIntegrationTest {
         String encryptedBefore = jdbc.queryForObject(
                 "select encrypted_secret from notification_channel where id=?", String.class, channelId);
         assertThat(encryptedBefore).doesNotContain("smtp-password");
+        assertThat(jdbc.queryForObject(
+                "select configuration_json::text from notification_channel where id=?", String.class, channelId))
+                .doesNotContain("password")
+                .doesNotContain("must-not-be-stored");
 
         mockMvc.perform(put("/api/v1/notification/channels/SMTP")
                         .with(csrf()).cookie(cookie(adminSession)).contentType(APPLICATION_JSON)

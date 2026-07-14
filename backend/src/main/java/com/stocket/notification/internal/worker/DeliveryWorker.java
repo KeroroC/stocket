@@ -9,7 +9,6 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -23,26 +22,15 @@ public class DeliveryWorker {
     private final List<ChannelSender> senders;
     private final BackoffPolicy backoff;
     private final int maxAttempts;
-    private final int batchSize;
-    private final boolean workerEnabled;
 
     DeliveryWorker(JdbcTemplate jdbc, TransactionTemplate transactions, List<ChannelSender> senders,
                    BackoffPolicy backoff,
-                   @Value("${stocket.notification.max-attempts:8}") int maxAttempts,
-                   @Value("${stocket.notification.worker-batch-size:50}") int batchSize,
-                   @Value("${stocket.notification.worker-enabled:true}") boolean workerEnabled) {
+                   @Value("${stocket.notification.max-attempts:8}") int maxAttempts) {
         this.jdbc = jdbc;
         this.transactions = transactions;
         this.senders = List.copyOf(senders);
         this.backoff = backoff;
         this.maxAttempts = maxAttempts;
-        this.batchSize = batchSize;
-        this.workerEnabled = workerEnabled;
-    }
-
-    @Scheduled(fixedDelayString = "${stocket.notification.worker-delay:5s}")
-    public void runScheduled() {
-        if (workerEnabled) runBatch(batchSize);
     }
 
     public int runBatch(int limit) {
