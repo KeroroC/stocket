@@ -52,7 +52,7 @@ function handleForcePasswordChange() {
 </script>
 
 <template>
-  <main class="app-shell">
+  <main :class="['app-shell', { 'app-shell--authenticated': state.kind === 'authenticated' }]">
     <!-- invite view takes priority when URL matches /invite/{token} -->
     <InviteAcceptView
       v-if="showInviteView && inviteToken"

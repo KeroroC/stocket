@@ -22,6 +22,11 @@ body {
   padding: 24px;
 }
 
+.app-shell--authenticated {
+  display: block;
+  padding: 0;
+}
+
 /* Shell layout (sidebar + content) */
 .shell-layout {
   display: flex;

@@ -1,6 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--st-color-text); background: var(--st-color-bg); font-variant-numeric: tabular-nums; }
 body { margin: 0; min-width: 320px; min-height: 100vh; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--st-color-primary) 55%, transparent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
 

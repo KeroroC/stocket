@@ -1,10 +1,23 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import { getDashboard } from '../api/dashboard'
 import HomeView from './HomeView.vue'
 
 vi.mock('../api/dashboard', () => ({ getDashboard: vi.fn() }))
 afterEach(cleanup)
+
+function renderHome() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', component: HomeView },
+      { path: '/receive', component: { template: '<div>入库</div>' } },
+    ],
+  })
+
+  return render(HomeView, { global: { plugins: [router] } })
+}
 
 describe('HomeView', () => {
   it('按任务顺序展示搜索、快捷入库和提醒摘要', async () => {
@@ -12,11 +25,11 @@ describe('HomeView', () => {
       summary: { expiring: 2, expired: 1, lowStock: 3, openTotal: 6 },
       search: [],
     })
-    render(HomeView)
+    renderHome()
 
     expect(await screen.findByRole('searchbox', { name: '全局搜索' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '快捷入库' })).toBeInTheDocument()
-    const labels = screen.getAllByRole('heading', { level: 2 }).map((node) => node.textContent)
+    const labels = screen.getAllByRole('heading', { level: 3 }).map((node) => node.textContent)
     expect(labels).toEqual(['30 天内到期', '已过期', '低库存', '待处理项目'])
   })
 
@@ -27,7 +40,7 @@ describe('HomeView', () => {
         summary: { expiring: 0, expired: 0, lowStock: 0, openTotal: 0 },
         search: [{ id: 'item-1', name: '牛奶', matchType: 'BARCODE_EXACT', totalAvailable: '3', locations: ['冰箱'], earliestExpiration: '2026-07-20', recentBatch: 'B-01' }],
       })
-    render(HomeView)
+    renderHome()
     await screen.findByRole('searchbox', { name: '全局搜索' })
     await fireEvent.update(screen.getByRole('searchbox', { name: '全局搜索' }), '690001')
 

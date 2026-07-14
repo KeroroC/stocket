@@ -16,9 +16,13 @@ test('320/390/768/1440 宽度无横向滚动且导航不遮挡正文', async ({ 
         contentPaddingBottom: Number.parseFloat(getComputedStyle(content).paddingBottom),
         mobileHeight: mobile.getBoundingClientRect().height,
         mobileVisible: getComputedStyle(mobile).display !== 'none',
+        searchIconWidth: document.querySelector('.global-search svg')?.getBoundingClientRect().width ?? 0,
+        quickReceiveWidth: document.querySelector('.quick-receive')?.getBoundingClientRect().width ?? 0,
       }
     })
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth)
+    expect(layout.searchIconWidth).toBeLessThanOrEqual(24)
+    expect(layout.quickReceiveWidth).toBeGreaterThan(0)
     if (width < 768) {
       expect(layout.mobileVisible).toBe(true)
       expect(layout.contentPaddingBottom).toBeGreaterThanOrEqual(layout.mobileHeight)

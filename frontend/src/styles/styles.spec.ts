@@ -16,6 +16,7 @@ describe('Stocket design tokens', () => {
   it('映射 Element Plus 并保留焦点与减少动态效果', () => {
     expect(readStyle('element-theme.css')).toContain('--el-color-primary: var(--st-color-primary)')
     const base = readStyle('base.css')
+    expect(base).toContain('.sr-only')
     expect(base).toContain(':focus-visible')
     expect(base).toContain('@media (prefers-reduced-motion: reduce)')
   })
