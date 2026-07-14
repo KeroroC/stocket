@@ -6,7 +6,7 @@ import {
 } from 'vue-router'
 import type { AuthState } from '../auth/AuthState'
 import ItemsView from '../views/ItemsView.vue'
-import InventoryReceiveView from '../views/InventoryReceiveView.vue'
+import ReceiveWizardView from '../views/ReceiveWizardView.vue'
 import RemindersView from '../views/RemindersView.vue'
 import AccountView from '../views/AccountView.vue'
 import LoginView from '../views/LoginView.vue'
@@ -26,7 +26,7 @@ export function createStocketRouter(authState: Ref<AuthState>, history: RouterHi
     routes: [
       { path: '/', name: 'home', component: HomePlaceholder, meta: { requiresAuth: true } },
       { path: '/items', name: 'items', component: ItemsView, meta: { requiresAuth: true } },
-      { path: '/receive', name: 'receive', component: InventoryReceiveView, meta: { requiresAuth: true } },
+      { path: '/receive', name: 'receive', component: ReceiveWizardView, meta: { requiresAuth: true } },
       { path: '/reminders', name: 'reminders', component: RemindersView, meta: { requiresAuth: true } },
       { path: '/profile', name: 'profile', component: AccountView, meta: { requiresAuth: true } },
       { path: '/login', name: 'login', component: LoginView },
