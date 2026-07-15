@@ -47,7 +47,63 @@ describe('移动 PWA 应用壳', () => {
 
     const navigation = screen.getByRole('navigation', { name: '桌面主导航' })
     expect(within(navigation).getByRole('link', { name: '首页' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByText('家庭成员')).toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: '物品目录' })).toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: '提醒中心' })).toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: '我的账户' })).toBeInTheDocument()
+  })
+
+  it('桌面侧栏按业务分组，并按角色过滤入库与系统管理', async () => {
+    const member = {
+      id: 'account-1',
+      username: 'member',
+      displayName: '家庭成员',
+      role: 'MEMBER',
+    }
+    const authState = ref<AuthState>({ kind: 'authenticated', account: member })
+    const router = createStocketRouter(authState, createMemoryHistory())
+    await router.push('/')
+    await router.isReady()
+
+    const { unmount } = render(DesktopSidebar, {
+      props: { account: member },
+      global: { plugins: [router] },
+    })
+
+    const navigation = screen.getByRole('navigation', { name: '桌面主导航' })
+    expect(within(navigation).getByText('概览')).toBeInTheDocument()
+    expect(within(navigation).getByText('库存业务')).toBeInTheDocument()
+    expect(within(navigation).getByText('个人')).toBeInTheDocument()
+    expect(within(navigation).queryByText('系统管理')).not.toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: '入库' })).toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: '库存台账' })).toHaveAttribute('href', '/inventory')
+    expect(within(navigation).getByRole('link', { name: '通知设置' })).toHaveAttribute('href', '/notification-settings')
+    expect(within(navigation).queryByRole('link', { name: '成员管理' })).not.toBeInTheDocument()
+    unmount()
+
+    const admin = { ...member, role: 'ADMIN', displayName: '管理员' }
+    const adminRouter = createStocketRouter(ref({ kind: 'authenticated', account: admin }), createMemoryHistory())
+    await adminRouter.push('/')
+    await adminRouter.isReady()
+    render(DesktopSidebar, { props: { account: admin }, global: { plugins: [adminRouter] } })
+    const adminNav = screen.getByRole('navigation', { name: '桌面主导航' })
+    expect(within(adminNav).getByText('系统管理')).toBeInTheDocument()
+    for (const label of ['成员管理', '邀请管理', '分类管理', '位置管理', '通知失败', '审计日志', '系统诊断']) {
+      expect(within(adminNav).getByRole('link', { name: label })).toBeInTheDocument()
+    }
+  })
+
+  it('VIEWER 不显示入库入口', async () => {
+    const viewer = {
+      id: 'v1',
+      username: 'viewer',
+      displayName: '只读',
+      role: 'VIEWER',
+    }
+    const router = createStocketRouter(ref({ kind: 'authenticated', account: viewer }), createMemoryHistory())
+    await router.push('/')
+    await router.isReady()
+    render(DesktopSidebar, { props: { account: viewer }, global: { plugins: [router] } })
+    expect(screen.queryByRole('link', { name: '入库' })).not.toBeInTheDocument()
   })
 
   it('管理员桌面侧栏提供全部管理入口', async () => {

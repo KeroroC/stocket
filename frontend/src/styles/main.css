@@ -419,6 +419,23 @@
     gap: var(--st-space-2);
   }
 
+  .desktop-sidebar__group {
+    display: grid;
+    gap: var(--st-space-1);
+  }
+
+  .desktop-sidebar__group-label {
+    margin: var(--st-space-3) 0 var(--st-space-1);
+    padding: 0 var(--st-space-3);
+    color: var(--st-color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .desktop-sidebar__group:first-child .desktop-sidebar__group-label {
+    margin-top: 0;
+  }
+
   .desktop-sidebar__logout {
     margin-top: auto;
   }

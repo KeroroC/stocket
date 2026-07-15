@@ -1,44 +1,27 @@
 <script setup lang="ts">
-import { Bell, Box, DocumentChecked, FirstAidKit, HomeFilled, Plus, User } from '@element-plus/icons-vue'
 import type { CurrentAccount } from '../../auth/AuthState'
+import { visibleNavGroups } from './navConfig'
 
-defineProps<{ account: CurrentAccount }>()
-const emit = defineEmits<{ logout: [] }>()
-
-const items = [
-  { to: '/', label: '首页', icon: HomeFilled },
-  { to: '/items', label: '物品', icon: Box },
-  { to: '/receive', label: '入库', icon: Plus },
-  { to: '/reminders', label: '提醒', icon: Bell },
-  { to: '/profile', label: '我的', icon: User },
-]
-const adminItems = [
-  { to: '/admin/members', label: '成员管理', icon: User },
-  { to: '/admin/invites', label: '邀请管理', icon: Plus },
-  { to: '/admin/categories', label: '分类管理', icon: Box },
-  { to: '/admin/locations', label: '位置管理', icon: HomeFilled },
-  { to: '/admin/delivery-failures', label: '通知失败', icon: Bell },
-  { to: '/admin/audit-logs', label: '审计日志', icon: DocumentChecked },
-  { to: '/admin/diagnostics', label: '系统诊断', icon: FirstAidKit },
-]
+const props = defineProps<{ account: CurrentAccount }>()
+const groups = visibleNavGroups(props.account.role)
 </script>
 
 <template>
   <aside class="desktop-sidebar">
     <div class="desktop-sidebar__brand">Stocket</div>
-    <div class="desktop-sidebar__account">
-      <strong>{{ account.displayName }}</strong>
-      <span>{{ account.role }}</span>
-    </div>
     <nav aria-label="桌面主导航">
-      <RouterLink v-for="item in items" :key="item.to" :to="item.to" class="desktop-sidebar__link">
-        <component :is="item.icon" aria-hidden="true" />
-        <span>{{ item.label }}</span>
-      </RouterLink>
-      <RouterLink v-for="item in account.role === 'ADMIN' ? adminItems : []" :key="item.to" :to="item.to" class="desktop-sidebar__link">
-        <component :is="item.icon" aria-hidden="true" /><span>{{ item.label }}</span>
-      </RouterLink>
+      <section v-for="group in groups" :key="group.id" class="desktop-sidebar__group">
+        <h2 class="desktop-sidebar__group-label">{{ group.label }}</h2>
+        <RouterLink
+          v-for="item in group.items"
+          :key="item.to"
+          :to="item.to"
+          class="desktop-sidebar__link"
+        >
+          <component :is="item.icon" aria-hidden="true" />
+          <span>{{ item.label }}</span>
+        </RouterLink>
+      </section>
     </nav>
-    <button class="desktop-sidebar__logout st-button" type="button" @click="emit('logout')">退出登录</button>
   </aside>
 </template>

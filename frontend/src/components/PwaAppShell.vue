@@ -24,7 +24,7 @@ const hasRouter = Boolean(inject(routerKey, null))
     @force-password-change="emit('forcePasswordChange')"
   />
   <div v-else class="pwa-shell">
-    <DesktopSidebar :account="account" @logout="emit('logout')" />
+    <DesktopSidebar :account="account" />
     <main class="pwa-shell__content">
       <RouterView v-slot="{ Component }">
         <component
