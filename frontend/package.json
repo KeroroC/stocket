@@ -16,7 +16,7 @@
     "@zxing/browser": "0.1.5",
     "element-plus": "2.14.3",
     "idb": "8.0.3",
-    "vue": "3.5.20",
+    "vue": "3.5.39",
     "vue-router": "4.6.4"
   },
   "devDependencies": {
