@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   adjustInventory,
@@ -56,7 +56,8 @@ describe('InventoryEntryView', () => {
 
     render(InventoryEntryView, { props: { role: 'VIEWER' } })
 
-    expect(await screen.findByText('最早到期：2026-07-20')).toBeInTheDocument()
+    const summary = await screen.findByLabelText('当前库存摘要')
+    expect(within(summary).getByText('2026-07-20')).toBeInTheDocument()
     expect(screen.getByText(/盘点差异/)).toBeInTheDocument()
     expect(screen.getByText(/管理员/)).toBeInTheDocument()
     expect(await screen.findByText('保修单.pdf')).toBeInTheDocument()
@@ -100,8 +101,33 @@ describe('InventoryEntryView', () => {
     render(InventoryEntryView, { props: { role: 'MEMBER', entryId: 'entry-new' } })
 
     expect(await screen.findByRole('heading', { name: '燕麦奶' })).toBeInTheDocument()
-    expect(screen.getByText('可用量：2')).toBeInTheDocument()
+    const availabilityMetric = within(screen.getByLabelText('当前库存摘要')).getByText('物品可用量').closest('div')!
+    expect(within(availabilityMetric).getByText('2')).toBeInTheDocument()
     expect(getInventoryEntry).toHaveBeenCalledWith('entry-new')
+  })
+
+  it('可以按关键词和库存类型缩小条目范围', async () => {
+    vi.mocked(listInventoryEntries).mockResolvedValue({
+      items: [
+        { id: 'batch-1', itemId: 'item-1', itemName: '牛奶', locationId: 'loc-1', locationName: '冰箱', type: 'BATCH', quantity: '2', receivedAt: '2026-07-14T00:00:00Z', expirationDate: '2026-07-20', archived: false, version: 0 },
+        { id: 'asset-1', itemId: 'item-2', itemName: '台灯', locationId: 'loc-2', locationName: '书房', type: 'ASSET', quantity: '1', receivedAt: '2026-07-14T00:00:00Z', expirationDate: null, archived: false, version: 0 },
+      ], page: 0, size: 20, total: 2,
+    } as never)
+    vi.mocked(getInventoryAvailability).mockResolvedValue({ itemId: 'item-1', totalAvailable: '2', earliestExpiration: '2026-07-20', activeEntryCount: 1 })
+    vi.mocked(getInventoryMovements).mockResolvedValue([])
+    vi.mocked(listAttachments).mockResolvedValue([])
+
+    render(InventoryEntryView, { props: { role: 'MEMBER' } })
+
+    await screen.findByRole('button', { name: '牛奶，冰箱，数量 2' })
+    await fireEvent.update(screen.getByRole('searchbox', { name: '筛选库存条目' }), '书房')
+    expect(screen.queryByRole('button', { name: '牛奶，冰箱，数量 2' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '台灯，书房，数量 1' })).toBeInTheDocument()
+
+    await fireEvent.update(screen.getByRole('searchbox', { name: '筛选库存条目' }), '')
+    await fireEvent.click(screen.getByRole('radio', { name: '资产' }))
+    expect(screen.queryByRole('button', { name: '牛奶，冰箱，数量 2' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '台灯，书房，数量 1' })).toBeInTheDocument()
   })
 
   it('消耗数量不足和后端 403 都显示稳定错误', async () => {

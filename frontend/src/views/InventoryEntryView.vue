@@ -22,7 +22,22 @@ const mode = ref<'list' | 'receive'>('list')
 const sheet = ref<'consume' | 'transfer' | 'adjust'>()
 const loading = ref(true)
 const error = ref('')
+const query = ref('')
+const typeFilter = ref<'ALL' | 'BATCH' | 'ASSET'>('ALL')
 const canWrite = computed(() => props.role !== 'VIEWER')
+const filteredEntries = computed(() => {
+  const keyword = query.value.trim().toLocaleLowerCase()
+  return entries.value.filter((entry) => {
+    const matchesType = typeFilter.value === 'ALL' || entry.type === typeFilter.value
+    const matchesQuery = !keyword
+      || entry.itemName.toLocaleLowerCase().includes(keyword)
+      || entry.locationName.toLocaleLowerCase().includes(keyword)
+    return matchesType && matchesQuery
+  })
+})
+const batchCount = computed(() => entries.value.filter(entry => entry.type === 'BATCH').length)
+const assetCount = computed(() => entries.value.filter(entry => entry.type === 'ASSET').length)
+const nearestExpiration = computed(() => entries.value.find(entry => entry.expirationDate)?.expirationDate)
 
 onMounted(load)
 
@@ -75,33 +90,104 @@ async function completed() {
 </script>
 
 <template>
-  <section class="st-page">
-    <StPageHeader title="库存台账" description="查看批次、资产、可用量与不可变流水">
+  <section class="st-page inventory-page">
+    <StPageHeader title="库存台账" description="集中查看库存条目、可用量、到期日期与每一次变动">
       <template #actions>
-        <ExportDialog kind="inventory" label="导出库存" />
-        <template v-if="canWrite">
-          <el-button type="primary" @click="mode = 'receive'">新增入库</el-button>
-          <el-button v-if="selected" @click="sheet = 'consume'">消耗</el-button>
-          <el-button v-if="selected" @click="sheet = 'transfer'">调拨</el-button>
-          <el-button v-if="selected" @click="sheet = 'adjust'">调整</el-button>
-        </template>
+        <ExportDialog v-if="mode === 'list'" kind="inventory" label="导出库存" />
+        <el-button v-if="canWrite && mode === 'list'" type="primary" @click="mode = 'receive'">新增入库</el-button>
+        <el-button v-else-if="mode === 'receive'" @click="mode = 'list'">返回台账</el-button>
       </template>
     </StPageHeader>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
     <el-skeleton v-else-if="loading" :rows="6" animated />
     <InventoryReceiveView v-else-if="mode === 'receive'" :role="role" @saved="saved" />
     <StEmptyState v-else-if="entries.length === 0" title="暂无库存" description="完成首次入库后，库存条目会显示在这里。" />
-    <div v-else class="inventory-workspace">
-      <InventoryEntryList :entries="entries" :selected-id="selected?.id" @select="select" />
-      <el-card v-if="selected" class="inventory-detail" shadow="never">
-        <h2>{{ selected.itemName }}</h2>
-        <p v-if="selected.expirationDate">推荐：最早到期 {{ selected.expirationDate }}</p>
-        <p>可用量：{{ availability?.totalAvailable ?? selected.quantity }}</p>
-        <p v-if="availability?.earliestExpiration">最早到期：{{ availability.earliestExpiration }}</p>
-        <MovementTimeline :movements="movements" />
-        <DocumentList :key="selected.id" owner-type="INVENTORY_ENTRY" :owner-id="selected.id" :can-write="canWrite" />
-      </el-card>
-    </div>
+    <template v-else>
+      <dl class="inventory-overview" aria-label="库存概览">
+        <div>
+          <dt>库存条目</dt>
+          <dd>{{ entries.length }}</dd>
+          <span>当前有效记录</span>
+        </div>
+        <div>
+          <dt>批次 / 资产</dt>
+          <dd>{{ batchCount }} / {{ assetCount }}</dd>
+          <span>两类库存构成</span>
+        </div>
+        <div>
+          <dt>最近到期</dt>
+          <dd class="inventory-overview__date">{{ nearestExpiration ?? '暂无' }}</dd>
+          <span>{{ nearestExpiration ? '已按日期优先排列' : '没有设置到期日' }}</span>
+        </div>
+      </dl>
+      <div class="inventory-workspace">
+        <section class="inventory-browser" aria-labelledby="inventory-list-title">
+          <header class="inventory-browser__header">
+            <div>
+              <p>库存浏览</p>
+              <h2 id="inventory-list-title">库存条目</h2>
+            </div>
+            <span aria-live="polite">{{ filteredEntries.length }} 项</span>
+          </header>
+          <div class="inventory-browser__filters">
+            <el-input v-model="query" type="search" aria-label="筛选库存条目" placeholder="搜索物品或位置" clearable />
+            <el-segmented
+              v-model="typeFilter"
+              :options="[
+                { label: '全部', value: 'ALL' },
+                { label: '批次', value: 'BATCH' },
+                { label: '资产', value: 'ASSET' },
+              ]"
+              aria-label="库存类型"
+            />
+          </div>
+          <InventoryEntryList :entries="filteredEntries" :selected-id="selected?.id" @select="select" />
+          <StEmptyState v-if="filteredEntries.length === 0" title="没有匹配的库存" description="尝试清空关键词或切换库存类型。" />
+        </section>
+        <el-card v-if="selected" class="inventory-detail" shadow="never">
+          <header class="inventory-detail__header">
+            <div>
+              <p>{{ selected.locationName }} · {{ selected.type === 'BATCH' ? '批次库存' : '资产库存' }}</p>
+              <h2>{{ selected.itemName }}</h2>
+              <span v-if="selected.expirationDate">推荐：最早到期 {{ selected.expirationDate }}</span>
+              <span v-else>当前条目没有设置到期日</span>
+            </div>
+            <el-tag effect="plain">{{ selected.type === 'BATCH' ? '批次' : '资产' }}</el-tag>
+          </header>
+          <dl class="inventory-detail__summary" aria-label="当前库存摘要">
+            <div>
+              <dt>条目数量</dt>
+              <dd>{{ selected.quantity }}</dd>
+            </div>
+            <div>
+              <dt>物品可用量</dt>
+              <dd>{{ availability?.totalAvailable ?? selected.quantity }}</dd>
+            </div>
+            <div>
+              <dt>最早到期</dt>
+              <dd>{{ availability?.earliestExpiration ?? '暂无' }}</dd>
+            </div>
+          </dl>
+          <div v-if="canWrite" class="inventory-detail__actions" role="group" aria-label="当前库存操作">
+            <el-button @click="sheet = 'consume'">消耗</el-button>
+            <el-button @click="sheet = 'transfer'">调拨</el-button>
+            <el-button @click="sheet = 'adjust'">调整</el-button>
+          </div>
+          <section class="inventory-detail__section" aria-labelledby="movement-title">
+            <header>
+              <div>
+                <p>变动记录</p>
+                <h3 id="movement-title">库存流水</h3>
+              </div>
+              <span>{{ movements.length }} 条</span>
+            </header>
+            <MovementTimeline :movements="movements" />
+            <StEmptyState v-if="movements.length === 0" title="暂无库存流水" description="入库或调整后，变动记录会显示在这里。" />
+          </section>
+          <DocumentList :key="selected.id" owner-type="INVENTORY_ENTRY" :owner-id="selected.id" :can-write="canWrite" />
+        </el-card>
+      </div>
+    </template>
     <ConsumeSheet v-if="selected" :entry-id="selected.id" :open="sheet === 'consume'" @close="sheet = undefined" @completed="completed" />
     <TransferSheet v-if="selected" :entry-id="selected.id" :open="sheet === 'transfer'" @close="sheet = undefined" @completed="completed" />
     <AdjustSheet v-if="selected" :entry-id="selected.id" :open="sheet === 'adjust'" @close="sheet = undefined" @completed="completed" />

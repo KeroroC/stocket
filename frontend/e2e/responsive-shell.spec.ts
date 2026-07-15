@@ -61,6 +61,68 @@ for (const route of routes) {
   })
 }
 
+test('物品目录在移动和桌面端保持清晰的浏览层级', async ({ page }) => {
+  await installApiFixture(page)
+  await page.goto('/items')
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport)
+    await expect(page.getByRole('heading', { name: '物品目录' })).toBeVisible()
+    await expect(page.getByRole('searchbox', { name: '搜索物品' })).toBeVisible()
+    await expect(page.getByRole('complementary', { name: '分类浏览' })).toBeVisible()
+
+    const browseToggle = page.locator('.catalog-page__browser-toggle')
+    if (viewport.width < 1024) {
+      await expect(browseToggle).toBeVisible()
+      await browseToggle.click()
+      await expect(page.getByRole('radiogroup', { name: '浏览方式' })).toBeVisible()
+      await expect(page.getByRole('radio', { name: '按分类' })).toBeChecked()
+    } else {
+      await expect(browseToggle).toBeHidden()
+      await expect(page.getByRole('radiogroup', { name: '浏览方式' })).toBeVisible()
+      await expect(page.locator('.item-results-table')).toBeVisible()
+    }
+
+    const layout = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      segmentedItemHeights: [...document.querySelectorAll('.el-segmented__item')]
+        .filter(element => getComputedStyle(element).display !== 'none')
+        .map(element => element.getBoundingClientRect().height),
+    }))
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth)
+    expect(Math.min(...layout.segmentedItemHeights)).toBeGreaterThanOrEqual(44)
+  }
+})
+
+test('库存台账在移动和桌面端保持清晰的主从工作区', async ({ page }) => {
+  await installApiFixture(page, { seedInventory: true })
+  await page.goto('/inventory')
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport)
+    await expect(page.getByRole('heading', { name: '库存台账' })).toBeVisible()
+    await expect(page.getByLabel('库存概览')).toBeVisible()
+    await expect(page.getByRole('searchbox', { name: '筛选库存条目' })).toBeVisible()
+    await expect(page.getByLabel('当前库存摘要')).toBeVisible()
+    await expect(page.getByRole('group', { name: '当前库存操作' })).toBeVisible()
+
+    if (viewport.width < 1024) {
+      await expect(page.getByRole('button', { name: '鲜牛奶，冰箱，数量 2' })).toBeVisible()
+    } else {
+      await expect(page.locator('.inventory-table')).toBeVisible()
+    }
+
+    const layout = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      segmentedItemHeights: [...document.querySelectorAll('.el-segmented__item')]
+        .filter(element => getComputedStyle(element).display !== 'none')
+        .map(element => element.getBoundingClientRect().height),
+    }))
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth)
+    expect(Math.min(...layout.segmentedItemHeights)).toBeGreaterThanOrEqual(44)
+  }
+})
+
 const primaryTabs = [
   { label: '首页', path: '/', heading: '今天需要关注什么？' },
   { label: '物品', path: '/items', heading: '物品目录' },

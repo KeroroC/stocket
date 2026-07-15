@@ -18,9 +18,26 @@ function canonicalDecimal(value: unknown) {
   return trimmedFraction ? `${integer}.${trimmedFraction}` : integer
 }
 
-export async function installApiFixture(page: Page, options: { role?: 'ADMIN' | 'MEMBER' | 'VIEWER' } = {}) {
+export async function installApiFixture(page: Page, options: { role?: 'ADMIN' | 'MEMBER' | 'VIEWER'; seedInventory?: boolean } = {}) {
   const receiptBodies: unknown[] = []
-  const inventoryEntries: Array<Record<string, unknown>> = []
+  const inventoryEntries: Array<Record<string, unknown>> = options.seedInventory
+    ? [
+        {
+          id: 'entry-existing', itemId: item.id, itemName: item.name,
+          locationId: location.id, locationName: location.name,
+          type: 'BATCH', quantity: '2', receivedAt: '2026-07-01T00:00:00Z',
+          productionDate: null, expirationDate: '2026-07-20',
+          batchNumber: 'B-EXISTING', customAttributes: {}, archived: false, version: 0,
+        },
+        {
+          id: 'entry-asset', itemId: 'item-asset', itemName: '露营灯',
+          locationId: 'location-storage', locationName: '储物间',
+          type: 'ASSET', quantity: '1', receivedAt: '2026-06-10T00:00:00Z',
+          expirationDate: null, assetNumber: 'ASSET-001', assetStatus: 'AVAILABLE',
+          customAttributes: {}, archived: false, version: 0,
+        },
+      ]
+    : []
   const account = { ...baseAccount, role: options.role ?? baseAccount.role }
   await page.route('**/api/**', async (route) => {
     const request = route.request()
@@ -104,6 +121,10 @@ export async function installApiFixture(page: Page, options: { role?: 'ADMIN' | 
     if (path === '/api/v1/inventory/entries/entry-existing/movements') return json([{
       id: 'movement-existing', type: 'RECEIVE', quantityDelta: '2', actorAccountId: account.id,
       actorDisplayName: account.displayName, requestId: 'e2e-existing', occurredAt: '2026-07-01T00:00:00Z',
+    }])
+    if (path === '/api/v1/inventory/entries/entry-asset/movements') return json([{
+      id: 'movement-asset', type: 'RECEIVE', quantityDelta: '1', actorAccountId: account.id,
+      actorDisplayName: account.displayName, requestId: 'e2e-asset', occurredAt: '2026-06-10T00:00:00Z',
     }])
     return json({ code: 'E2E_FIXTURE_MISSING', detail: path }, 404)
   })
