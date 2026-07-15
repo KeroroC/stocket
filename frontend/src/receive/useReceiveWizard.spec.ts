@@ -38,6 +38,23 @@ describe('四步入库向导', () => {
     expect(wizard.draft.value.location?.name).toBe('冰箱')
   })
 
+  it('未选物品或位置时不能提前进入下一步', () => {
+    const wizard = createReceiveWizard('account-1', new MemoryDraftRepository(), services())
+
+    wizard.next()
+    wizard.next()
+    expect(wizard.state.value).toEqual({ kind: 'MATCH', error: '请先选择要入库的物品。' })
+
+    wizard.selectItem(item)
+    wizard.next()
+    wizard.next()
+    expect(wizard.state.value).toEqual({ kind: 'DETAILS', error: '请先选择存放位置。' })
+
+    wizard.selectLocation(location)
+    wizard.next()
+    expect(wizard.state.value.kind).toBe('CONFIRM')
+  })
+
   it('变更后 300ms 自动保存并可恢复草稿', async () => {
     vi.useFakeTimers()
     const repository = new MemoryDraftRepository()

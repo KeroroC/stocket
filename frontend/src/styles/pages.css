@@ -130,6 +130,7 @@
 .search-label,
 .catalog-form label,
 .receive-step__fields label,
+.receive-item-picker label,
 .reminder-filter,
 .audit-filters label,
 .settings-page form > label {
@@ -152,6 +153,7 @@
 .catalog-form select,
 .receive-step__fields input,
 .receive-step__fields select,
+.receive-item-picker input,
 .reminder-filter select,
 .audit-filters input,
 .audit-filters select,
@@ -173,6 +175,7 @@
 .catalog-form select:focus,
 .receive-step__fields input:focus,
 .receive-step__fields select:focus,
+.receive-item-picker input:focus,
 .reminder-filter select:focus,
 .audit-filters input:focus,
 .audit-filters select:focus,
@@ -318,6 +321,15 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--st-space-4);
+}
+
+.receive-item-picker {
+  display: grid;
+  gap: var(--st-space-4);
+}
+
+.receive-item-picker > p {
+  margin: 0;
 }
 
 .receive-step__fields > button {

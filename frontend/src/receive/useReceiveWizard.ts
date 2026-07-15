@@ -67,11 +67,13 @@ export function createReceiveWizard(
   function selectItem(item: ReceiveItemSelection) {
     draft.value.item = { ...item }
     draft.value.inventoryType = item.defaultInventoryType
+    if (state.value.error) state.value = { kind: state.value.kind }
     touch()
   }
 
   function selectLocation(location: ReceiveLocationSelection) {
     draft.value.location = { ...location }
+    if (state.value.error) state.value = { kind: state.value.kind }
     touch()
   }
 
@@ -81,6 +83,14 @@ export function createReceiveWizard(
   }
 
   function next() {
+    if (state.value.kind === 'MATCH' && !draft.value.item) {
+      state.value = { kind: 'MATCH', error: '请先选择要入库的物品。' }
+      return
+    }
+    if (state.value.kind === 'DETAILS' && !draft.value.location) {
+      state.value = { kind: 'DETAILS', error: '请先选择存放位置。' }
+      return
+    }
     const nextKind = state.value.kind === 'IDENTIFY' ? 'MATCH'
       : state.value.kind === 'MATCH' ? 'DETAILS'
         : state.value.kind === 'DETAILS' ? 'CONFIRM' : state.value.kind
