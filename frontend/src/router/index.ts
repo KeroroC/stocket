@@ -18,6 +18,9 @@ import AuditLogView from '../views/AuditLogView.vue'
 import DiagnosticsView from '../views/DiagnosticsView.vue'
 import CategoryAdminView from '../views/CategoryAdminView.vue'
 import LocationAdminView from '../views/LocationAdminView.vue'
+import AdminMembersView from '../views/AdminMembersView.vue'
+import AdminInvitesView from '../views/AdminInvitesView.vue'
+import DeliveryFailuresView from '../views/DeliveryFailuresView.vue'
 
 export function createStocketRouter(authState: Ref<AuthState>, history: RouterHistory = createWebHistory()) {
   const router = createRouter({
@@ -30,6 +33,9 @@ export function createStocketRouter(authState: Ref<AuthState>, history: RouterHi
       { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
       { path: '/inventory/:id?', name: 'inventory', component: InventoryEntryView, meta: { requiresAuth: true, roles: ['ADMIN', 'MEMBER', 'VIEWER'] } },
       { path: '/notification-settings', name: 'notification-settings', component: NotificationSettingsView, meta: { requiresAuth: true } },
+      { path: '/admin/members', name: 'members', component: AdminMembersView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
+      { path: '/admin/invites', name: 'invites', component: AdminInvitesView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
+      { path: '/admin/delivery-failures', name: 'delivery-failures', component: DeliveryFailuresView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
       { path: '/admin/audit-logs', name: 'audit-logs', component: AuditLogView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
       { path: '/admin/diagnostics', name: 'diagnostics', component: DiagnosticsView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
       { path: '/admin/categories', name: 'categories', component: CategoryAdminView, meta: { requiresAuth: true, roles: ['ADMIN'] } },

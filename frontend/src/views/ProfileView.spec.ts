@@ -25,14 +25,17 @@ describe('ProfileView', () => {
     expect(emitted().logout).toBeTruthy()
   })
 
-  it('管理员可以从我的页面进入分类和位置管理', async () => {
+  it('管理员可以从我的页面进入全部管理功能', async () => {
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
         { path: '/', component: ProfileView },
         { path: '/notification-settings', component: { template: '<div />' } },
+        { path: '/admin/members', component: { template: '<div />' } },
+        { path: '/admin/invites', component: { template: '<div />' } },
         { path: '/admin/categories', component: { template: '<div />' } },
         { path: '/admin/locations', component: { template: '<div />' } },
+        { path: '/admin/delivery-failures', component: { template: '<div />' } },
       ],
     })
     render(ProfileView, {
@@ -40,7 +43,14 @@ describe('ProfileView', () => {
       global: { plugins: [router] },
     })
 
-    expect(screen.getByRole('link', { name: '分类管理' })).toHaveAttribute('href', '/admin/categories')
-    expect(screen.getByRole('link', { name: '位置管理' })).toHaveAttribute('href', '/admin/locations')
+    for (const [label, href] of [
+      ['成员管理', '/admin/members'],
+      ['邀请管理', '/admin/invites'],
+      ['分类管理', '/admin/categories'],
+      ['位置管理', '/admin/locations'],
+      ['通知失败', '/admin/delivery-failures'],
+    ]) {
+      expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', href)
+    }
   })
 })

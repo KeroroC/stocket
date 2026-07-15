@@ -50,7 +50,7 @@ describe('移动 PWA 应用壳', () => {
     expect(screen.getByText('家庭成员')).toBeInTheDocument()
   })
 
-  it('管理员桌面侧栏提供分类和位置管理入口', async () => {
+  it('管理员桌面侧栏提供全部管理入口', async () => {
     const adminAccount = { ...account, role: 'ADMIN' }
     const authState = ref<AuthState>({ kind: 'authenticated', account: adminAccount })
     const router = createStocketRouter(authState, createMemoryHistory())
@@ -59,8 +59,31 @@ describe('移动 PWA 应用壳', () => {
 
     render(DesktopSidebar, { props: { account: adminAccount }, global: { plugins: [router] } })
 
-    expect(screen.getByRole('link', { name: '分类管理' })).toHaveAttribute('href', '/admin/categories')
-    expect(screen.getByRole('link', { name: '位置管理' })).toHaveAttribute('href', '/admin/locations')
+    for (const [label, href] of [
+      ['成员管理', '/admin/members'],
+      ['邀请管理', '/admin/invites'],
+      ['分类管理', '/admin/categories'],
+      ['位置管理', '/admin/locations'],
+      ['通知失败', '/admin/delivery-failures'],
+    ]) {
+      expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', href)
+    }
+  })
+
+  it('管理员可以访问成员、邀请和通知失败路由，普通成员会被拒绝', async () => {
+    const adminAccount = { ...account, role: 'ADMIN' }
+    const adminAuthState = ref<AuthState>({ kind: 'authenticated', account: adminAccount })
+    const adminRouter = createStocketRouter(adminAuthState, createMemoryHistory())
+
+    for (const path of ['/admin/members', '/admin/invites', '/admin/delivery-failures']) {
+      await adminRouter.push(path)
+      expect(adminRouter.currentRoute.value.path).toBe(path)
+    }
+
+    const memberAuthState = ref<AuthState>({ kind: 'authenticated', account })
+    const memberRouter = createStocketRouter(memberAuthState, createMemoryHistory())
+    await memberRouter.push('/admin/members')
+    expect(memberRouter.currentRoute.value.path).toBe('/')
   })
 
   it('未登录时阻止进入认证路由并重定向登录', async () => {
