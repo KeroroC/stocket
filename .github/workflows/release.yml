@@ -78,7 +78,7 @@ jobs:
             '{jvmTests:"passed",containerPlatforms:["linux/amd64","linux/arm64"],java:$java}' \
             >release/test-summary.json
       - name: Generate release SBOM
-        uses: anchore/sbom-action@v0.20.6
+        uses: anchore/sbom-action@v0.24.0
         with:
           image: ${{ env.IMAGE_REPOSITORY }}:${{ env.VERSION }}
           format: spdx-json
