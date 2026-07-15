@@ -1,6 +1,7 @@
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
+import fs from 'node:fs'
 
 export default defineConfig({
   plugins: [
@@ -25,6 +26,10 @@ export default defineConfig({
     }),
   ],
   server: {
+    https: {
+      key: fs.readFileSync('./localhost+2-key.pem'),
+      cert: fs.readFileSync('./localhost+2.pem'),
+    },
     proxy: {
       '/api': 'http://localhost:8080',
     },
