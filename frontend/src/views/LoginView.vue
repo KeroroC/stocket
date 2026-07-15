@@ -49,37 +49,17 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="auth-card">
+  <el-card class="auth-card" shadow="always">
     <h1>登录</h1>
-
-    <form class="auth-form" @submit.prevent="handleSubmit">
-      <div v-if="errorMessage" role="alert" class="auth-error">
-        {{ errorMessage }}
-      </div>
-
-      <div class="form-field">
-        <label for="username">用户名</label>
-        <input
-          id="username"
-          v-model="username"
-          type="text"
-          autocomplete="username"
-        />
-      </div>
-
-      <div class="form-field">
-        <label for="password">密码</label>
-        <input
-          id="password"
-          v-model="password"
-          type="password"
-          autocomplete="current-password"
-        />
-      </div>
-
-      <button type="submit" class="auth-submit" :disabled="submitting">
-        {{ submitting ? '登录中...' : '登录' }}
-      </button>
-    </form>
-  </div>
+    <el-form class="auth-form" label-position="top" @submit.prevent="handleSubmit">
+      <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
+      <el-form-item label="用户名">
+        <el-input id="username" v-model="username" autocomplete="username" />
+      </el-form-item>
+      <el-form-item label="密码">
+        <el-input id="password" v-model="password" type="password" autocomplete="current-password" show-password />
+      </el-form-item>
+      <el-button type="primary" size="large" :loading="submitting" :disabled="submitting" @click="handleSubmit">{{ submitting ? '登录中...' : '登录' }}</el-button>
+    </el-form>
+  </el-card>
 </template>

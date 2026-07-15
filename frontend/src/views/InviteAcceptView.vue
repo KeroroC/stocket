@@ -100,12 +100,10 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="auth-card">
+  <el-card class="auth-card" shadow="always">
     <h1>接受邀请</h1>
 
-    <div v-if="loading" class="auth-loading">
-      <p>正在加载邀请信息...</p>
-    </div>
+    <el-skeleton v-if="loading" :rows="4" animated />
 
     <div v-else-if="loadError" role="alert" class="auth-error">
       {{ loadError }}
@@ -129,59 +127,7 @@ async function handleSubmit() {
         </p>
       </div>
 
-      <form class="auth-form" @submit.prevent="handleSubmit">
-        <div v-if="errorMessage" role="alert" class="auth-error">
-          {{ errorMessage }}
-        </div>
-
-        <div class="form-field">
-          <label for="username">用户名</label>
-          <input
-            id="username"
-            v-model="username"
-            type="text"
-            placeholder="至少 3 个字符"
-            autocomplete="username"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="displayName">显示名称</label>
-          <input
-            id="displayName"
-            v-model="displayName"
-            type="text"
-            placeholder="您的昵称"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="password">密码</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            placeholder="至少 12 个字符"
-            autocomplete="new-password"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="confirmPassword">确认密码</label>
-          <input
-            id="confirmPassword"
-            v-model="confirmPassword"
-            type="password"
-            placeholder="再次输入密码"
-            autocomplete="new-password"
-          />
-        </div>
-
-        <button type="submit" class="auth-submit" :disabled="submitting">
-          {{ submitting ? '加入中...' : '接受邀请' }}
-        </button>
-      </form>
+      <el-form class="auth-form" label-position="top" @submit.prevent="handleSubmit"><el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" /><el-form-item label="用户名"><el-input id="username" v-model="username" placeholder="至少 3 个字符" autocomplete="username" /></el-form-item><el-form-item label="显示名称"><el-input id="displayName" v-model="displayName" placeholder="您的昵称" autocomplete="off" /></el-form-item><el-form-item label="密码"><el-input id="password" v-model="password" type="password" placeholder="至少 12 个字符" autocomplete="new-password" show-password /></el-form-item><el-form-item label="确认密码"><el-input id="confirmPassword" v-model="confirmPassword" type="password" placeholder="再次输入密码" autocomplete="new-password" show-password /></el-form-item><el-button type="primary" size="large" :loading="submitting" :disabled="submitting" @click="handleSubmit">{{ submitting ? '加入中...' : '接受邀请' }}</el-button></el-form>
     </template>
-  </div>
+  </el-card>
 </template>

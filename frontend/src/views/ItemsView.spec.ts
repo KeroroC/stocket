@@ -51,8 +51,8 @@ describe('ItemsView', () => {
   it('可以切换分类和位置浏览', async () => {
     vi.mocked(listLocations).mockResolvedValue([{ id: 'loc-1', parentId: null, name: '冰箱', fullPath: '冰箱', publicCode: 'FRIDGE', version: 0, archived: false }])
     render(ItemsView, { props: { role: 'VIEWER' } })
-    expect(screen.getByRole('button', { name: '按分类' })).toBeInTheDocument()
-    await fireEvent.click(screen.getByRole('button', { name: '按位置' }))
+    expect(screen.getByRole('radio', { name: '按分类' })).toBeInTheDocument()
+    await fireEvent.click(screen.getByRole('radio', { name: '按位置' }))
     expect(await screen.findByText('冰箱')).toBeInTheDocument()
   })
 })

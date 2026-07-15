@@ -27,7 +27,7 @@ defineEmits<{
 </script>
 
 <template>
-  <section class="receive-step">
+  <el-card class="receive-step" shadow="never">
     <div class="receive-step__intro">
       <span>第 2 步</span>
       <h2>选择物品</h2>
@@ -48,7 +48,7 @@ defineEmits<{
       <span v-else>请联系管理员先创建分类。</span>
     </div>
     <div v-else class="receive-item-picker">
-      <label>搜索物品<input v-model="query" type="search" autocomplete="off" /></label>
+      <el-input v-model="query" type="search" autocomplete="off" placeholder="搜索物品" aria-label="搜索物品" clearable />
       <p v-if="loading" role="status">正在搜索...</p>
       <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
       <ItemSearchResults
@@ -57,12 +57,12 @@ defineEmits<{
         :loading="loading"
         @select="$emit('select', $event)"
       />
-      <button class="st-button" type="button" @click="creating = true">创建新物品</button>
+      <el-button @click="creating = true">创建新物品</el-button>
     </div>
     <div class="receive-step__actions">
-      <button class="st-button" type="button" @click="$emit('back')">返回</button>
-      <button v-if="creating" class="st-button" type="button" @click="creating = false">取消建档</button>
-      <button class="st-button st-button--primary" type="button" :disabled="!draft.item" @click="$emit('next')">下一步</button>
+      <el-button @click="$emit('back')">返回</el-button>
+      <el-button v-if="creating" @click="creating = false">取消建档</el-button>
+      <el-button type="primary" :disabled="!draft.item" @click="$emit('next')">下一步</el-button>
     </div>
-  </section>
+  </el-card>
 </template>

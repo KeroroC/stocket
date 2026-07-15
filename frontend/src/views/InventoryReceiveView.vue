@@ -58,21 +58,21 @@ async function submit() {
 <template>
   <section class="inventory-panel">
     <h2>新增入库</h2>
-    <p v-if="error" role="alert" class="auth-error">{{ error }}</p>
-    <form v-if="canWrite" class="inventory-form" @submit.prevent="submit">
-      <label class="inventory-field" for="receive-item-id"><span>物品 ID</span><input id="receive-item-id" v-model="itemId" required @input="changed" /></label>
-      <label class="inventory-field" for="receive-location-id"><span>位置 ID</span><input id="receive-location-id" v-model="locationId" required @input="changed" /></label>
-      <label class="inventory-field" for="receive-type"><span>库存类型</span><select id="receive-type" v-model="type" @change="changed"><option value="BATCH">批次</option><option value="ASSET">资产</option></select></label>
+    <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
+    <el-form v-if="canWrite" class="inventory-form" label-position="top" @submit.prevent="submit">
+      <el-form-item label="物品 ID"><el-input id="receive-item-id" v-model="itemId" required @input="changed" /></el-form-item>
+      <el-form-item label="位置 ID"><el-input id="receive-location-id" v-model="locationId" required @input="changed" /></el-form-item>
+      <el-form-item label="库存类型"><el-select id="receive-type" v-model="type" @change="changed"><el-option label="批次" value="BATCH" /><el-option label="资产" value="ASSET" /></el-select></el-form-item>
       <QuantityInput id="receive-quantity" v-model="quantity" label="数量" @update:model-value="changed" />
-      <label v-if="type === 'BATCH'" class="inventory-field" for="batch-number"><span>批次号</span><input id="batch-number" v-model="batchNumber" @input="changed" /></label>
+      <el-form-item v-if="type === 'BATCH'" label="批次号"><el-input id="batch-number" v-model="batchNumber" @input="changed" /></el-form-item>
       <template v-else>
-        <label class="inventory-field" for="asset-number"><span>资产编号</span><input id="asset-number" v-model="assetNumber" required @input="changed" /></label>
-        <label class="inventory-field" for="serial-number"><span>序列号</span><input id="serial-number" v-model="serialNumber" @input="changed" /></label>
+        <el-form-item label="资产编号"><el-input id="asset-number" v-model="assetNumber" required @input="changed" /></el-form-item>
+        <el-form-item label="序列号"><el-input id="serial-number" v-model="serialNumber" @input="changed" /></el-form-item>
       </template>
-      <label class="inventory-field" for="production-date"><span>生产日期</span><input id="production-date" v-model="productionDate" type="date" @input="changed" /></label>
-      <label class="inventory-field" for="expiration-date"><span>到期日期</span><input id="expiration-date" v-model="expirationDate" type="date" @input="changed" /></label>
-      <button type="submit" :disabled="submitting">{{ submitting ? '提交中…' : '确认入库' }}</button>
-    </form>
-    <p v-else>只读成员不能执行入库。</p>
+      <el-form-item label="生产日期"><el-input id="production-date" v-model="productionDate" type="date" @input="changed" /></el-form-item>
+      <el-form-item label="到期日期"><el-input id="expiration-date" v-model="expirationDate" type="date" @input="changed" /></el-form-item>
+      <el-button native-type="submit" type="primary" :loading="submitting">确认入库</el-button>
+    </el-form>
+    <el-alert v-else title="只读成员不能执行入库。" type="info" :closable="false" />
   </section>
 </template>

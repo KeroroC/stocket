@@ -209,44 +209,20 @@ function formatRole(role: string): string {
   <section class="st-page admin-members-view">
     <StPageHeader title="成员管理" description="管理家庭成员角色与访问状态">
       <template #actions>
-        <button class="st-button st-button--primary" type="button" @click="openCreateDialog">创建成员</button>
+        <el-button type="primary" @click="openCreateDialog">创建成员</el-button>
       </template>
     </StPageHeader>
 
-    <div v-if="error" role="alert" class="auth-error">
-      {{ error }}
-    </div>
+    <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
+    <el-skeleton v-if="loading" :rows="5" animated />
 
-    <div v-if="loading" class="auth-loading">加载中...</div>
-
-    <div v-if="isDesktop && members.length > 0" class="st-table-wrapper admin-table-fallback">
-      <table class="st-table">
-        <thead>
-          <tr>
-            <th>显示名</th>
-            <th>用户名</th>
-            <th>角色</th>
-            <th>状态</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="member in members" :key="`table-${member.id}`">
-            <td>{{ member.displayName }}</td>
-            <td>@{{ member.username }}</td>
-            <td>{{ formatRole(member.role) }}</td>
-            <td>{{ member.enabled ? '启用' : '停用' }}</td>
-            <td class="st-table__actions">
-              <button class="st-button st-button--text" type="button" @click="openEditRoleDialog(member)">修改角色</button>
-              <button class="st-button st-button--text" type="button" @click="handleToggleEnabled(member)">
-                {{ member.enabled ? '禁用' : '启用' }}
-              </button>
-              <button class="st-button st-button--text" type="button" @click="handleResetPassword(member)">重置密码</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <el-table v-if="isDesktop && members.length > 0" :data="members" row-key="id">
+      <el-table-column prop="displayName" label="显示名" min-width="130" />
+      <el-table-column label="用户名" min-width="130"><template #default="{ row }">@{{ row.username }}</template></el-table-column>
+      <el-table-column label="角色" width="110"><template #default="{ row }"><el-tag :type="row.role === 'ADMIN' ? 'success' : row.role === 'MEMBER' ? 'primary' : 'info'">{{ formatRole(row.role) }}</el-tag></template></el-table-column>
+      <el-table-column label="状态" width="100"><template #default="{ row }"><el-tag :type="row.enabled ? 'success' : 'danger'" effect="plain">{{ row.enabled ? '启用' : '停用' }}</el-tag></template></el-table-column>
+      <el-table-column label="操作" min-width="240" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openEditRoleDialog(row as MemberInfo)">修改角色</el-button><el-button link :type="row.enabled ? 'danger' : 'success'" @click="handleToggleEnabled(row as MemberInfo)">{{ row.enabled ? '禁用' : '启用' }}</el-button><el-button link @click="handleResetPassword(row as MemberInfo)">重置密码</el-button></template></el-table-column>
+    </el-table>
 
     <ul v-if="!isDesktop && members.length > 0" class="member-list">
       <li v-for="member in members" :key="member.id" class="member-item">
@@ -259,11 +235,11 @@ function formatRole(role: string): string {
           <el-tag v-if="!member.enabled" type="danger" size="small">已禁用</el-tag>
         </div>
         <div class="member-actions">
-          <button class="member-action-btn" @click="openEditRoleDialog(member)">修改角色</button>
-          <button class="member-action-btn" @click="handleToggleEnabled(member)">
+          <el-button size="small" @click="openEditRoleDialog(member)">修改角色</el-button>
+          <el-button size="small" @click="handleToggleEnabled(member)">
             {{ member.enabled ? '禁用' : '启用' }}
-          </button>
-          <button class="member-action-btn" @click="handleResetPassword(member)">重置密码</button>
+          </el-button>
+          <el-button size="small" @click="handleResetPassword(member)">重置密码</el-button>
         </div>
       </li>
     </ul>
@@ -277,45 +253,14 @@ function formatRole(role: string): string {
       :close-on-click-modal="false"
       width="400px"
     >
-      <form class="auth-form" @submit.prevent="handleCreateMember">
-        <div v-if="createError" role="alert" class="auth-error">
-          {{ createError }}
-        </div>
-
-        <div class="form-field">
-          <label for="newUsername">用户名</label>
-          <input
-            id="newUsername"
-            v-model="newUsername"
-            type="text"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="newDisplayName">显示名称</label>
-          <input
-            id="newDisplayName"
-            v-model="newDisplayName"
-            type="text"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="newRole">角色</label>
-          <select id="newRole" v-model="newRole">
-            <option value="ADMIN">管理员</option>
-            <option value="MEMBER">成员</option>
-            <option value="VIEWER">只读者</option>
-          </select>
-        </div>
-      </form>
+      <el-form class="auth-form" label-position="top" @submit.prevent="handleCreateMember">
+        <el-alert v-if="createError" :title="createError" type="error" show-icon :closable="false" />
+        <el-form-item label="用户名"><el-input id="newUsername" v-model="newUsername" autocomplete="off" /></el-form-item>
+        <el-form-item label="显示名称"><el-input id="newDisplayName" v-model="newDisplayName" autocomplete="off" /></el-form-item>
+        <el-form-item label="角色"><el-select id="newRole" v-model="newRole"><el-option label="管理员" value="ADMIN" /><el-option label="成员" value="MEMBER" /><el-option label="只读者" value="VIEWER" /></el-select></el-form-item>
+      </el-form>
       <template #footer>
-        <button class="auth-logout-btn" style="width: auto;" @click="showCreateDialog = false">取消</button>
-        <button class="auth-submit" style="width: auto;" :disabled="createSubmitting" @click="handleCreateMember">
-          {{ createSubmitting ? '创建中...' : '确认创建' }}
-        </button>
+        <el-button @click="showCreateDialog = false">取消</el-button><el-button type="primary" :loading="createSubmitting" @click="handleCreateMember">确认创建</el-button>
       </template>
     </el-dialog>
 
@@ -330,18 +275,12 @@ function formatRole(role: string): string {
       <div class="result-content">
         <p>临时密码（仅显示一次，请妥善保存）：</p>
         <div class="result-secret">{{ resultTempPassword }}</div>
-        <button
-          class="result-copy-btn"
-          :disabled="copiedCreate"
-          @click="copyToClipboard(resultTempPassword, 'create')"
-        >
+        <el-button :disabled="copiedCreate" @click="copyToClipboard(resultTempPassword, 'create')">
           {{ copiedCreate ? '已复制' : '复制密码' }}
-        </button>
+        </el-button>
       </div>
       <template #footer>
-        <button class="auth-submit" style="width: auto;" @click="closeResultDialog">
-          确定
-        </button>
+        <el-button type="primary" @click="closeResultDialog">确定</el-button>
       </template>
     </el-dialog>
 
@@ -352,25 +291,9 @@ function formatRole(role: string): string {
       :close-on-click-modal="false"
       width="400px"
     >
-      <form class="auth-form" @submit.prevent="handleEditRole">
-        <div v-if="editError" role="alert" class="auth-error">
-          {{ editError }}
-        </div>
-
-        <div class="form-field">
-          <label for="editRole">新角色</label>
-          <select id="editRole" v-model="editRole">
-            <option value="ADMIN">管理员</option>
-            <option value="MEMBER">成员</option>
-            <option value="VIEWER">只读者</option>
-          </select>
-        </div>
-      </form>
+      <el-form class="auth-form" label-position="top" @submit.prevent="handleEditRole"><el-alert v-if="editError" :title="editError" type="error" show-icon :closable="false" /><el-form-item label="新角色"><el-select id="editRole" v-model="editRole"><el-option label="管理员" value="ADMIN" /><el-option label="成员" value="MEMBER" /><el-option label="只读者" value="VIEWER" /></el-select></el-form-item></el-form>
       <template #footer>
-        <button class="auth-logout-btn" style="width: auto;" @click="showEditRoleDialog = false">取消</button>
-        <button class="auth-submit" style="width: auto;" :disabled="editSubmitting" @click="handleEditRole">
-          {{ editSubmitting ? '保存中...' : '确认' }}
-        </button>
+        <el-button @click="showEditRoleDialog = false">取消</el-button><el-button type="primary" :loading="editSubmitting" @click="handleEditRole">确认</el-button>
       </template>
     </el-dialog>
 
@@ -385,18 +308,12 @@ function formatRole(role: string): string {
       <div class="result-content">
         <p>临时密码（仅显示一次，请妥善保存）：</p>
         <div class="result-secret">{{ resetTempPassword }}</div>
-        <button
-          class="result-copy-btn"
-          :disabled="copiedReset"
-          @click="copyToClipboard(resetTempPassword, 'reset')"
-        >
+        <el-button :disabled="copiedReset" @click="copyToClipboard(resetTempPassword, 'reset')">
           {{ copiedReset ? '已复制' : '复制密码' }}
-        </button>
+        </el-button>
       </div>
       <template #footer>
-        <button class="auth-submit" style="width: auto;" @click="closeResetResultDialog">
-          确定
-        </button>
+        <el-button type="primary" @click="closeResetResultDialog">确定</el-button>
       </template>
     </el-dialog>
   </section>

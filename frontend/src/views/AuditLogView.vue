@@ -14,42 +14,9 @@ const detailLabel:Record<string,string>={ownerType:'对象类型',ownerId:'对�
 <template>
   <section class="st-page audit-page">
     <StPageHeader title="审计日志" description="按请求、操作者和事件追踪关键变更" />
-    <form class="audit-filters" @submit.prevent="load(false)">
-      <label>事件类型<input v-model="filters.eventType" /></label>
-      <label>结果<select v-model="filters.outcome"><option value="">全部</option><option>SUCCESS</option><option>FAILURE</option></select></label>
-      <label>Request ID<input v-model="filters.requestId" /></label>
-      <button type="submit">筛选</button>
-    </form>
+    <el-form class="audit-filters" inline @submit.prevent="load(false)"><el-form-item label="事件类型"><el-input v-model="filters.eventType" /></el-form-item><el-form-item label="结果"><el-select v-model="filters.outcome"><el-option label="全部" value="" /><el-option label="SUCCESS" value="SUCCESS" /><el-option label="FAILURE" value="FAILURE" /></el-select></el-form-item><el-form-item label="Request ID"><el-input v-model="filters.requestId" /></el-form-item><el-button native-type="submit" type="primary">筛选</el-button></el-form>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <div v-if="isDesktop && items.length" class="st-table-wrapper audit-table">
-      <table class="st-table">
-        <thead>
-          <tr>
-            <th>时间</th>
-            <th>事件</th>
-            <th>结果</th>
-            <th>操作人</th>
-            <th>对象</th>
-            <th>Request ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in items" :key="`table-${item.id}`">
-            <td><time :datetime="item.occurredAt">{{ new Date(item.occurredAt).toLocaleString() }}</time></td>
-            <td>{{ item.eventType }}</td>
-            <td>{{ item.outcome }}</td>
-            <td>{{ item.actorDisplayName ?? '系统' }}</td>
-            <td>{{ item.subjectType }} {{ item.subjectId ?? '' }}</td>
-            <td>
-              <template v-if="item.requestId">
-                <code>{{ item.requestId }}</code>
-                <button class="st-button st-button--text" type="button" :aria-label="`复制 request ID ${item.requestId}`" @click="copy(item.requestId)">复制</button>
-              </template>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <el-table v-if="isDesktop && items.length" :data="items" row-key="id" class="audit-table"><el-table-column label="时间" min-width="180"><template #default="{ row }">{{ new Date(row.occurredAt).toLocaleString() }}</template></el-table-column><el-table-column prop="eventType" label="事件" min-width="170" /><el-table-column label="结果" width="100"><template #default="{ row }"><el-tag :type="row.outcome === 'FAILURE' ? 'danger' : 'success'">{{ row.outcome }}</el-tag></template></el-table-column><el-table-column label="操作人" min-width="120"><template #default="{ row }">{{ row.actorDisplayName ?? '系统' }}</template></el-table-column><el-table-column label="对象" min-width="180"><template #default="{ row }">{{ row.subjectType }} {{ row.subjectId ?? '' }}</template></el-table-column><el-table-column label="Request ID" min-width="200"><template #default="{ row }"><template v-if="row.requestId"><code>{{ row.requestId }}</code><el-button link type="primary" :aria-label="`复制 request ID ${row.requestId}`" @click="copy(row.requestId)">复制</el-button></template></template></el-table-column></el-table>
     <ul v-if="!isDesktop" class="audit-list">
       <li v-for="item in items" :key="item.id">
         <header>
@@ -60,13 +27,13 @@ const detailLabel:Record<string,string>={ownerType:'对象类型',ownerId:'对�
         <p>操作人：{{ item.actorDisplayName ?? '系统' }}</p>
         <p>对象：{{ item.subjectType }} {{ item.subjectId ?? '' }}</p>
         <p v-if="item.requestId">Request ID：<code>{{ item.requestId }}</code>
-          <button class="st-button st-button--text" type="button" aria-label="复制 request ID" @click="copy(item.requestId)">复制</button>
+          <el-button link type="primary" aria-label="复制 request ID" @click="copy(item.requestId)">复制</el-button>
           <span v-if="copied === item.requestId" role="status">已复制</span>
         </p>
         <dl v-if="Object.keys(item.details).length"><template v-for="(value,key) in item.details" :key="key"><dt>{{ detailLabel[key] ?? key }}</dt><dd>{{ value }}</dd></template></dl>
       </li>
     </ul>
-    <p v-if="!loading && !items.length" class="st-empty-copy">没有匹配的审计记录</p>
-    <button v-if="nextCursor" class="st-button" type="button" :disabled="loading" @click="load(true)">加载更多</button>
+    <el-empty v-if="!loading && !items.length" description="没有匹配的审计记录" />
+    <el-button v-if="nextCursor" :loading="loading" @click="load(true)">加载更多</el-button>
   </section>
 </template>

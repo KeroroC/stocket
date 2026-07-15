@@ -148,6 +148,14 @@ body {
   box-shadow: var(--st-shadow-card);
 }
 
+.auth-card.el-card {
+  border-radius: var(--st-radius-feature);
+}
+
+.auth-card.el-card > .el-card__body {
+  padding: 32px 24px;
+}
+
 @media (min-width: 480px) {
   .auth-card {
     padding: 40px 32px;
@@ -177,6 +185,15 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.auth-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.auth-form > .el-button {
+  width: 100%;
+  margin-left: 0;
 }
 
 .form-field {

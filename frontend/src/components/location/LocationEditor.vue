@@ -5,4 +5,4 @@ const props = defineProps<{ parent?: LocationNode }>()
 const emit = defineEmits<{ save: [{ name: string; parentId: string | null }] }>()
 const name = ref('')
 </script>
-<template><form class="location-editor" @submit.prevent="emit('save',{name,parentId:props.parent?.id??null})"><label>位置名称<input v-model="name" required /></label><button class="st-button st-button--primary" type="submit">保存位置</button></form></template>
+<template><el-card class="location-editor" shadow="never"><el-form label-position="top" @submit.prevent="emit('save',{name,parentId:props.parent?.id??null})"><el-form-item label="位置名称"><el-input v-model="name" required /></el-form-item><el-button native-type="submit" type="primary">保存位置</el-button></el-form></el-card></template>

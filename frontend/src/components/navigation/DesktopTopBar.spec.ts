@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/vue'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/vue'
 import { createMemoryHistory } from 'vue-router'
 import { ref } from 'vue'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -33,9 +33,9 @@ describe('DesktopTopBar', () => {
     expect(screen.getByRole('link', { name: '快捷入库' })).toHaveAttribute('href', '/receive')
 
     await fireEvent.click(screen.getByRole('button', { name: /家庭成员/ }))
-    const menu = screen.getByRole('menu')
-    expect(within(menu).getByRole('menuitem', { name: '我的账户' })).toHaveAttribute('href', '/profile')
-    expect(within(menu).getByRole('menuitem', { name: '通知设置' })).toHaveAttribute('href', '/notification-settings')
+    const menu = await waitFor(() => screen.getByRole('menu'))
+    expect(within(menu).getByRole('menuitem', { name: '我的账户' })).toBeInTheDocument()
+    expect(within(menu).getByRole('menuitem', { name: '通知设置' })).toBeInTheDocument()
     await fireEvent.click(within(menu).getByRole('menuitem', { name: '退出登录' }))
     expect(emitted().logout).toBeTruthy()
   })

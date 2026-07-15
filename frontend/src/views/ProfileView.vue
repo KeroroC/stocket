@@ -22,6 +22,6 @@ const emit = defineEmits<{ logout: []; forcePasswordChange: []; profileUpdated: 
       <RouterLink v-if="account.role === 'ADMIN'" to="/admin/locations">位置管理</RouterLink>
       <RouterLink v-if="account.role === 'ADMIN'" to="/admin/delivery-failures">通知失败</RouterLink>
     </nav>
-    <button class="st-button" type="button" @click="emit('logout')">退出登录</button>
+    <el-button type="danger" plain @click="emit('logout')">退出登录</el-button>
   </section>
 </template>

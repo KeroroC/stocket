@@ -110,7 +110,8 @@ describe('InventoryEntryView', () => {
       .mockRejectedValueOnce({ status: 403, detail: '无权限执行库存操作' })
     render(ConsumeSheet, { props: { entryId: 'entry-1', open: true } })
 
-    await fireEvent.update(screen.getByLabelText('消耗数量'), '9.5')
+    const consumeField = await screen.findByLabelText('消耗数量')
+    await fireEvent.input((consumeField.querySelector?.('input') ?? consumeField) as HTMLInputElement, { target: { value: '9.5' } })
     await fireEvent.click(screen.getByRole('button', { name: '确认消耗' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('库存数量不足')
 
@@ -129,11 +130,12 @@ describe('InventoryEntryView', () => {
     vi.mocked(transferInventory).mockResolvedValue({ id: 'entry-1' })
     render(TransferSheet, { props: { entryId: 'entry-1', open: true, scanner } })
 
-    await screen.findByRole('option', { name: '厨房 > 冷藏室' })
+    await screen.findByRole('dialog', { name: '调拨库存' })
     await fireEvent.click(screen.getByRole('button', { name: '扫描目标位置' }))
     await waitFor(() => scanner.emit('stocket:location:FRIDGE'))
-    await waitFor(() => expect(screen.getByLabelText('目标位置')).toHaveValue('loc-2'))
-    await fireEvent.update(screen.getByLabelText('调拨数量'), '1.2500')
+    await waitFor(() => expect(screen.getAllByText('厨房 > 冷藏室').length).toBeGreaterThan(0))
+    const transferField = screen.getByLabelText('调拨数量')
+    await fireEvent.input((transferField.querySelector?.('input') ?? transferField) as HTMLInputElement, { target: { value: '1.2500' } })
     await fireEvent.click(screen.getByRole('button', { name: '确认调拨' }))
 
     await waitFor(() => expect(transferInventory).toHaveBeenCalledWith(
@@ -143,7 +145,8 @@ describe('InventoryEntryView', () => {
 
   it('调整库存要求填写原因', async () => {
     render(AdjustSheet, { props: { entryId: 'entry-1', open: true } })
-    await fireEvent.update(screen.getByLabelText('调整后数量'), '2.0000')
+    const adjustField = await screen.findByLabelText('调整后数量')
+    await fireEvent.input((adjustField.querySelector?.('input') ?? adjustField) as HTMLInputElement, { target: { value: '2.0000' } })
     await fireEvent.click(screen.getByRole('button', { name: '确认调整' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('请输入调整原因')

@@ -17,6 +17,11 @@ vi.mock('../api/identity', () => ({
 
 const mockLogin = vi.mocked(login)
 
+function input(label: RegExp) {
+  const field = screen.getByLabelText(label)
+  return (field.querySelector?.('input') ?? field) as HTMLInputElement
+}
+
 beforeEach(() => {
   vi.spyOn(document, 'cookie', 'get').mockReturnValue('XSRF-TOKEN=abc123')
   vi.spyOn(document, 'cookie', 'set').mockImplementation(() => {})
@@ -44,8 +49,8 @@ describe('LoginView', () => {
 
     const { emitted } = render(LoginView)
 
-    await fireEvent.update(screen.getByLabelText(/用户名/), 'admin')
-    await fireEvent.update(screen.getByLabelText(/密码/), 'password123')
+    await fireEvent.input(input(/用户名/), { target: { value: 'admin' } })
+    await fireEvent.input(input(/密码/), { target: { value: 'password123' } })
     await fireEvent.click(screen.getByRole('button', { name: /登录/ }))
 
     await waitFor(() => {
@@ -61,8 +66,8 @@ describe('LoginView', () => {
 
     render(LoginView)
 
-    await fireEvent.update(screen.getByLabelText(/用户名/), 'admin')
-    await fireEvent.update(screen.getByLabelText(/密码/), 'wrong')
+    await fireEvent.input(input(/用户名/), { target: { value: 'admin' } })
+    await fireEvent.input(input(/密码/), { target: { value: 'wrong' } })
     await fireEvent.click(screen.getByRole('button', { name: /登录/ }))
 
     await waitFor(() => {
@@ -81,8 +86,8 @@ describe('LoginView', () => {
 
     render(LoginView)
 
-    await fireEvent.update(screen.getByLabelText(/用户名/), 'admin')
-    await fireEvent.update(screen.getByLabelText(/密码/), 'password123')
+    await fireEvent.input(input(/用户名/), { target: { value: 'admin' } })
+    await fireEvent.input(input(/密码/), { target: { value: 'password123' } })
 
     const submitBtn = screen.getByRole('button', { name: /登录/ })
     await fireEvent.click(submitBtn)

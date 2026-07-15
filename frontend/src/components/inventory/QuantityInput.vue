@@ -4,14 +4,13 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 </script>
 
 <template>
-  <label class="inventory-field" :for="id">
-    <span>{{ label }}</span>
-    <input
+  <el-form-item class="inventory-field" :label="label">
+    <el-input
       :id="id"
-      :value="modelValue"
+      :model-value="modelValue"
       inputmode="decimal"
       autocomplete="off"
-      @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @update:model-value="emit('update:modelValue', String($event))"
     />
-  </label>
+  </el-form-item>
 </template>

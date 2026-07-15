@@ -28,15 +28,9 @@ async function retry(delivery: Delivery) {
     <StPageHeader title="通知失败" description="查看永久失败的投递并手工重试" />
     <p v-if="message" class="st-feedback st-feedback--success" role="status">{{ message }}</p>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <div v-if="deliveries.length" class="st-table-wrapper">
-      <table class="st-table">
-        <thead><tr><th>渠道</th><th>错误分类</th><th>尝试次数</th><th>操作</th></tr></thead>
-        <tbody><tr v-for="delivery in deliveries" :key="delivery.id">
-          <td>{{ delivery.channelType }}</td><td>{{ delivery.lastErrorCode }}</td><td>{{ delivery.attemptCount }}</td>
-          <td><button class="st-button" :aria-label="`重试 ${delivery.id}`" @click="retry(delivery)">重试</button></td>
-        </tr></tbody>
-      </table>
-    </div>
-    <p v-else class="st-empty-copy">暂无失败投递</p>
+    <el-table v-if="deliveries.length" :data="deliveries" row-key="id">
+      <el-table-column prop="channelType" label="渠道" /><el-table-column prop="lastErrorCode" label="错误分类" /><el-table-column prop="attemptCount" label="尝试次数" /><el-table-column label="操作"><template #default="{ row }"><el-button link type="primary" :aria-label="`重试 ${row.id}`" @click="retry(row as Delivery)">重试</el-button></template></el-table-column>
+    </el-table>
+    <el-empty v-else description="暂无失败投递" />
   </section>
 </template>

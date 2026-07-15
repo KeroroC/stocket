@@ -46,7 +46,8 @@ describe('RemindersView', () => {
   it('按类型筛选提醒', async () => {
     render(RemindersView)
     await screen.findByText('待处理')
-    await fireEvent.update(screen.getByLabelText('提醒类型'), 'LOW_STOCK')
+    await fireEvent.click(screen.getByRole('combobox', { name: '提醒类型' }))
+    await fireEvent.click(await screen.findByRole('option', { name: '低库存' }))
     await waitFor(() => expect(listReminders).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: 'LOW_STOCK' }),
     ))

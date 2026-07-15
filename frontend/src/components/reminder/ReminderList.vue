@@ -27,12 +27,12 @@ function date(value: string) {
       <p>{{ date(reminder.triggerAt) }}</p>
       <p v-if="reminder.locationName">位置：{{ reminder.locationName }}</p>
       <p v-if="reminder.availableQuantity !== null">剩余 {{ reminder.availableQuantity }}</p>
-      <button
+      <el-button
         v-if="acknowledgeable && reminder.status === 'OPEN'"
-        class="st-button st-button--primary"
+        type="primary"
         :aria-label="`确认 ${reminder.itemName}`"
         @click="emit('acknowledge', reminder)"
-      >确认</button>
+      >确认</el-button>
     </li>
   </ul>
   <p v-else>暂无提醒</p>

@@ -127,13 +127,10 @@ describe('AdminMembersView', () => {
     })
 
     const dialog = getOpenDialog() as HTMLElement
-    const usernameInput = within(dialog).getByText('用户名').closest('.form-field')!.querySelector('input')!
-    const displayNameInput = within(dialog).getByText('显示名称').closest('.form-field')!.querySelector('input')!
-    const roleSelect = within(dialog).getByText('角色').closest('.form-field')!.querySelector('select')!
-
-    await fireEvent.update(usernameInput, 'newuser')
-    await fireEvent.update(displayNameInput, '新用户')
-    await fireEvent.update(roleSelect, 'MEMBER')
+    const usernameField = within(dialog).getByLabelText('用户名')
+    const displayNameField = within(dialog).getByLabelText('显示名称')
+    await fireEvent.input((usernameField.querySelector?.('input') ?? usernameField) as HTMLInputElement, { target: { value: 'newuser' } })
+    await fireEvent.input((displayNameField.querySelector?.('input') ?? displayNameField) as HTMLInputElement, { target: { value: '新用户' } })
 
     await fireEvent.click(within(dialog).getByText('确认创建'))
 
@@ -159,13 +156,10 @@ describe('AdminMembersView', () => {
     })
 
     const dialog = getOpenDialog() as HTMLElement
-    const usernameInput = within(dialog).getByText('用户名').closest('.form-field')!.querySelector('input')!
-    const displayNameInput = within(dialog).getByText('显示名称').closest('.form-field')!.querySelector('input')!
-    const roleSelect = within(dialog).getByText('角色').closest('.form-field')!.querySelector('select')!
-
-    await fireEvent.update(usernameInput, 'newuser')
-    await fireEvent.update(displayNameInput, '新用户')
-    await fireEvent.update(roleSelect, 'MEMBER')
+    const usernameField = within(dialog).getByLabelText('用户名')
+    const displayNameField = within(dialog).getByLabelText('显示名称')
+    await fireEvent.input((usernameField.querySelector?.('input') ?? usernameField) as HTMLInputElement, { target: { value: 'newuser' } })
+    await fireEvent.input((displayNameField.querySelector?.('input') ?? displayNameField) as HTMLInputElement, { target: { value: '新用户' } })
     await fireEvent.click(within(dialog).getByText('确认创建'))
 
     await waitFor(() => {
@@ -202,8 +196,8 @@ describe('AdminMembersView', () => {
     })
 
     const dialog = screen.getByRole('dialog', { name: /修改角色/ })
-    const roleSelect = within(dialog).getByText('新角色').closest('.form-field')!.querySelector('select')!
-    await fireEvent.update(roleSelect, 'VIEWER')
+    await fireEvent.click(within(dialog).getByRole('combobox', { name: '新角色' }))
+    await fireEvent.click(await screen.findByRole('option', { name: '只读者' }))
     await fireEvent.click(within(dialog).getByText('确认'))
 
     await waitFor(() => {
@@ -272,8 +266,8 @@ describe('AdminMembersView', () => {
     })
 
     const dialog = screen.getByRole('dialog', { name: /修改角色/ })
-    const roleSelect = within(dialog).getByText('新角色').closest('.form-field')!.querySelector('select')!
-    await fireEvent.update(roleSelect, 'MEMBER')
+    await fireEvent.click(within(dialog).getByRole('combobox', { name: '新角色' }))
+    await fireEvent.click(await screen.findByRole('option', { name: '成员' }))
     await fireEvent.click(within(dialog).getByText('确认'))
 
     await waitFor(() => {

@@ -17,6 +17,11 @@ vi.mock('../api/identity', () => ({
 
 const mockInitialize = vi.mocked(initialize)
 
+function input(label: string | RegExp) {
+  const field = screen.getByLabelText(label)
+  return (field.querySelector?.('input') ?? field) as HTMLInputElement
+}
+
 beforeEach(() => {
   vi.spyOn(document, 'cookie', 'get').mockReturnValue('XSRF-TOKEN=abc123')
   vi.spyOn(document, 'cookie', 'set').mockImplementation(() => {})
@@ -48,11 +53,11 @@ describe('SetupView', () => {
 
     const { emitted } = render(SetupView)
 
-    await fireEvent.update(screen.getByLabelText(/家庭名称/), '我的家庭')
-    await fireEvent.update(screen.getByLabelText(/管理员用户名/), 'admin')
-    await fireEvent.update(screen.getByLabelText(/显示名称/), '管理员')
-    await fireEvent.update(screen.getByLabelText('密码'), 'secureP@ss123')
-    await fireEvent.update(screen.getByLabelText(/确认密码/), 'secureP@ss123')
+    await fireEvent.input(input(/家庭名称/), { target: { value: '我的家庭' } })
+    await fireEvent.input(input(/管理员用户名/), { target: { value: 'admin' } })
+    await fireEvent.input(input(/显示名称/), { target: { value: '管理员' } })
+    await fireEvent.input(input('密码'), { target: { value: 'secureP@ss123' } })
+    await fireEvent.input(input(/确认密码/), { target: { value: 'secureP@ss123' } })
     await fireEvent.click(screen.getByRole('button', { name: /创建家庭/ }))
 
     await waitFor(() => {
@@ -81,11 +86,11 @@ describe('SetupView', () => {
   it('shows password mismatch error', async () => {
     render(SetupView)
 
-    await fireEvent.update(screen.getByLabelText(/家庭名称/), '我的家庭')
-    await fireEvent.update(screen.getByLabelText(/管理员用户名/), 'admin')
-    await fireEvent.update(screen.getByLabelText(/显示名称/), '管理员')
-    await fireEvent.update(screen.getByLabelText('密码'), 'secureP@ss123')
-    await fireEvent.update(screen.getByLabelText(/确认密码/), 'differentP@ss')
+    await fireEvent.input(input(/家庭名称/), { target: { value: '我的家庭' } })
+    await fireEvent.input(input(/管理员用户名/), { target: { value: 'admin' } })
+    await fireEvent.input(input(/显示名称/), { target: { value: '管理员' } })
+    await fireEvent.input(input('密码'), { target: { value: 'secureP@ss123' } })
+    await fireEvent.input(input(/确认密码/), { target: { value: 'differentP@ss' } })
     await fireEvent.click(screen.getByRole('button', { name: /创建家庭/ }))
 
     await waitFor(() => {
@@ -103,11 +108,11 @@ describe('SetupView', () => {
 
     render(SetupView)
 
-    await fireEvent.update(screen.getByLabelText(/家庭名称/), '我的家庭')
-    await fireEvent.update(screen.getByLabelText(/管理员用户名/), 'admin')
-    await fireEvent.update(screen.getByLabelText(/显示名称/), '管理员')
-    await fireEvent.update(screen.getByLabelText('密码'), 'secureP@ss123')
-    await fireEvent.update(screen.getByLabelText(/确认密码/), 'secureP@ss123')
+    await fireEvent.input(input(/家庭名称/), { target: { value: '我的家庭' } })
+    await fireEvent.input(input(/管理员用户名/), { target: { value: 'admin' } })
+    await fireEvent.input(input(/显示名称/), { target: { value: '管理员' } })
+    await fireEvent.input(input('密码'), { target: { value: 'secureP@ss123' } })
+    await fireEvent.input(input(/确认密码/), { target: { value: 'secureP@ss123' } })
 
     const submitBtn = screen.getByRole('button', { name: /创建家庭/ })
     await fireEvent.click(submitBtn)

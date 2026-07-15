@@ -46,21 +46,21 @@ async function save(data: Parameters<typeof createCategory>[0]) {
   <section class="st-page">
     <StPageHeader title="分类管理" description="分类用于整理物品；创建物品前至少需要一个分类。">
       <template #actions>
-        <button class="st-button st-button--primary" type="button" @click="startCreating">{{ selected ? '添加子分类' : '创建分类' }}</button>
+        <el-button type="primary" @click="startCreating">{{ selected ? '添加子分类' : '创建分类' }}</el-button>
       </template>
     </StPageHeader>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
     <CategoryEditor v-if="editing && !nodes.length" @save="save" />
     <StEmptyState v-else-if="!nodes.length" title="还没有分类" description="先创建第一个顶级分类，之后可继续添加子分类。">
-      <button class="st-button st-button--primary" type="button" @click="startCreating">创建第一个分类</button>
+      <el-button type="primary" @click="startCreating">创建第一个分类</el-button>
     </StEmptyState>
     <div v-else class="admin-grid">
       <CategoryTree :nodes="nodes" :selected-id="selected?.id" @select="selected = $event" />
       <CategoryEditor v-if="editing" :parent="selected" @save="save" />
-      <article v-else-if="selected" class="admin-detail">
+      <el-card v-else-if="selected" class="admin-detail" shadow="never">
         <h2>{{ selected.name }}</h2>
         <p>属性字段：{{ selected.attributeSchema.length }}</p>
-      </article>
+      </el-card>
     </div>
   </section>
 </template>

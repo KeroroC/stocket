@@ -11,8 +11,15 @@ afterEach(() => {
 })
 
 async function fillRequiredFields() {
-  await fireEvent.update(screen.getByLabelText('物品 ID'), 'item-1')
-  await fireEvent.update(screen.getByLabelText('位置 ID'), 'location-1')
+  for (const [label, value] of [['物品 ID', 'item-1'], ['位置 ID', 'location-1']] as const) {
+    const field = screen.getByLabelText(label)
+    await fireEvent.input((field.querySelector?.('input') ?? field) as HTMLInputElement, { target: { value } })
+  }
+}
+
+async function fill(label: string, value: string) {
+  const field = screen.getByLabelText(label)
+  await fireEvent.input((field.querySelector?.('input') ?? field) as HTMLInputElement, { target: { value } })
 }
 
 describe('InventoryReceiveView', () => {
@@ -23,13 +30,15 @@ describe('InventoryReceiveView', () => {
     expect(screen.getByLabelText('批次号')).toBeInTheDocument()
     expect(screen.queryByLabelText('资产编号')).not.toBeInTheDocument()
 
-    await fireEvent.update(screen.getByLabelText('库存类型'), 'ASSET')
+    const typeField = screen.getByLabelText('库存类型')
+    await fireEvent.click((typeField.querySelector?.('[role="combobox"]') ?? typeField) as HTMLElement)
+    await fireEvent.click(await screen.findByRole('option', { name: '资产' }))
     expect(screen.queryByLabelText('批次号')).not.toBeInTheDocument()
     expect(screen.getByLabelText('资产编号')).toBeInTheDocument()
 
     await fillRequiredFields()
-    await fireEvent.update(screen.getByLabelText('资产编号'), 'A-001')
-    await fireEvent.update(screen.getByLabelText('数量'), '1.0000')
+    await fill('资产编号', 'A-001')
+    await fill('数量', '1.0000')
     await fireEvent.click(screen.getByRole('button', { name: '确认入库' }))
 
     await waitFor(() => expect(receiveInventory).toHaveBeenCalled())
@@ -43,10 +52,11 @@ describe('InventoryReceiveView', () => {
     render(InventoryReceiveView, { props: { role: 'MEMBER' } })
 
     await fillRequiredFields()
-    await fireEvent.update(screen.getByLabelText('数量'), '2.5000')
+    await fill('数量', '2.5000')
     await fireEvent.click(screen.getByRole('button', { name: '确认入库' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('IDEMPOTENCY_KEY_REUSED')
-    expect(screen.getByLabelText('数量')).toHaveValue('2.5000')
+    const quantity = screen.getByLabelText('数量')
+    expect((quantity.querySelector?.('input') ?? quantity) as HTMLInputElement).toHaveValue('2.5000')
   })
 })

@@ -10,10 +10,10 @@ beforeEach(() => { list.mockResolvedValue([{ id:'p', parentId:null, name:'食品
 describe('CategoryAdminView', () => {
   it('展示树并添加子分类', async () => {
     render(CategoryAdminView)
-    expect(await screen.findByRole('button', { name: '食品' })).toBeInTheDocument()
+    expect(await screen.findByRole('treeitem', { name: '食品' })).toBeInTheDocument()
     await fireEvent.click(screen.getByRole('button', { name: '添加子分类' }))
     await fireEvent.update(screen.getByLabelText('分类名称'), '乳制品')
-    await fireEvent.update(screen.getByLabelText('默认库存类型'), 'ASSET')
+    await fireEvent.click(screen.getByRole('radio', { name: '资产' }))
     await fireEvent.click(screen.getByRole('button', { name: '保存分类' }))
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: '乳制品', parentId: 'p', defaultInventoryType: 'ASSET' }))
   })

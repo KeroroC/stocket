@@ -14,12 +14,5 @@ watch(() => props.parent, () => {
 </script>
 
 <template>
-  <form class="st-editor" @submit.prevent="emit('save', { name, parentId: parent?.id ?? null, defaultInventoryType, attributeSchema: [] })">
-    <label>分类名称<input v-model="name" required /></label>
-    <label>默认库存类型
-      <select v-model="defaultInventoryType"><option value="BATCH">批次</option><option value="ASSET">资产</option></select>
-    </label>
-    <fieldset><legend>属性模式</legend><p>创建后可添加 TEXT、NUMBER、BOOLEAN、DATE、ENUM 字段。</p></fieldset>
-    <button class="st-button st-button--primary" type="submit">保存分类</button>
-  </form>
+  <el-card class="st-editor" shadow="never"><el-form label-position="top" @submit.prevent="emit('save', { name, parentId: parent?.id ?? null, defaultInventoryType, attributeSchema: [] })"><el-form-item label="分类名称"><el-input v-model="name" required /></el-form-item><el-form-item label="默认库存类型"><el-radio-group v-model="defaultInventoryType"><el-radio-button value="BATCH">批次</el-radio-button><el-radio-button value="ASSET">资产</el-radio-button></el-radio-group></el-form-item><el-alert title="创建后可添加 TEXT、NUMBER、BOOLEAN、DATE、ENUM 字段。" type="info" :closable="false" /><el-button native-type="submit" type="primary">保存分类</el-button></el-form></el-card>
 </template>

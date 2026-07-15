@@ -28,15 +28,18 @@ afterEach(() => {
 })
 
 function getOldPassword() {
-  return document.getElementById('oldPassword') as HTMLInputElement
+  const field = screen.getByLabelText('旧密码')
+  return (field.querySelector?.('input') ?? field) as HTMLInputElement
 }
 
 function getNewPassword() {
-  return document.getElementById('newPassword') as HTMLInputElement
+  const field = screen.getByLabelText('新密码')
+  return (field.querySelector?.('input') ?? field) as HTMLInputElement
 }
 
 function getConfirmNewPassword() {
-  return document.getElementById('confirmNewPassword') as HTMLInputElement
+  const field = screen.getByLabelText('确认新密码')
+  return (field.querySelector?.('input') ?? field) as HTMLInputElement
 }
 
 describe('PasswordChangeView', () => {
@@ -59,9 +62,9 @@ describe('PasswordChangeView', () => {
 
     const { emitted } = render(PasswordChangeView)
 
-    await fireEvent.update(getOldPassword(), 'oldP@ss1')
-    await fireEvent.update(getNewPassword(), 'newSecureP@ss12')
-    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss12')
+    await fireEvent.input(getOldPassword(), { target: { value: 'oldP@ss1' } })
+    await fireEvent.input(getNewPassword(), { target: { value: 'newSecureP@ss12' } })
+    await fireEvent.input(getConfirmNewPassword(), { target: { value: 'newSecureP@ss12' } })
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
     await waitFor(() => {
@@ -74,9 +77,9 @@ describe('PasswordChangeView', () => {
 
     render(PasswordChangeView)
 
-    await fireEvent.update(getOldPassword(), 'oldP@ss1')
-    await fireEvent.update(getNewPassword(), 'newSecureP@ss12')
-    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss12')
+    await fireEvent.input(getOldPassword(), { target: { value: 'oldP@ss1' } })
+    await fireEvent.input(getNewPassword(), { target: { value: 'newSecureP@ss12' } })
+    await fireEvent.input(getConfirmNewPassword(), { target: { value: 'newSecureP@ss12' } })
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
     await waitFor(() => {
@@ -89,9 +92,9 @@ describe('PasswordChangeView', () => {
   it('shows password mismatch error', async () => {
     render(PasswordChangeView)
 
-    await fireEvent.update(getOldPassword(), 'oldP@ss1')
-    await fireEvent.update(getNewPassword(), 'newSecureP@ss12')
-    await fireEvent.update(getConfirmNewPassword(), 'differentP@ss')
+    await fireEvent.input(getOldPassword(), { target: { value: 'oldP@ss1' } })
+    await fireEvent.input(getNewPassword(), { target: { value: 'newSecureP@ss12' } })
+    await fireEvent.input(getConfirmNewPassword(), { target: { value: 'differentP@ss' } })
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
     await waitFor(() => {
@@ -107,9 +110,9 @@ describe('PasswordChangeView', () => {
 
     render(PasswordChangeView)
 
-    await fireEvent.update(getOldPassword(), 'wrongOld')
-    await fireEvent.update(getNewPassword(), 'newSecureP@ss12')
-    await fireEvent.update(getConfirmNewPassword(), 'newSecureP@ss12')
+    await fireEvent.input(getOldPassword(), { target: { value: 'wrongOld' } })
+    await fireEvent.input(getNewPassword(), { target: { value: 'newSecureP@ss12' } })
+    await fireEvent.input(getConfirmNewPassword(), { target: { value: 'newSecureP@ss12' } })
     await fireEvent.click(screen.getByRole('button', { name: /修改密码/ }))
 
     await waitFor(() => {

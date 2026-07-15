@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { Camera, Check, Close } from '@element-plus/icons-vue'
+import { Camera, Check } from '@element-plus/icons-vue'
 import { transferInventory } from '../../api/inventory'
 import { listLocations, resolveLocationCode, type LocationNode } from '../../api/location'
 import { useInventoryCommands } from '../../inventory/useInventoryCommands'
@@ -75,19 +75,14 @@ async function submit() {
 </script>
 
 <template>
-  <section v-if="open" class="inventory-sheet" role="dialog" aria-label="调拨库存">
-    <header><h2>调拨库存</h2><button class="st-button st-button--text st-button--icon" type="button" aria-label="关闭调拨库存" title="关闭" @click="emit('close')"><Close aria-hidden="true" /></button></header>
-    <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <form @submit.prevent="submit">
+  <el-dialog :model-value="open" title="调拨库存" width="min(34rem, calc(100vw - 2rem))" :teleported="false" :destroy-on-close="false" @close="emit('close')">
+    <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
+    <el-form label-position="top" @submit.prevent="submit">
       <QuantityInput id="transfer-quantity" v-model="quantity" label="调拨数量" @update:model-value="changed" />
-      <label for="target-location">目标位置</label>
-      <select id="target-location" v-model="targetLocationId" @change="changed">
-        <option value="">请选择位置</option>
-        <option v-for="location in locations" :key="location.id" :value="location.id">{{ location.fullPath }}</option>
-      </select>
-      <button class="st-button" type="button" @click="scanning = true"><Camera aria-hidden="true" />扫描目标位置</button>
-      <button class="st-button st-button--primary" type="submit" :disabled="submitting"><Check aria-hidden="true" />{{ error ? '重试调拨' : '确认调拨' }}</button>
-    </form>
+      <el-form-item label="目标位置"><el-select id="target-location" v-model="targetLocationId" filterable @change="changed"><el-option v-for="location in locations" :key="location.id" :label="location.fullPath" :value="location.id" /></el-select></el-form-item>
+      <el-button :icon="Camera" @click="scanning = true">扫描目标位置</el-button>
+    </el-form>
+    <template #footer><el-button @click="emit('close')">取消</el-button><el-button type="primary" :icon="Check" :loading="submitting" @click="submit">{{ error ? '重试调拨' : '确认调拨' }}</el-button></template>
     <ScannerSheet v-model="scanning" :scanner="scanner" @result="scanned" />
-  </section>
+  </el-dialog>
 </template>

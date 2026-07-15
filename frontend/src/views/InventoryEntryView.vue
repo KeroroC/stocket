@@ -80,27 +80,27 @@ async function completed() {
       <template #actions>
         <ExportDialog kind="inventory" label="导出库存" />
         <template v-if="canWrite">
-          <button class="st-button st-button--primary" type="button" @click="mode = 'receive'">新增入库</button>
-          <button v-if="selected" class="st-button" type="button" @click="sheet = 'consume'">消耗</button>
-          <button v-if="selected" class="st-button" type="button" @click="sheet = 'transfer'">调拨</button>
-          <button v-if="selected" class="st-button" type="button" @click="sheet = 'adjust'">调整</button>
+          <el-button type="primary" @click="mode = 'receive'">新增入库</el-button>
+          <el-button v-if="selected" @click="sheet = 'consume'">消耗</el-button>
+          <el-button v-if="selected" @click="sheet = 'transfer'">调拨</el-button>
+          <el-button v-if="selected" @click="sheet = 'adjust'">调整</el-button>
         </template>
       </template>
     </StPageHeader>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <p v-else-if="loading" class="st-feedback">正在加载库存…</p>
+    <el-skeleton v-else-if="loading" :rows="6" animated />
     <InventoryReceiveView v-else-if="mode === 'receive'" :role="role" @saved="saved" />
     <StEmptyState v-else-if="entries.length === 0" title="暂无库存" description="完成首次入库后，库存条目会显示在这里。" />
     <div v-else class="inventory-workspace">
       <InventoryEntryList :entries="entries" :selected-id="selected?.id" @select="select" />
-      <aside v-if="selected" class="inventory-detail">
+      <el-card v-if="selected" class="inventory-detail" shadow="never">
         <h2>{{ selected.itemName }}</h2>
         <p v-if="selected.expirationDate">推荐：最早到期 {{ selected.expirationDate }}</p>
         <p>可用量：{{ availability?.totalAvailable ?? selected.quantity }}</p>
         <p v-if="availability?.earliestExpiration">最早到期：{{ availability.earliestExpiration }}</p>
         <MovementTimeline :movements="movements" />
         <DocumentList :key="selected.id" owner-type="INVENTORY_ENTRY" :owner-id="selected.id" :can-write="canWrite" />
-      </aside>
+      </el-card>
     </div>
     <ConsumeSheet v-if="selected" :entry-id="selected.id" :open="sheet === 'consume'" @close="sheet = undefined" @completed="completed" />
     <TransferSheet v-if="selected" :entry-id="selected.id" :open="sheet === 'transfer'" @close="sheet = undefined" @completed="completed" />

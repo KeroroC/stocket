@@ -176,130 +176,36 @@ async function handleRevokeOtherSessions() {
 <template>
   <div class="account-view">
     <h2 class="section-title">我的账户</h2>
-
-    <!-- Profile section -->
-    <section class="account-section">
-      <h3>个人资料</h3>
-      <form class="auth-form" @submit.prevent="handleProfileSubmit">
-        <div v-if="profileError" role="alert" class="auth-error">
-          {{ profileError }}
-        </div>
-        <div v-if="profileSuccess" class="auth-success">
-          资料已更新
-        </div>
-
-        <div class="form-field">
-          <label for="displayName">显示名称</label>
-          <input
-            id="displayName"
-            v-model="displayName"
-            type="text"
-            autocomplete="name"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="email">邮箱（可选）</label>
-          <input
-            id="email"
-            v-model="email"
-            type="email"
-            autocomplete="email"
-          />
-        </div>
-
-        <button type="submit" class="auth-submit" :disabled="profileSaving">
-          {{ profileSaving ? '保存中...' : '保存资料' }}
-        </button>
-      </form>
-    </section>
-
-    <!-- Password section -->
-    <section class="account-section">
-      <h3>修改密码</h3>
-      <form class="auth-form" @submit.prevent="handlePasswordSubmit">
-        <div v-if="passwordError" role="alert" class="auth-error">
-          {{ passwordError }}
-        </div>
-
-        <div class="form-field">
-          <label for="currentPassword">当前密码</label>
-          <input
-            id="currentPassword"
-            v-model="currentPassword"
-            type="password"
-            autocomplete="current-password"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="newPassword">新密码</label>
-          <input
-            id="newPassword"
-            v-model="newPassword"
-            type="password"
-            placeholder="至少 12 个字符"
-            autocomplete="new-password"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="confirmNewPassword">确认新密码</label>
-          <input
-            id="confirmNewPassword"
-            v-model="confirmNewPassword"
-            type="password"
-            placeholder="再次输入新密码"
-            autocomplete="new-password"
-          />
-        </div>
-
-        <button type="submit" class="auth-submit" :disabled="passwordSaving">
-          {{ passwordSaving ? '修改中...' : '修改密码' }}
-        </button>
-      </form>
-    </section>
-
-    <!-- Sessions section -->
-    <section class="account-section">
-      <h3>活跃会话</h3>
-      <div v-if="sessionError" role="alert" class="auth-error">
-        {{ sessionError }}
-      </div>
-      <div v-if="sessionsLoading" class="auth-loading">加载中...</div>
-
-      <ul v-if="sessions.length > 0" class="session-list">
-        <li
-          v-for="session in sessions"
-          :key="session.id"
-          :class="['session-item', { current: session.current }]"
-        >
-          <div class="session-info">
-            <span class="session-agent">{{ session.userAgent ?? '未知设备' }}</span>
-            <span v-if="session.current" class="session-current-badge">当前会话</span>
-            <span class="session-time">
-              最后活跃：{{ new Date(session.lastSeenAt).toLocaleString() }}
-            </span>
-          </div>
-          <button
-            v-if="!session.current"
-            class="session-revoke-btn"
-            @click="handleRevokeSession(session.id)"
-          >
-            撤销
-          </button>
-        </li>
-      </ul>
-
-      <p v-else-if="!sessionsLoading" class="auth-loading">暂无活跃会话</p>
-
-      <button
-        v-if="sessions.length > 1"
-        class="auth-logout-btn"
-        @click="handleRevokeOtherSessions"
-      >
-        撤销其他全部会话
-      </button>
-    </section>
+    <el-tabs type="border-card">
+      <el-tab-pane label="个人资料">
+        <el-form class="auth-form" label-position="top" @submit.prevent="handleProfileSubmit">
+          <el-alert v-if="profileError" :title="profileError" type="error" show-icon :closable="false" />
+          <el-alert v-if="profileSuccess" title="资料已更新" type="success" show-icon :closable="false" />
+          <el-form-item label="显示名称"><el-input id="displayName" v-model="displayName" autocomplete="name" /></el-form-item>
+          <el-form-item label="邮箱（可选）"><el-input id="email" v-model="email" type="email" autocomplete="email" /></el-form-item>
+          <el-button native-type="submit" type="primary" :loading="profileSaving">保存资料</el-button>
+        </el-form>
+      </el-tab-pane>
+      <el-tab-pane label="修改密码">
+        <el-form class="auth-form" label-position="top" @submit.prevent="handlePasswordSubmit">
+          <el-alert v-if="passwordError" :title="passwordError" type="error" show-icon :closable="false" />
+          <el-form-item label="当前密码"><el-input id="currentPassword" v-model="currentPassword" type="password" autocomplete="current-password" show-password /></el-form-item>
+          <el-form-item label="新密码"><el-input id="newPassword" v-model="newPassword" type="password" placeholder="至少 12 个字符" autocomplete="new-password" show-password /></el-form-item>
+          <el-form-item label="确认新密码"><el-input id="confirmNewPassword" v-model="confirmNewPassword" type="password" placeholder="再次输入新密码" autocomplete="new-password" show-password /></el-form-item>
+          <el-button native-type="submit" type="primary" :loading="passwordSaving">修改密码</el-button>
+        </el-form>
+      </el-tab-pane>
+      <el-tab-pane label="活跃会话">
+        <el-alert v-if="sessionError" :title="sessionError" type="error" show-icon :closable="false" />
+        <el-skeleton v-if="sessionsLoading" :rows="3" animated />
+        <el-table v-else-if="sessions.length" :data="sessions" row-key="id">
+          <el-table-column label="设备" min-width="220"><template #default="{ row }">{{ row.userAgent ?? '未知设备' }} <el-tag v-if="row.current" size="small" type="success">当前会话</el-tag></template></el-table-column>
+          <el-table-column label="最后活跃" min-width="180"><template #default="{ row }">{{ new Date(row.lastSeenAt).toLocaleString() }}</template></el-table-column>
+          <el-table-column label="操作" width="100"><template #default="{ row }"><el-button v-if="!row.current" link type="danger" @click="handleRevokeSession(row.id)">撤销</el-button></template></el-table-column>
+        </el-table>
+        <el-empty v-else description="暂无活跃会话" />
+        <el-button v-if="sessions.length > 1" type="danger" plain @click="handleRevokeOtherSessions">撤销其他全部会话</el-button>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>

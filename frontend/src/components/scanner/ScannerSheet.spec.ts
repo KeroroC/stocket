@@ -12,6 +12,7 @@ describe('ScannerSheet', () => {
     const stop = vi.spyOn(scanner, 'stop')
     const { rerender } = render(ScannerSheet, { props: { modelValue: true, scanner } })
 
+    await screen.findByLabelText('手工输入条码或位置码')
     await waitFor(() => expect(start).toHaveBeenCalledOnce())
     await rerender({ modelValue: false, scanner })
     expect(stop).toHaveBeenCalled()
@@ -26,7 +27,9 @@ describe('ScannerSheet', () => {
     const scanner = new FakeScanner()
     const { emitted } = render(ScannerSheet, { props: { modelValue: true, scanner } })
 
-    await fireEvent.update(screen.getByLabelText('手工输入条码或位置码'), ' abc-1 ')
+    const field = await screen.findByLabelText('手工输入条码或位置码')
+    const input = (field.querySelector?.('input') ?? field) as HTMLInputElement
+    await fireEvent.input(input, { target: { value: ' abc-1 ' } })
     await fireEvent.click(screen.getByRole('button', { name: '使用手工输入' }))
 
     expect(emitted().result?.[0]).toEqual([{ kind: 'PRODUCT_BARCODE', value: 'ABC-1' }])

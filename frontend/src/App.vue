@@ -52,7 +52,7 @@ function handleForcePasswordChange() {
 </script>
 
 <template>
-  <main :class="['app-shell', { 'app-shell--authenticated': state.kind === 'authenticated' }]">
+  <main v-loading="state.kind === 'checking-setup'" :class="['app-shell', { 'app-shell--authenticated': state.kind === 'authenticated' }]">
     <!-- invite view takes priority when URL matches /invite/{token} -->
     <InviteAcceptView
       v-if="showInviteView && inviteToken"
@@ -61,9 +61,7 @@ function handleForcePasswordChange() {
     />
 
     <!-- checking-setup -->
-    <section v-else-if="state.kind === 'checking-setup'" class="auth-card">
-      <p>正在检查身份状态...</p>
-    </section>
+    <el-card v-else-if="state.kind === 'checking-setup'" class="auth-card"><el-skeleton :rows="3" animated /></el-card>
 
     <!-- setup-required -->
     <SetupView

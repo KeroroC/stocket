@@ -10,4 +10,4 @@ const currentIndex = computed(() => {
   return kinds.indexOf(props.current)
 })
 </script>
-<template><ol class="wizard-progress" aria-label="入库步骤"><li v-for="(step, index) in steps" :key="step" :class="{ active: currentIndex === index, completed: currentIndex > index }" :aria-current="currentIndex === index ? 'step' : undefined"><span>{{ index + 1 }}</span>{{ step }}</li></ol></template>
+<template><el-steps class="wizard-progress" :active="currentIndex" finish-status="success" align-center aria-label="入库步骤"><el-step v-for="step in steps" :key="step" :title="step" /></el-steps></template>

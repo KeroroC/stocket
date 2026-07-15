@@ -118,6 +118,7 @@ describe('AccountView', () => {
 
   it('shows password change form', async () => {
     render(AccountView, { props: { account: accountFixture } })
+    await fireEvent.click(screen.getByRole('tab', { name: '修改密码' }))
 
     await waitFor(() => {
       expect(screen.getByLabelText(/当前密码/)).toBeInTheDocument()
@@ -130,6 +131,7 @@ describe('AccountView', () => {
     mockChangePassword.mockResolvedValueOnce(undefined)
 
     render(AccountView, { props: { account: accountFixture } })
+    await fireEvent.click(screen.getByRole('tab', { name: '修改密码' }))
 
     await waitFor(() => {
       expect(screen.getByLabelText(/当前密码/)).toBeInTheDocument()
@@ -150,6 +152,7 @@ describe('AccountView', () => {
 
   it('displays session list with current session marked', async () => {
     render(AccountView, { props: { account: accountFixture } })
+    await fireEvent.click(screen.getByRole('tab', { name: '活跃会话' }))
 
     await waitFor(() => {
       expect(screen.getByText(/当前会话/)).toBeInTheDocument()
@@ -160,6 +163,7 @@ describe('AccountView', () => {
 
   it('current session cannot be revoked', async () => {
     render(AccountView, { props: { account: accountFixture } })
+    await fireEvent.click(screen.getByRole('tab', { name: '活跃会话' }))
 
     await waitFor(() => {
       // Only non-current sessions have a revoke button
@@ -172,6 +176,7 @@ describe('AccountView', () => {
     mockRevokeSession.mockResolvedValue(undefined)
 
     render(AccountView, { props: { account: accountFixture } })
+    await fireEvent.click(screen.getByRole('tab', { name: '活跃会话' }))
 
     await waitFor(() => {
       expect(screen.getByText(/Safari/)).toBeInTheDocument()
@@ -189,6 +194,7 @@ describe('AccountView', () => {
     mockRevokeOtherSessions.mockResolvedValue(undefined)
 
     render(AccountView, { props: { account: accountFixture } })
+    await fireEvent.click(screen.getByRole('tab', { name: '活跃会话' }))
 
     await waitFor(() => {
       expect(screen.getByText(/Safari/)).toBeInTheDocument()

@@ -175,7 +175,7 @@ onMounted(async () => {
     <section v-else-if="wizard.state.value.kind === 'COMPLETED'" class="receive-completed" role="status">
       <strong>入库完成</strong>
       <p>库存数量和流水已经更新。</p>
-      <RouterLink class="st-button st-button--primary" :to="`/inventory/${wizard.state.value.entryId}`">查看入库物品</RouterLink>
+      <RouterLink :to="`/inventory/${wizard.state.value.entryId}`"><el-button tag="span" type="primary">查看入库物品</el-button></RouterLink>
     </section>
     <ScannerSheet v-model="scannerOpen" :scanner="scanner" @result="handleScan" />
   </section>

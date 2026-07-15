@@ -38,21 +38,20 @@ async function save(data: ItemInput) {
 <template>
   <section class="st-page catalog-page">
     <StPageHeader title="物品目录" description="按名称或条码快速查找">
-      <template v-if="canWrite" #actions><button class="st-button st-button--primary" type="button" @click="creating = true">创建物品</button></template>
+      <template v-if="canWrite" #actions><el-button type="primary" @click="creating = true">创建物品</el-button></template>
     </StPageHeader>
     <div class="catalog-page__toolbar st-toolbar">
-      <div class="browse-switch" role="group" aria-label="浏览方式">
-        <button type="button" :aria-pressed="browseMode === 'category'" @click="browseMode = 'category'">按分类</button>
-        <button type="button" :aria-pressed="browseMode === 'location'" @click="browseMode = 'location'">按位置</button>
-      </div>
-      <label class="search-label">搜索物品<input v-model="search.query.value" type="search" aria-label="搜索物品" /></label>
+      <el-segmented v-model="browseMode" :options="[{ label: '按分类', value: 'category' }, { label: '按位置', value: 'location' }]" aria-label="浏览方式" />
+      <el-input v-model="search.query.value" type="search" aria-label="搜索物品" placeholder="搜索名称或条码" clearable />
     </div>
     <p v-if="search.error.value || error" class="st-feedback st-feedback--error" role="alert">{{ search.error.value || error }}</p>
     <div class="catalog-page__workspace">
-      <aside class="catalog-page__tree">
-        <ul v-if="browseMode === 'category'" class="browse-list" aria-label="分类浏览"><li v-for="category in categories" :key="category.id">{{ category.name }}</li></ul>
-        <ul v-else class="browse-list" aria-label="位置浏览"><li v-for="location in locations" :key="location.id">{{ location.fullPath }}</li></ul>
-      </aside>
+      <el-card class="catalog-page__tree" shadow="never">
+        <el-scrollbar>
+          <el-tree v-if="browseMode === 'category'" :data="categories" node-key="id" :props="{ label: 'name', children: 'children' }" aria-label="分类浏览" />
+          <el-tree v-else :data="locations" node-key="id" :props="{ label: 'fullPath', children: 'children' }" aria-label="位置浏览" />
+        </el-scrollbar>
+      </el-card>
       <div class="catalog-page__main">
         <ItemForm v-if="creating" :categories="categories" @save="save" />
         <ItemDetailView v-else-if="selectedId" :item-id="selectedId" :role="role" />

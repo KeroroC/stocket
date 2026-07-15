@@ -8,7 +8,14 @@
   --el-text-color-regular: var(--st-color-text-muted);
   --el-border-color: var(--st-color-border);
   --el-bg-color: var(--st-color-surface);
+  --el-bg-color-page: var(--st-color-bg);
+  --el-fill-color-blank: var(--st-color-surface);
+  --el-fill-color-light: color-mix(in srgb, var(--st-color-primary-soft) 42%, var(--st-color-surface));
+  --el-fill-color-lighter: color-mix(in srgb, var(--st-color-primary-soft) 22%, var(--st-color-surface));
   --el-border-radius-base: var(--st-radius-control);
+  --el-border-radius-small: 8px;
+  --el-border-radius-round: 999px;
+  --el-box-shadow-light: var(--st-shadow-card);
   --el-component-size: var(--st-control-min-size);
 }
 
@@ -16,4 +23,21 @@
 .el-input__wrapper,
 .el-select__wrapper {
   min-height: var(--st-control-min-size);
+}
+
+.el-card,
+.el-dialog {
+  --el-card-border-radius: var(--st-radius-card);
+  --el-dialog-border-radius: var(--st-radius-card);
+}
+
+.el-table {
+  --el-table-header-bg-color: color-mix(in srgb, var(--st-color-primary-soft) 48%, var(--st-color-surface));
+  --el-table-row-hover-bg-color: var(--st-color-primary-soft);
+  --el-table-current-row-bg-color: var(--st-color-primary-soft);
+  border-radius: var(--st-radius-card);
+}
+
+.el-dialog__body .el-alert {
+  margin-bottom: var(--st-space-4);
 }

@@ -89,82 +89,19 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="auth-card">
+  <el-card class="auth-card" shadow="always">
     <h1>初始化家庭</h1>
     <p class="auth-subtitle">首次使用需要创建家庭和管理员账户</p>
 
-    <form class="auth-form" @submit.prevent="handleSubmit">
-      <div v-if="errorMessage" role="alert" class="auth-error">
-        {{ errorMessage }}
-      </div>
-
-      <div class="form-field">
-        <label for="householdName">家庭名称</label>
-        <input
-          id="householdName"
-          v-model="householdName"
-          type="text"
-          placeholder="例如：我的家庭"
-          autocomplete="off"
-        />
-      </div>
-
-      <div class="form-field">
-        <label for="timezone">时区</label>
-        <select id="timezone" v-model="timezone">
-          <option v-for="tz in TIMEZONES" :key="tz" :value="tz">
-            {{ tz }}
-          </option>
-        </select>
-      </div>
-
-      <div class="form-field">
-        <label for="username">管理员用户名</label>
-        <input
-          id="username"
-          v-model="username"
-          type="text"
-          placeholder="至少 3 个字符"
-          autocomplete="username"
-        />
-      </div>
-
-      <div class="form-field">
-        <label for="displayName">显示名称</label>
-        <input
-          id="displayName"
-          v-model="displayName"
-          type="text"
-          placeholder="例如：管理员"
-          autocomplete="off"
-        />
-      </div>
-
-      <div class="form-field">
-        <label for="password">密码</label>
-        <input
-          id="password"
-          v-model="password"
-          type="password"
-          placeholder="至少 12 个字符"
-          autocomplete="new-password"
-        />
-      </div>
-
-      <div class="form-field">
-        <label for="confirmPassword">确认密码</label>
-        <input
-          id="confirmPassword"
-          v-model="confirmPassword"
-          type="password"
-          placeholder="再次输入密码"
-          autocomplete="new-password"
-        />
-      </div>
-
-      <button type="submit" class="auth-submit" :disabled="submitting">
-        {{ submitting ? '创建中...' : '创建家庭' }}
-      </button>
-    </form>
-  </div>
+    <el-form class="auth-form" label-position="top" @submit.prevent="handleSubmit">
+      <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
+      <el-form-item label="家庭名称"><el-input id="householdName" v-model="householdName" placeholder="例如：我的家庭" autocomplete="off" /></el-form-item>
+      <el-form-item label="时区"><el-select id="timezone" v-model="timezone" filterable><el-option v-for="tz in TIMEZONES" :key="tz" :label="tz" :value="tz" /></el-select></el-form-item>
+      <el-form-item label="管理员用户名"><el-input id="username" v-model="username" placeholder="至少 3 个字符" autocomplete="username" /></el-form-item>
+      <el-form-item label="显示名称"><el-input id="displayName" v-model="displayName" placeholder="例如：管理员" autocomplete="off" /></el-form-item>
+      <el-form-item label="密码"><el-input id="password" v-model="password" type="password" placeholder="至少 12 个字符" autocomplete="new-password" show-password /></el-form-item>
+      <el-form-item label="确认密码"><el-input id="confirmPassword" v-model="confirmPassword" type="password" placeholder="再次输入密码" autocomplete="new-password" show-password /></el-form-item>
+      <el-button type="primary" size="large" :loading="submitting" :disabled="submitting" @click="handleSubmit">{{ submitting ? '创建中...' : '创建家庭' }}</el-button>
+    </el-form>
+  </el-card>
 </template>

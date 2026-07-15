@@ -57,15 +57,15 @@ async function submit() {
 <template>
   <section class="inventory-panel">
     <h2>库存操作</h2>
-    <p v-if="error" role="alert" class="auth-error">{{ error }}</p>
-    <p v-if="success" role="status">{{ success }}</p>
-    <form v-if="canWrite" class="inventory-form" @submit.prevent="submit">
-      <label class="inventory-field" for="inventory-operation"><span>操作</span><select id="inventory-operation" v-model="operation" @change="changed"><option value="consume">消耗</option><option value="return">退库</option><option value="adjust">调整</option><option value="transfer">调拨</option><option value="lost">标记丢失</option><option value="retire">报废</option></select></label>
+    <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
+    <el-alert v-if="success" :title="success" type="success" show-icon :closable="false" />
+    <el-form v-if="canWrite" class="inventory-form" label-position="top" @submit.prevent="submit">
+      <el-form-item label="操作"><el-select id="inventory-operation" v-model="operation" @change="changed"><el-option label="消耗" value="consume" /><el-option label="退库" value="return" /><el-option label="调整" value="adjust" /><el-option label="调拨" value="transfer" /><el-option label="标记丢失" value="lost" /><el-option label="报废" value="retire" /></el-select></el-form-item>
       <QuantityInput v-if="!['lost', 'retire'].includes(operation)" id="operate-quantity" v-model="quantity" label="操作数量" @update:model-value="changed" />
-      <label v-if="operation === 'transfer'" class="inventory-field" for="target-location"><span>目标位置 ID</span><input id="target-location" v-model="targetLocationId" required @input="changed" /></label>
-      <label v-if="['return', 'adjust', 'lost', 'retire'].includes(operation)" class="inventory-field" for="operation-reason"><span>原因</span><input id="operation-reason" v-model="reason" @input="changed" /></label>
-      <button type="submit" :disabled="submitting">{{ error ? '重试' : '确认操作' }}</button>
-    </form>
-    <p v-else>只读成员不能执行库存操作。</p>
+      <el-form-item v-if="operation === 'transfer'" label="目标位置 ID"><el-input id="target-location" v-model="targetLocationId" required @input="changed" /></el-form-item>
+      <el-form-item v-if="['return', 'adjust', 'lost', 'retire'].includes(operation)" label="原因"><el-input id="operation-reason" v-model="reason" @input="changed" /></el-form-item>
+      <el-button native-type="submit" type="primary" :loading="submitting">{{ error ? '重试' : '确认操作' }}</el-button>
+    </el-form>
+    <el-alert v-else title="只读成员不能执行库存操作。" type="info" :closable="false" />
   </section>
 </template>

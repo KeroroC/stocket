@@ -52,21 +52,7 @@ async function enablePush() {
     <StPageHeader title="通知设置" description="管理浏览器通知与外部发送渠道" />
     <p v-if="message" class="st-feedback st-feedback--success" role="status">{{ message }}</p>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <section>
-      <h2>浏览器通知</h2>
-      <button v-if="!push.enabled.value" :disabled="push.busy.value" @click="enablePush">启用浏览器通知</button>
-      <button v-else :disabled="push.busy.value" @click="push.disable">关闭浏览器通知</button>
-    </section>
-    <form @submit.prevent="saveSmtp">
-      <h2>SMTP</h2>
-      <label><input v-model="smtp.enabled" type="checkbox" />启用 SMTP</label>
-      <label>主机<input v-model="smtp.host" /></label>
-      <label>端口<input v-model.number="smtp.port" type="number" /></label>
-      <label>用户名<input v-model="smtp.username" /></label>
-      <label>发件地址<input v-model="smtp.fromAddress" type="email" /></label>
-      <label>SMTP 密码<input v-model="smtp.secret" aria-label="SMTP 密码" type="password" autocomplete="new-password" /></label>
-      <p v-if="smtp.hasSecret">已保存密钥</p>
-      <button type="submit">保存 SMTP</button>
-    </form>
+    <el-card shadow="never"><template #header><h2>浏览器通知</h2></template><el-button v-if="!push.enabled.value" type="primary" :loading="push.busy.value" @click="enablePush">启用浏览器通知</el-button><el-button v-else :loading="push.busy.value" @click="push.disable">关闭浏览器通知</el-button></el-card>
+    <el-card shadow="never"><template #header><h2>SMTP</h2></template><el-form label-position="top" @submit.prevent="saveSmtp"><el-form-item label="启用 SMTP"><el-switch v-model="smtp.enabled" /></el-form-item><el-row :gutter="16"><el-col :xs="24" :sm="16"><el-form-item label="主机"><el-input v-model="smtp.host" /></el-form-item></el-col><el-col :xs="24" :sm="8"><el-form-item label="端口"><el-input-number v-model="smtp.port" :min="1" :max="65535" /></el-form-item></el-col><el-col :xs="24" :sm="12"><el-form-item label="用户名"><el-input v-model="smtp.username" /></el-form-item></el-col><el-col :xs="24" :sm="12"><el-form-item label="发件地址"><el-input v-model="smtp.fromAddress" type="email" /></el-form-item></el-col><el-col :span="24"><el-form-item label="SMTP 密码"><el-input v-model="smtp.secret" aria-label="SMTP 密码" type="password" autocomplete="new-password" show-password /></el-form-item></el-col></el-row><el-tag v-if="smtp.hasSecret" type="success">已保存密钥</el-tag><el-button native-type="submit" type="primary">保存 SMTP</el-button></el-form></el-card>
   </section>
 </template>

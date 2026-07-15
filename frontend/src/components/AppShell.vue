@@ -47,55 +47,19 @@ function handleForcePasswordChange() {
 </script>
 
 <template>
-  <div class="shell-layout">
-    <nav class="shell-sidebar" aria-label="主导航">
+  <el-container class="shell-layout">
+    <el-aside class="shell-sidebar" width="240px">
       <div class="shell-user">
         <div class="shell-user-name">{{ account.displayName }}</div>
-        <div class="shell-user-role">{{ account.role }}</div>
+        <el-tag class="shell-user-role" size="small">{{ account.role }}</el-tag>
       </div>
-
-      <ul class="shell-nav">
-        <li><button :class="['shell-nav-item', { active: currentView === 'items' }]" @click="navigateTo('items')">物品目录</button></li>
-        <li><button :class="['shell-nav-item', { active: currentView === 'inventory' }]" @click="navigateTo('inventory')">库存台账</button></li>
-        <li><button :class="['shell-nav-item', { active: currentView === 'reminders' }]" @click="navigateTo('reminders')">提醒中心</button></li>
-        <li>
-          <button
-            :class="['shell-nav-item', { active: currentView === 'account' }]"
-            @click="navigateTo('account')"
-          >
-            我的账户
-          </button>
-        </li>
-        <li v-if="isAdmin">
-          <button
-            :class="['shell-nav-item', { active: currentView === 'members' }]"
-            @click="navigateTo('members')"
-          >
-            成员管理
-          </button>
-        </li>
-        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'notification-settings' }]" @click="navigateTo('notification-settings')">通知设置</button></li>
-        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'delivery-failures' }]" @click="navigateTo('delivery-failures')">通知失败</button></li>
-        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'categories' }]" @click="navigateTo('categories')">分类管理</button></li>
-        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'locations' }]" @click="navigateTo('locations')">位置管理</button></li>
-        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'audit-logs' }]" @click="navigateTo('audit-logs')">审计日志</button></li>
-        <li v-if="isAdmin"><button :class="['shell-nav-item', { active: currentView === 'diagnostics' }]" @click="navigateTo('diagnostics')">系统诊断</button></li>
-        <li v-if="isAdmin">
-          <button
-            :class="['shell-nav-item', { active: currentView === 'invites' }]"
-            @click="navigateTo('invites')"
-          >
-            邀请管理
-          </button>
-        </li>
-      </ul>
-
+      <nav aria-label="主导航"><el-menu class="shell-nav" :default-active="currentView" @select="navigateTo($event as ViewName)"><el-menu-item index="items">物品目录</el-menu-item><el-menu-item index="inventory">库存台账</el-menu-item><el-menu-item index="reminders">提醒中心</el-menu-item><el-menu-item index="account">我的账户</el-menu-item><template v-if="isAdmin"><el-menu-item index="members">成员管理</el-menu-item><el-menu-item index="notification-settings">通知设置</el-menu-item><el-menu-item index="delivery-failures">通知失败</el-menu-item><el-menu-item index="categories">分类管理</el-menu-item><el-menu-item index="locations">位置管理</el-menu-item><el-menu-item index="audit-logs">审计日志</el-menu-item><el-menu-item index="diagnostics">系统诊断</el-menu-item><el-menu-item index="invites">邀请管理</el-menu-item></template></el-menu></nav>
       <div class="shell-sidebar-footer">
-        <button class="auth-logout-btn" @click="handleLogout">退出登录</button>
+        <el-button plain @click="handleLogout">退出登录</el-button>
       </div>
-    </nav>
+    </el-aside>
 
-    <main class="shell-content">
+    <el-main class="shell-content">
       <AccountView
         v-if="currentView === 'account'"
         :account="account"
@@ -121,6 +85,6 @@ function handleForcePasswordChange() {
       <DeliveryFailuresView v-else-if="currentView === 'delivery-failures'" />
       <AuditLogView v-else-if="currentView === 'audit-logs'" />
       <DiagnosticsView v-else-if="currentView === 'diagnostics'" />
-    </main>
-  </div>
+    </el-main>
+  </el-container>
 </template>

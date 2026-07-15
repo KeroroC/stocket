@@ -35,15 +35,9 @@ onMounted(load)
 <template>
   <section class="st-page reminders-page">
     <StPageHeader title="提醒中心" description="集中处理临期、过期和低库存事项" />
-    <label class="reminder-filter">提醒类型
-      <select v-model="type" aria-label="提醒类型">
-        <option value="">全部</option><option value="EXPIRING">临期</option>
-        <option value="EXPIRED">过期</option><option value="LOW_STOCK">低库存</option>
-        <option value="INTEGRITY">库存异常</option>
-      </select>
-    </label>
+    <el-form class="reminder-filter" inline><el-form-item label="提醒类型"><el-select v-model="type"><el-option label="全部" value="" /><el-option label="临期" value="EXPIRING" /><el-option label="过期" value="EXPIRED" /><el-option label="低库存" value="LOW_STOCK" /><el-option label="库存异常" value="INTEGRITY" /></el-select></el-form-item></el-form>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <p v-if="loading" class="st-feedback">正在加载...</p>
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
       <section class="reminder-section"><header><div><span>需要操作</span><h2>待处理</h2></div><strong>{{ open.length }}</strong></header><ReminderList :reminders="open" acknowledgeable @acknowledge="acknowledge" /></section>
       <section class="reminder-section reminder-section--muted"><header><div><span>历史记录</span><h2>已确认</h2></div><strong>{{ acknowledged.length }}</strong></header><ReminderList :reminders="acknowledged" /></section>

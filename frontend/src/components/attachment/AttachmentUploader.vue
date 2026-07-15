@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { ElMessageBox } from 'element-plus'
+import type { UploadFile } from 'element-plus'
 import { uploadAttachment, type AttachmentSummary } from '../../api/attachment'
 
 const props = withDefaults(defineProps<{ ownerType:string; ownerId:string; purpose:string; label?:string }>(), { label:'上传附件' })
@@ -19,9 +21,17 @@ function choose(event: Event) {
   if (file.type.startsWith('image/')) previewUrl.value = URL.createObjectURL(file)
 }
 
+function chooseUpload(file: UploadFile) {
+  if (!file.raw) return
+  choose({ target: { files: [file.raw] } } as unknown as Event)
+}
+
 async function upload() {
   if (!selected.value) return
-  if (props.purpose === 'COVER_IMAGE' && !confirm('确认替换当前封面？')) return
+  if (props.purpose === 'COVER_IMAGE') {
+    try { await ElMessageBox.confirm('确认替换当前封面？', '替换封面', { type: 'warning' }) }
+    catch { return }
+  }
   pending.value = true; error.value = ''; progress.value = 0; controller = new AbortController()
   try {
     const uploaded = await uploadAttachment(props.ownerType, props.ownerId, props.purpose, selected.value,
@@ -40,13 +50,13 @@ onBeforeUnmount(revoke)
 
 <template>
   <div class="attachment-uploader">
-    <label>{{ label }}<input type="file" :accept="accept" @change="choose" /></label>
+    <el-upload :auto-upload="false" :show-file-list="false" :accept="accept" :on-change="chooseUpload"><el-button>{{ label }}</el-button></el-upload>
     <p class="attachment-hint">服务端会再次验证文件内容，最大 20 MiB。</p>
     <img v-if="previewUrl" :src="previewUrl" alt="待上传预览" class="attachment-preview" />
     <p v-if="selected">{{ selected.name }}</p>
-    <progress v-if="pending" :value="progress" max="100">{{ progress }}%</progress>
-    <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <button v-if="selected && !pending" class="st-button st-button--primary" type="button" @click="upload">开始上传</button>
-    <button v-if="pending" class="st-button" type="button" @click="cancel">取消上传</button>
+    <el-progress v-if="pending" :percentage="progress" />
+    <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
+    <el-button v-if="selected && !pending" type="primary" @click="upload">开始上传</el-button>
+    <el-button v-if="pending" @click="cancel">取消上传</el-button>
   </div>
 </template>

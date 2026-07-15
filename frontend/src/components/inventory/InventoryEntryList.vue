@@ -10,48 +10,28 @@ const emit = defineEmits<{ select: [entry: InventoryEntry] }>()
 
 <template>
   <div class="inventory-list" aria-label="库存条目">
-    <div v-if="isDesktop" class="st-table-wrapper inventory-table">
-      <table class="st-table">
-        <thead>
-          <tr>
-            <th>物品</th>
-            <th>位置</th>
-            <th>类型</th>
-            <th>数量</th>
-            <th>到期日</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="entry in entries"
-            :key="`table-${entry.id}`"
-            :class="{ selected: selectedId === entry.id }"
-            tabindex="0"
-            @click="emit('select', entry)"
-            @keydown.enter="emit('select', entry)"
-          >
-            <td>{{ entry.itemName }}</td>
-            <td>{{ entry.locationName }}</td>
-            <td>{{ entry.type === 'BATCH' ? '批次' : '资产' }}</td>
-            <td>{{ entry.quantity }}</td>
-            <td>{{ entry.expirationDate ?? '无到期日' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <button
+    <el-table v-if="isDesktop" :data="entries" row-key="id" highlight-current-row :current-row-key="selectedId" class="inventory-table" @row-click="emit('select', $event)">
+      <el-table-column prop="itemName" label="物品" min-width="160" />
+      <el-table-column prop="locationName" label="位置" min-width="140" />
+      <el-table-column label="类型" width="90"><template #default="{ row }"><el-tag effect="plain">{{ row.type === 'BATCH' ? '批次' : '资产' }}</el-tag></template></el-table-column>
+      <el-table-column prop="quantity" label="数量" width="100" />
+      <el-table-column label="到期日" min-width="130"><template #default="{ row }">{{ row.expirationDate ?? '无到期日' }}</template></el-table-column>
+    </el-table>
+    <el-card
       v-for="entry in entries"
       v-show="!isDesktop"
       :key="entry.id"
-      type="button"
       :class="['inventory-card', { selected: selectedId === entry.id }]"
       @click="emit('select', entry)"
+      shadow="hover"
+      tabindex="0"
+      @keydown.enter="emit('select', entry)"
     >
       <span class="inventory-card-title">{{ entry.itemName }}</span>
       <span>{{ entry.locationName }} · {{ entry.type === 'BATCH' ? '批次' : '资产' }}</span>
       <strong>{{ entry.quantity }}</strong>
       <span v-if="entry.expirationDate">到期 {{ entry.expirationDate }}</span>
       <span v-else>无到期日</span>
-    </button>
+    </el-card>
   </div>
 </template>

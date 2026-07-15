@@ -182,10 +182,10 @@ function formatStatus(status: string): string {
 function formatStatusType(status: string): string {
   switch (status) {
     case 'PENDING': return 'success'
-    case 'ACCEPTED': return ''
+    case 'ACCEPTED': return 'primary'
     case 'EXPIRED': return 'warning'
     case 'REVOKED': return 'info'
-    default: return ''
+    default: return 'info'
   }
 }
 </script>
@@ -194,51 +194,20 @@ function formatStatusType(status: string): string {
   <section class="st-page admin-invites-view">
     <StPageHeader title="邀请管理" description="创建和管理一次性邀请链接">
       <template #actions>
-        <button class="st-button st-button--primary" type="button" @click="openCreateDialog">创建邀请</button>
+        <el-button type="primary" @click="openCreateDialog">创建邀请</el-button>
       </template>
     </StPageHeader>
 
-    <div v-if="error" role="alert" class="auth-error">
-      {{ error }}
-    </div>
+    <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
+    <el-skeleton v-if="loading" :rows="5" animated />
 
-    <div v-if="loading" class="auth-loading">加载中...</div>
-
-    <div v-if="isDesktop && invites.length > 0" class="st-table-wrapper admin-table-fallback">
-      <table class="st-table">
-        <thead>
-          <tr>
-            <th>状态</th>
-            <th>角色</th>
-            <th>有效期</th>
-            <th>使用次数</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="invite in invites" :key="`table-${invite.id}`">
-            <td>{{ formatStatus(invite.status) }}</td>
-            <td>{{ formatRole(invite.role) }}</td>
-            <td>{{ new Date(invite.expiresAt).toLocaleString() }}</td>
-            <td>{{ invite.useCount }}/{{ invite.maxUses }}</td>
-            <td class="st-table__actions">
-              <button
-                v-if="canExtend(invite)"
-                class="st-button st-button--text"
-                type="button"
-                @click="openExtendDialog(invite.id, invite.expiresAt)"
-              >延长</button>
-              <button
-                v-if="invite.status === 'PENDING'"
-                class="st-button st-button--text"
-                type="button"
-                @click="handleRevokeInvite(invite.id)"
-              >撤销</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <el-table v-if="isDesktop && invites.length > 0" :data="invites" row-key="id">
+      <el-table-column label="状态" width="110"><template #default="{ row }"><el-tag :type="formatStatusType(row.status) as any">{{ formatStatus(row.status) }}</el-tag></template></el-table-column>
+      <el-table-column label="角色" width="110"><template #default="{ row }">{{ formatRole(row.role) }}</template></el-table-column>
+      <el-table-column label="有效期" min-width="180"><template #default="{ row }">{{ new Date(row.expiresAt).toLocaleString() }}</template></el-table-column>
+      <el-table-column label="使用次数" width="110"><template #default="{ row }">{{ row.useCount }}/{{ row.maxUses }}</template></el-table-column>
+      <el-table-column label="操作" width="150"><template #default="{ row }"><el-button v-if="canExtend(row as InviteListItem)" link type="primary" @click="openExtendDialog(row.id, row.expiresAt)">延长</el-button><el-button v-if="row.status === 'PENDING'" link type="danger" @click="handleRevokeInvite(row.id)">撤销</el-button></template></el-table-column>
+    </el-table>
 
     <ul v-if="!isDesktop && invites.length > 0" class="invite-list">
       <li v-for="invite in invites" :key="invite.id" class="invite-item">
@@ -258,20 +227,16 @@ function formatStatusType(status: string): string {
           </span>
         </div>
         <div class="invite-item-actions">
-          <button
+          <el-button
             v-if="canExtend(invite)"
-            class="member-action-btn"
+            size="small"
             @click="openExtendDialog(invite.id, invite.expiresAt)"
-          >
-            延长
-          </button>
-          <button
+          >延长</el-button>
+          <el-button
             v-if="invite.status === 'PENDING'"
-            class="member-action-btn"
+            size="small"
             @click="handleRevokeInvite(invite.id)"
-          >
-            撤销
-          </button>
+          >撤销</el-button>
         </div>
       </li>
     </ul>
@@ -285,47 +250,9 @@ function formatStatusType(status: string): string {
       :close-on-click-modal="false"
       width="400px"
     >
-      <form class="auth-form" @submit.prevent="handleCreateInvite">
-        <div v-if="createError" role="alert" class="auth-error">
-          {{ createError }}
-        </div>
-
-        <div class="form-field">
-          <label for="inviteRole">角色</label>
-          <select id="inviteRole" v-model="newRole">
-            <option value="ADMIN">管理员</option>
-            <option value="MEMBER">成员</option>
-            <option value="VIEWER">只读者</option>
-          </select>
-        </div>
-
-        <div class="form-field">
-          <label for="inviteExpiry">有效期（小时）</label>
-          <input
-            id="inviteExpiry"
-            v-model.number="newExpiresInHours"
-            type="number"
-            min="1"
-            max="720"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="inviteMaxUses">最大使用次数</label>
-          <input
-            id="inviteMaxUses"
-            v-model.number="newMaxUses"
-            type="number"
-            min="1"
-            max="100"
-          />
-        </div>
-      </form>
+      <el-form class="auth-form" label-position="top" @submit.prevent="handleCreateInvite"><el-alert v-if="createError" :title="createError" type="error" show-icon :closable="false" /><el-form-item label="角色"><el-select id="inviteRole" v-model="newRole"><el-option label="管理员" value="ADMIN" /><el-option label="成员" value="MEMBER" /><el-option label="只读者" value="VIEWER" /></el-select></el-form-item><el-form-item label="有效期（小时）"><el-input-number id="inviteExpiry" v-model="newExpiresInHours" :min="1" :max="720" /></el-form-item><el-form-item label="最大使用次数"><el-input-number id="inviteMaxUses" v-model="newMaxUses" :min="1" :max="100" /></el-form-item></el-form>
       <template #footer>
-        <button class="auth-logout-btn" style="width: auto;" @click="showCreateDialog = false">取消</button>
-        <button class="auth-submit" style="width: auto;" :disabled="createSubmitting" @click="handleCreateInvite">
-          {{ createSubmitting ? '创建中...' : '确认创建' }}
-        </button>
+        <el-button @click="showCreateDialog = false">取消</el-button><el-button type="primary" :loading="createSubmitting" @click="handleCreateInvite">确认创建</el-button>
       </template>
     </el-dialog>
 
@@ -340,18 +267,12 @@ function formatStatusType(status: string): string {
       <div class="result-content">
         <p>邀请链接（仅显示一次，请妥善保存）：</p>
         <div class="result-secret">{{ resultInviteLink }}</div>
-        <button
-          class="result-copy-btn"
-          :disabled="copied"
-          @click="copyToClipboard(resultInviteLink)"
-        >
+        <el-button :disabled="copied" @click="copyToClipboard(resultInviteLink)">
           {{ copied ? '已复制' : '复制链接' }}
-        </button>
+        </el-button>
       </div>
       <template #footer>
-        <button class="auth-submit" style="width: auto;" @click="closeResultDialog">
-          确定
-        </button>
+        <el-button type="primary" @click="closeResultDialog">确定</el-button>
       </template>
     </el-dialog>
 
@@ -362,26 +283,9 @@ function formatStatusType(status: string): string {
       :close-on-click-modal="false"
       width="400px"
     >
-      <form class="auth-form" @submit.prevent="handleExtendInvite">
-        <div v-if="extendError" role="alert" class="auth-error">
-          {{ extendError }}
-        </div>
-
-        <div class="form-field">
-          <label for="newExpiry">新的过期时间</label>
-          <input
-            id="newExpiry"
-            v-model="newExpiryDate"
-            type="datetime-local"
-            :min="new Date().toISOString().slice(0, 16)"
-          />
-        </div>
-      </form>
+      <el-form class="auth-form" label-position="top" @submit.prevent="handleExtendInvite"><el-alert v-if="extendError" :title="extendError" type="error" show-icon :closable="false" /><el-form-item label="新的过期时间"><el-input id="newExpiry" v-model="newExpiryDate" type="datetime-local" :min="new Date().toISOString().slice(0, 16)" /></el-form-item></el-form>
       <template #footer>
-        <button class="auth-logout-btn" style="width: auto;" @click="showExtendDialog = false">取消</button>
-        <button class="auth-submit" style="width: auto;" :disabled="extendSubmitting" @click="handleExtendInvite">
-          {{ extendSubmitting ? '提交中...' : '确认延长' }}
-        </button>
+        <el-button @click="showExtendDialog = false">取消</el-button><el-button type="primary" :loading="extendSubmitting" @click="handleExtendInvite">确认延长</el-button>
       </template>
     </el-dialog>
   </section>

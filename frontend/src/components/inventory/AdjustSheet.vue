@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Check, Close } from '@element-plus/icons-vue'
+import { Check } from '@element-plus/icons-vue'
 import { adjustInventory } from '../../api/inventory'
 import { useInventoryCommands } from '../../inventory/useInventoryCommands'
 import QuantityInput from './QuantityInput.vue'
@@ -42,14 +42,12 @@ async function submit() {
 </script>
 
 <template>
-  <section v-if="open" class="inventory-sheet" role="dialog" aria-label="调整库存">
-    <header><h2>调整库存</h2><button class="st-button st-button--text st-button--icon" type="button" aria-label="关闭调整库存" title="关闭" @click="emit('close')"><Close aria-hidden="true" /></button></header>
-    <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <form @submit.prevent="submit">
+  <el-dialog :model-value="open" title="调整库存" width="min(34rem, calc(100vw - 2rem))" :teleported="false" :destroy-on-close="false" @close="emit('close')">
+    <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
+    <el-form label-position="top" @submit.prevent="submit">
       <QuantityInput id="adjust-quantity" v-model="targetQuantity" label="调整后数量" @update:model-value="changed" />
-      <label for="adjust-reason">调整原因</label>
-      <input id="adjust-reason" v-model="reason" @input="changed" />
-      <button class="st-button st-button--primary" type="submit" :disabled="submitting"><Check aria-hidden="true" />{{ error ? '重试调整' : '确认调整' }}</button>
-    </form>
-  </section>
+      <el-form-item label="调整原因"><el-input id="adjust-reason" v-model="reason" @input="changed" /></el-form-item>
+    </el-form>
+    <template #footer><el-button @click="emit('close')">取消</el-button><el-button type="primary" :icon="Check" :loading="submitting" @click="submit">{{ error ? '重试调整' : '确认调整' }}</el-button></template>
+  </el-dialog>
 </template>

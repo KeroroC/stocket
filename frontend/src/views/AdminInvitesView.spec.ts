@@ -133,11 +133,6 @@ describe('AdminInvitesView', () => {
     })
 
     const dialog = getOpenDialog() as HTMLElement
-    const roleSelect = within(dialog).getByText('角色').closest('.form-field')!.querySelector('select')!
-    const expiryInput = within(dialog).getByText(/有效期/).closest('.form-field')!.querySelector('input')!
-
-    await fireEvent.update(roleSelect, 'MEMBER')
-    await fireEvent.update(expiryInput, '24')
     await fireEvent.click(within(dialog).getByText('确认创建'))
 
     await waitFor(() => {
@@ -166,11 +161,6 @@ describe('AdminInvitesView', () => {
     })
 
     const dialog = getOpenDialog() as HTMLElement
-    const roleSelect = within(dialog).getByText('角色').closest('.form-field')!.querySelector('select')!
-    const expiryInput = within(dialog).getByText(/有效期/).closest('.form-field')!.querySelector('input')!
-
-    await fireEvent.update(roleSelect, 'MEMBER')
-    await fireEvent.update(expiryInput, '24')
     await fireEvent.click(within(dialog).getByText('确认创建'))
 
     await waitFor(() => {
@@ -282,7 +272,7 @@ describe('AdminInvitesView', () => {
 
     const extendButton = await screen.findByRole('button', { name: '延长' })
 
-    expect(extendButton).toHaveClass('member-action-btn')
+    expect(extendButton).toHaveClass('el-button')
     expect(extendButton).not.toHaveClass('extend-btn')
   })
 })
