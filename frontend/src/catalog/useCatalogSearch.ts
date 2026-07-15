@@ -12,29 +12,36 @@ export function useCatalogSearch() {
   let timer: ReturnType<typeof setTimeout> | undefined
   let controller: AbortController | undefined
 
+  async function runSearch(normalized: string) {
+    const requestController = new AbortController()
+    controller = requestController
+    loading.value = true
+    error.value = null
+    try {
+      const response = await searchCatalog(normalized, { signal: requestController.signal })
+      if (requestController.signal.aborted) return
+      results.value = response.items
+      total.value = response.total
+    } catch (cause) {
+      if (!requestController.signal.aborted) {
+        const problem = cause as ApiProblem
+        error.value = problem.detail ?? problem.code ?? '搜索暂不可用'
+      }
+    } finally {
+      if (!requestController.signal.aborted) loading.value = false
+    }
+  }
+
   watch(query, (value) => {
     if (timer) clearTimeout(timer)
     controller?.abort()
     const normalized = value.trim().replace(/\s+/g, ' ')
-    if (!normalized) { results.value = []; total.value = 0; loading.value = false; error.value = null; return }
-    timer = setTimeout(async () => {
-      controller = new AbortController()
-      loading.value = true
-      error.value = null
-      try {
-        const response = await searchCatalog(normalized, { signal: controller.signal })
-        results.value = response.items
-        total.value = response.total
-      } catch (cause) {
-        if (!controller.signal.aborted) {
-          const problem = cause as ApiProblem
-          error.value = problem.detail ?? problem.code ?? '搜索暂不可用'
-        }
-      } finally {
-        if (!controller.signal.aborted) loading.value = false
-      }
-    }, 250)
-  }, { flush: 'sync' })
+    if (!normalized) {
+      void runSearch('')
+      return
+    }
+    timer = setTimeout(() => void runSearch(normalized), 250)
+  }, { flush: 'sync', immediate: true })
 
   if (getCurrentScope()) onScopeDispose(() => { if (timer) clearTimeout(timer); controller?.abort() })
   return { query, results, total, loading, error }

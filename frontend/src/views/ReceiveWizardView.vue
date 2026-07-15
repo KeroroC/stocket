@@ -150,7 +150,11 @@ onMounted(async () => {
   }
   if (!repository || wizard.state.value.kind !== 'IDENTIFY') return
   const latest = (await repository.list(props.account?.id ?? 'anonymous'))[0]
-  if (latest) await wizard.restore(latest.id)
+  if (latest) {
+    await wizard.restore(latest.id)
+    if (wizard.draft.value.location) locationLoadError.value = ''
+    if (wizard.draft.value.item) itemSelectionError.value = ''
+  }
 })
 </script>
 
@@ -168,7 +172,11 @@ onMounted(async () => {
     <MatchStep v-else-if="wizard.state.value.kind === 'MATCH'" v-model:query="catalogSearch.query.value" v-model:creating="quickCreating" :draft="wizard.draft.value" :results="catalogSearch.results.value" :loading="catalogSearch.loading.value" :error="itemSelectionError || catalogSearch.error.value" :categories="categories" :create-pending="createPending" :can-manage-categories="account?.role === 'ADMIN'" @select="selectItem" @create="createNewItem" @next="wizard.next" @back="wizard.back" />
     <DetailsStep v-else-if="wizard.state.value.kind === 'DETAILS'" :draft="wizard.draft.value" :locations="locations" :can-manage-locations="account?.role === 'ADMIN'" @update="wizard.updateDetails" @select-location="wizard.selectLocation" @next="wizard.next" @back="wizard.back" @scan-location="scannerOpen = true" />
     <ConfirmStep v-else-if="['CONFIRM', 'SUBMITTING', 'CONFLICT'].includes(wizard.state.value.kind)" :draft="wizard.draft.value" :current="wizard.preview.value.current" @submit="wizard.submit()" @back="wizard.back" />
-    <section v-else-if="wizard.state.value.kind === 'COMPLETED'" class="receive-completed" role="status"><strong>入库完成</strong><p>库存数量和流水已经更新。</p></section>
+    <section v-else-if="wizard.state.value.kind === 'COMPLETED'" class="receive-completed" role="status">
+      <strong>入库完成</strong>
+      <p>库存数量和流水已经更新。</p>
+      <RouterLink class="st-button st-button--primary" :to="`/inventory/${wizard.state.value.entryId}`">查看入库物品</RouterLink>
+    </section>
     <ScannerSheet v-model="scannerOpen" :scanner="scanner" @result="handleScan" />
   </section>
 </template>

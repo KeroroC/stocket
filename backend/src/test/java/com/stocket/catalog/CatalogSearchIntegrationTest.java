@@ -89,6 +89,15 @@ class CatalogSearchIntegrationTest {
     }
 
     @Test
+    void emptyQueryListsAllActiveItemsByDefault() throws Exception {
+        mockMvc.perform(get("/api/v1/catalog/search").cookie(cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(2)))
+                .andExpect(jsonPath("$.items[*].name", contains("伊利牛奶", "蒙牛纯牛奶")))
+                .andExpect(jsonPath("$.total").value(2));
+    }
+
+    @Test
     void itemChangesBuildProjectionWithFullCategoryPathAndNormalizedSearch() throws Exception {
         UUID foodId = createCategory("食品", null);
         UUID dairyId = createCategory("乳制品", foodId);

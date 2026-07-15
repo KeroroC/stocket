@@ -25,14 +25,14 @@ class CatalogSearchService implements CatalogExportQuery {
     }
 
     CatalogSearchResult search(CatalogFilter filter, int page, int size) {
-        try { filter.validate(true); } catch (IllegalArgumentException error) { throw new InvalidSearchException(); }
+        try { filter.validate(false); } catch (IllegalArgumentException error) { throw new InvalidSearchException(); }
         String query = filter.normalizedQuery();
         boolean includeArchived = filter.includeArchived();
         if (page < 0 || size < 1 || size > 100) {
             throw new InvalidSearchException();
         }
         UUID householdId = current.requireCurrent().householdId();
-        List<CatalogSearchResult.SearchItem> barcode = jdbc.query("""
+        List<CatalogSearchResult.SearchItem> barcode = query.isBlank() ? List.of() : jdbc.query("""
                 select p.item_definition_id, p.display_name, p.category_path, p.brand, p.model, p.specification,
                        p.tags, p.raw_barcodes
                 from catalog_search_projection p

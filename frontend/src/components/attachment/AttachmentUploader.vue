@@ -45,8 +45,8 @@ onBeforeUnmount(revoke)
     <img v-if="previewUrl" :src="previewUrl" alt="待上传预览" class="attachment-preview" />
     <p v-if="selected">{{ selected.name }}</p>
     <progress v-if="pending" :value="progress" max="100">{{ progress }}%</progress>
-    <p v-if="error" role="alert">{{ error }}</p>
-    <button v-if="selected && !pending" type="button" @click="upload">开始上传</button>
-    <button v-if="pending" type="button" @click="cancel">取消上传</button>
+    <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
+    <button v-if="selected && !pending" class="st-button st-button--primary" type="button" @click="upload">开始上传</button>
+    <button v-if="pending" class="st-button" type="button" @click="cancel">取消上传</button>
   </div>
 </template>

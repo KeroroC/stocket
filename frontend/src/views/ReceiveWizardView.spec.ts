@@ -111,6 +111,7 @@ describe('ReceiveWizardView', () => {
         wizard,
         locations: [{ id: 'loc-1', name: '冰箱', fullPath: '家 > 冰箱', version: 1 }],
       },
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } },
     })
 
     await fireEvent.click(screen.getByRole('button', { name: '手工选择' }))
@@ -124,6 +125,7 @@ describe('ReceiveWizardView', () => {
     await fireEvent.click(screen.getByRole('button', { name: '确认入库' }))
 
     await screen.findByText('入库完成')
+    expect(screen.getByRole('link', { name: '查看入库物品' })).toHaveAttribute('href', '/inventory/entry-1')
     expect(services.receive).toHaveBeenCalledWith(expect.objectContaining({
       itemId: 'item-1',
       locationId: 'loc-1',

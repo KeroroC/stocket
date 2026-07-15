@@ -13,8 +13,9 @@ describe('CategoryAdminView', () => {
     expect(await screen.findByRole('button', { name: '食品' })).toBeInTheDocument()
     await fireEvent.click(screen.getByRole('button', { name: '添加子分类' }))
     await fireEvent.update(screen.getByLabelText('分类名称'), '乳制品')
+    await fireEvent.update(screen.getByLabelText('默认库存类型'), 'ASSET')
     await fireEvent.click(screen.getByRole('button', { name: '保存分类' }))
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: '乳制品', parentId: 'p' }))
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: '乳制品', parentId: 'p', defaultInventoryType: 'ASSET' }))
   })
 
   it('空分类时可以创建第一个顶级分类', async () => {

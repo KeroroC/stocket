@@ -27,6 +27,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -106,6 +107,27 @@ class ReceiveInventoryIntegrationTest {
                 .isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from inventory_movement where entry_id=? and movement_type='RECEIVE'",
                 Integer.class, entryId)).isEqualTo(1);
+
+        mockMvc.perform(get("/api/v1/inventory/entries").cookie(cookie(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(entryId.toString()))
+                .andExpect(jsonPath("$.items[0].itemName").value("牛奶"))
+                .andExpect(jsonPath("$.items[0].locationName").value("冰箱"))
+                .andExpect(jsonPath("$.items[0].quantity").value("2.5"));
+        mockMvc.perform(get("/api/v1/inventory/entries/{id}", entryId).cookie(cookie(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(entryId.toString()))
+                .andExpect(jsonPath("$.batchNumber").value("B-001"));
+        mockMvc.perform(get("/api/v1/inventory/entries/{id}/movements", entryId).cookie(cookie(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].type").value("RECEIVE"))
+                .andExpect(jsonPath("$[0].quantityDelta").value("2.5"));
+        mockMvc.perform(get("/api/v1/inventory/availability")
+                        .queryParam("itemId", itemId.toString()).cookie(cookie(member)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAvailable").value("2.5"))
+                .andExpect(jsonPath("$.activeEntryCount").value(1));
     }
 
     @Test

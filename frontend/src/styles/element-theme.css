@@ -11,3 +11,9 @@
   --el-border-radius-base: var(--st-radius-control);
   --el-component-size: var(--st-control-min-size);
 }
+
+.el-button,
+.el-input__wrapper,
+.el-select__wrapper {
+  min-height: var(--st-control-min-size);
+}

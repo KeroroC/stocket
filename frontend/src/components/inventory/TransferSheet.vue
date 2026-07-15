@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { Camera, Check } from '@element-plus/icons-vue'
+import { Camera, Check, Close } from '@element-plus/icons-vue'
 import { transferInventory } from '../../api/inventory'
 import { listLocations, resolveLocationCode, type LocationNode } from '../../api/location'
 import { useInventoryCommands } from '../../inventory/useInventoryCommands'
@@ -76,8 +76,8 @@ async function submit() {
 
 <template>
   <section v-if="open" class="inventory-sheet" role="dialog" aria-label="调拨库存">
-    <header><h2>调拨库存</h2><button type="button" aria-label="关闭调拨库存" @click="emit('close')">关闭</button></header>
-    <p v-if="error" role="alert">{{ error }}</p>
+    <header><h2>调拨库存</h2><button class="st-button st-button--text st-button--icon" type="button" aria-label="关闭调拨库存" title="关闭" @click="emit('close')"><Close aria-hidden="true" /></button></header>
+    <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
     <form @submit.prevent="submit">
       <QuantityInput id="transfer-quantity" v-model="quantity" label="调拨数量" @update:model-value="changed" />
       <label for="target-location">目标位置</label>
@@ -85,8 +85,8 @@ async function submit() {
         <option value="">请选择位置</option>
         <option v-for="location in locations" :key="location.id" :value="location.id">{{ location.fullPath }}</option>
       </select>
-      <button type="button" @click="scanning = true"><Camera aria-hidden="true" />扫描目标位置</button>
-      <button type="submit" :disabled="submitting"><Check aria-hidden="true" />{{ error ? '重试调拨' : '确认调拨' }}</button>
+      <button class="st-button" type="button" @click="scanning = true"><Camera aria-hidden="true" />扫描目标位置</button>
+      <button class="st-button st-button--primary" type="submit" :disabled="submitting"><Check aria-hidden="true" />{{ error ? '重试调拨' : '确认调拨' }}</button>
     </form>
     <ScannerSheet v-model="scanning" :scanner="scanner" @result="scanned" />
   </section>

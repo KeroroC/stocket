@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 class CatalogSearchController {
     private final CatalogSearchService service;
     CatalogSearchController(CatalogSearchService service) { this.service = service; }
-    @GetMapping CatalogSearchResult search(@RequestParam String q,
+    @GetMapping CatalogSearchResult search(@RequestParam(defaultValue = "") String q,
                                             @RequestParam(required = false) UUID categoryId,
                                             @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "20") int size,

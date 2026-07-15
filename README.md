@@ -193,7 +193,7 @@ cd backend && ./mvnw -DskipTests package
 
 ### 搜索与二维码
 
-- `GET /api/v1/catalog/search?q=...` 会规范化首尾空白和大小写。
+- `GET /api/v1/catalog/search` 默认返回全部未归档物品；传入 `q=...` 时会规范化首尾空白和大小写并进行搜索。
 - 完整条码精确命中优先于名称、品牌、规格、标签和分类路径的文本结果。
 - 归档物品默认不进入搜索结果，目录写事务会同步更新搜索投影。
 - 位置二维码载荷使用 `stocket:location:<public-code>`；公开码不可替代认证，解析结果仍受家庭隔离约束。

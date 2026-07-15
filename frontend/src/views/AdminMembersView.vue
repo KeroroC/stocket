@@ -205,7 +205,7 @@ function formatRole(role: string): string {
   <div class="admin-members-view">
     <div class="section-header">
       <h2 class="section-title">成员管理</h2>
-      <button class="auth-submit" style="width: auto; height: 40px; font-size: 0.875rem;" @click="openCreateDialog">
+      <button class="auth-submit" style="width: auto; font-size: 0.875rem;" @click="openCreateDialog">
         创建成员
       </button>
     </div>
@@ -280,8 +280,8 @@ function formatRole(role: string): string {
         </div>
       </form>
       <template #footer>
-        <button class="auth-logout-btn" style="width: auto; height: 36px;" @click="showCreateDialog = false">取消</button>
-        <button class="auth-submit" style="width: auto; height: 36px;" :disabled="createSubmitting" @click="handleCreateMember">
+        <button class="auth-logout-btn" style="width: auto;" @click="showCreateDialog = false">取消</button>
+        <button class="auth-submit" style="width: auto;" :disabled="createSubmitting" @click="handleCreateMember">
           {{ createSubmitting ? '创建中...' : '确认创建' }}
         </button>
       </template>
@@ -307,7 +307,7 @@ function formatRole(role: string): string {
         </button>
       </div>
       <template #footer>
-        <button class="auth-submit" style="width: auto; height: 36px;" @click="closeResultDialog">
+        <button class="auth-submit" style="width: auto;" @click="closeResultDialog">
           确定
         </button>
       </template>
@@ -335,8 +335,8 @@ function formatRole(role: string): string {
         </div>
       </form>
       <template #footer>
-        <button class="auth-logout-btn" style="width: auto; height: 36px;" @click="showEditRoleDialog = false">取消</button>
-        <button class="auth-submit" style="width: auto; height: 36px;" :disabled="editSubmitting" @click="handleEditRole">
+        <button class="auth-logout-btn" style="width: auto;" @click="showEditRoleDialog = false">取消</button>
+        <button class="auth-submit" style="width: auto;" :disabled="editSubmitting" @click="handleEditRole">
           {{ editSubmitting ? '保存中...' : '确认' }}
         </button>
       </template>
@@ -362,7 +362,7 @@ function formatRole(role: string): string {
         </button>
       </div>
       <template #footer>
-        <button class="auth-submit" style="width: auto; height: 36px;" @click="closeResetResultDialog">
+        <button class="auth-submit" style="width: auto;" @click="closeResetResultDialog">
           确定
         </button>
       </template>

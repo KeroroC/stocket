@@ -501,6 +501,7 @@ body {
 }
 
 .member-action-btn {
+  min-height: var(--st-control-min-size);
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--st-color-primary);

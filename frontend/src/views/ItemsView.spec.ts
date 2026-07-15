@@ -10,10 +10,33 @@ vi.mock('./ItemDetailView.vue', () => ({ default: { template: '<div>详情</div>
 afterEach(() => { cleanup(); vi.useRealTimers() })
 
 describe('ItemsView', () => {
+  it('默认显示全部物品并在清空搜索后恢复全部列表', async () => {
+    vi.useFakeTimers()
+    vi.mocked(searchCatalog)
+      .mockResolvedValueOnce({ items:[{id:'1',name:'牛奶',categoryPath:'食品',brand:null,model:null,specification:null,tags:[],barcodes:[],matchType:'TEXT'}],page:0,size:20,total:1 })
+      .mockResolvedValueOnce({ items:[],page:0,size:20,total:0 })
+      .mockResolvedValueOnce({ items:[{id:'1',name:'牛奶',categoryPath:'食品',brand:null,model:null,specification:null,tags:[],barcodes:[],matchType:'TEXT'}],page:0,size:20,total:1 })
+
+    render(ItemsView, { props: { role: 'MEMBER' } })
+    await vi.runAllTimersAsync()
+    expect(await screen.findByText('牛奶')).toBeInTheDocument()
+
+    const input = screen.getByRole('searchbox', { name: '搜索物品' })
+    await fireEvent.update(input, '不存在')
+    await vi.advanceTimersByTimeAsync(250)
+    expect(await screen.findByText('没有找到物品')).toBeInTheDocument()
+    await fireEvent.update(input, '')
+    await vi.runAllTimersAsync()
+    expect(await screen.findByText('牛奶')).toBeInTheDocument()
+  })
+
   it('搜索并标记条码精确结果', async () => {
     vi.useFakeTimers()
-    vi.mocked(searchCatalog).mockResolvedValue({ items:[{id:'1',name:'牛奶',categoryPath:'食品 / 乳制品',brand:'品牌',model:null,specification:'250ml',tags:['早餐'],barcodes:['ABC'],matchType:'BARCODE_EXACT'}],page:0,size:20,total:1 })
+    vi.mocked(searchCatalog)
+      .mockResolvedValueOnce({ items:[],page:0,size:20,total:0 })
+      .mockResolvedValue({ items:[{id:'1',name:'牛奶',categoryPath:'食品 / 乳制品',brand:'品牌',model:null,specification:'250ml',tags:['早餐'],barcodes:['ABC'],matchType:'BARCODE_EXACT'}],page:0,size:20,total:1 })
     render(ItemsView, { props: { role: 'MEMBER' } })
+    await vi.runAllTimersAsync()
     await fireEvent.update(screen.getByRole('searchbox', { name: '搜索物品' }), 'ABC')
     await vi.advanceTimersByTimeAsync(250)
     expect(await screen.findByText('牛奶')).toBeInTheDocument()

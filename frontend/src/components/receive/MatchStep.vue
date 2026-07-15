@@ -54,6 +54,7 @@ defineEmits<{
       <ItemSearchResults
         :items="results"
         :searched="Boolean(query.trim()) && !loading"
+        :loading="loading"
         @select="$emit('select', $event)"
       />
       <button class="st-button" type="button" @click="creating = true">创建新物品</button>

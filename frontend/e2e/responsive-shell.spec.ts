@@ -23,7 +23,7 @@ test('320/390/768/1440 宽度无横向滚动且导航不遮挡正文', async ({ 
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth)
     expect(layout.searchIconWidth).toBeLessThanOrEqual(24)
     expect(layout.quickReceiveWidth).toBeGreaterThan(0)
-    if (width < 768) {
+    if (width < 1024) {
       expect(layout.mobileVisible).toBe(true)
       expect(layout.contentPaddingBottom).toBeGreaterThanOrEqual(layout.mobileHeight)
     } else {
@@ -64,6 +64,54 @@ const primaryTabs = [
   { label: '提醒', path: '/reminders', heading: '提醒中心' },
   { label: '我的', path: '/profile', heading: '我的账户' },
 ]
+
+const allPages = [
+  { path: '/', heading: '今天需要关注什么？' },
+  { path: '/items', heading: '物品目录' },
+  { path: '/receive', heading: '把物品放到正确的位置' },
+  { path: '/reminders', heading: '提醒中心' },
+  { path: '/inventory', heading: '库存台账' },
+  { path: '/profile', heading: '我的账户' },
+  { path: '/notification-settings', heading: '通知设置' },
+  { path: '/admin/members', heading: '成员管理' },
+  { path: '/admin/invites', heading: '邀请管理' },
+  { path: '/admin/categories', heading: '分类管理' },
+  { path: '/admin/locations', heading: '位置管理' },
+  { path: '/admin/delivery-failures', heading: '通知失败' },
+  { path: '/admin/audit-logs', heading: '审计日志' },
+  { path: '/admin/diagnostics', heading: '系统诊断' },
+]
+
+for (const route of allPages) {
+  test(`${route.path} 页面在移动和桌面视口布局合理且控件可触达`, async ({ page }) => {
+    await installApiFixture(page, { role: 'ADMIN' })
+    await page.goto(route.path)
+    await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
+    for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      await page.setViewportSize(viewport)
+      await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
+      const layout = await page.evaluate(() => {
+        const controls = [...document.querySelectorAll('button, input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea, a.st-button, label:has(input[type="checkbox"]), label:has(input[type="radio"])')]
+          .filter(element => {
+            const style = getComputedStyle(element)
+            const rect = element.getBoundingClientRect()
+            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0
+          })
+          .map(element => ({ height: element.getBoundingClientRect().height, html: element.outerHTML.slice(0, 180) }))
+        return {
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+          minimumControl: controls.length
+            ? controls.reduce((minimum, control) => control.height < minimum.height ? control : minimum,
+              { height: Number.POSITIVE_INFINITY, html: '' })
+            : { height: 44, html: '' },
+        }
+      })
+      expect(layout.scrollWidth, `${route.path} 在 ${viewport.width}px 不应横向溢出`).toBeLessThanOrEqual(layout.innerWidth)
+      expect(layout.minimumControl.height, `${route.path} 在 ${viewport.width}px 的可见控件高度不应小于 44px：${layout.minimumControl.html}`).toBeGreaterThanOrEqual(44)
+    }
+  })
+}
 
 test('主 Tab 切换保持应用外壳稳定', async ({ page }, testInfo) => {
   const viewport = testInfo.project.name === 'mobile-chromium'

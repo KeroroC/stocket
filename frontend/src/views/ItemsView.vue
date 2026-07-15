@@ -50,6 +50,6 @@ async function save(data: ItemInput) {
     <p v-if="search.error.value || error" class="st-feedback st-feedback--error" role="alert">{{ search.error.value || error }}</p>
     <ItemForm v-if="creating" :categories="categories" @save="save" />
     <ItemDetailView v-else-if="selectedId" :item-id="selectedId" :role="role" />
-    <ItemSearchResults v-else :items="search.results.value" :searched="Boolean(search.query.value.trim())" @select="selectedId = $event.id" />
+    <ItemSearchResults v-else :items="search.results.value" :searched="Boolean(search.query.value.trim())" :loading="search.loading.value" @select="selectedId = $event.id" />
   </section>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Check } from '@element-plus/icons-vue'
+import { Check, Close } from '@element-plus/icons-vue'
 import { adjustInventory } from '../../api/inventory'
 import { useInventoryCommands } from '../../inventory/useInventoryCommands'
 import QuantityInput from './QuantityInput.vue'
@@ -43,13 +43,13 @@ async function submit() {
 
 <template>
   <section v-if="open" class="inventory-sheet" role="dialog" aria-label="调整库存">
-    <header><h2>调整库存</h2><button type="button" aria-label="关闭调整库存" @click="emit('close')">关闭</button></header>
-    <p v-if="error" role="alert">{{ error }}</p>
+    <header><h2>调整库存</h2><button class="st-button st-button--text st-button--icon" type="button" aria-label="关闭调整库存" title="关闭" @click="emit('close')"><Close aria-hidden="true" /></button></header>
+    <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
     <form @submit.prevent="submit">
       <QuantityInput id="adjust-quantity" v-model="targetQuantity" label="调整后数量" @update:model-value="changed" />
       <label for="adjust-reason">调整原因</label>
       <input id="adjust-reason" v-model="reason" @input="changed" />
-      <button type="submit" :disabled="submitting"><Check aria-hidden="true" />{{ error ? '重试调整' : '确认调整' }}</button>
+      <button class="st-button st-button--primary" type="submit" :disabled="submitting"><Check aria-hidden="true" />{{ error ? '重试调整' : '确认调整' }}</button>
     </form>
   </section>
 </template>

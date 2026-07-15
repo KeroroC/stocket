@@ -4,6 +4,7 @@ import {
   adjustInventory,
   consumeInventory,
   getInventoryAvailability,
+  getInventoryEntry,
   getInventoryMovements,
   listInventoryEntries,
   transferInventory,
@@ -18,6 +19,7 @@ import InventoryEntryView from './InventoryEntryView.vue'
 
 vi.mock('../api/inventory', () => ({
   listInventoryEntries: vi.fn(),
+  getInventoryEntry: vi.fn(),
   getInventoryMovements: vi.fn(),
   getInventoryAvailability: vi.fn(),
   consumeInventory: vi.fn(),
@@ -80,6 +82,26 @@ describe('InventoryEntryView', () => {
     }
     await fireEvent.click(screen.getByRole('button', { name: '消耗' }))
     expect(screen.getByRole('dialog', { name: '消耗库存' })).toBeInTheDocument()
+  })
+
+  it('从入库完成页进入时自动选中新创建的库存条目', async () => {
+    vi.mocked(listInventoryEntries).mockResolvedValue({
+      items: [
+        { id: 'early', itemId: 'item-1', itemName: '牛奶', locationId: 'loc-1', locationName: '冰箱', type: 'BATCH', quantity: '1', receivedAt: '2026-07-14T00:00:00Z', expirationDate: '2026-07-20', archived: false, version: 0 },
+      ], page: 0, size: 50, total: 51,
+    } as never)
+    vi.mocked(getInventoryEntry).mockResolvedValue({
+      id: 'entry-new', itemId: 'item-2', itemName: '燕麦奶', locationId: 'loc-1', locationName: '冰箱', type: 'BATCH', quantity: '2', receivedAt: '2026-07-15T00:00:00Z', expirationDate: null, archived: false, version: 0,
+    })
+    vi.mocked(getInventoryAvailability).mockImplementation(async itemId => ({ itemId, totalAvailable: itemId === 'item-2' ? '2' : '1', earliestExpiration: null, activeEntryCount: 1 }))
+    vi.mocked(getInventoryMovements).mockResolvedValue([])
+    vi.mocked(listAttachments).mockResolvedValue([])
+
+    render(InventoryEntryView, { props: { role: 'MEMBER', entryId: 'entry-new' } })
+
+    expect(await screen.findByRole('heading', { name: '燕麦奶' })).toBeInTheDocument()
+    expect(screen.getByText('可用量：2')).toBeInTheDocument()
+    expect(getInventoryEntry).toHaveBeenCalledWith('entry-new')
   })
 
   it('消耗数量不足和后端 403 都显示稳定错误', async () => {

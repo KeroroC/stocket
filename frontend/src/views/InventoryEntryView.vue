@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { getInventoryAvailability, getInventoryMovements, listInventoryEntries } from '../api/inventory'
+import { getInventoryAvailability, getInventoryEntry, getInventoryMovements, listInventoryEntries } from '../api/inventory'
 import AdjustSheet from '../components/inventory/AdjustSheet.vue'
 import ConsumeSheet from '../components/inventory/ConsumeSheet.vue'
 import InventoryEntryList from '../components/inventory/InventoryEntryList.vue'
@@ -13,7 +13,7 @@ import InventoryReceiveView from './InventoryReceiveView.vue'
 import DocumentList from '../components/attachment/DocumentList.vue'
 import ExportDialog from '../components/export/ExportDialog.vue'
 
-const props = defineProps<{ role: string }>()
+const props = defineProps<{ role: string; entryId?: string }>()
 const entries = ref<InventoryEntry[]>([])
 const selected = ref<InventoryEntry>()
 const movements = ref<InventoryMovement[]>([])
@@ -36,7 +36,14 @@ async function load() {
       if (!right.expirationDate) return -1
       return left.expirationDate.localeCompare(right.expirationDate)
     })
-    if (entries.value.length > 0) await select(entries.value[0]!)
+    let requested = props.entryId
+      ? entries.value.find(entry => entry.id === props.entryId)
+      : undefined
+    if (props.entryId && !requested) {
+      requested = await getInventoryEntry(props.entryId)
+      entries.value.unshift(requested)
+    }
+    if (entries.value.length > 0) await select(requested ?? entries.value[0]!)
   } catch (problem) {
     error.value = (problem as { detail?: string; code?: string }).detail ?? '库存加载失败'
   } finally {
@@ -74,14 +81,14 @@ async function completed() {
         <ExportDialog kind="inventory" label="导出库存" />
         <template v-if="canWrite">
           <button class="st-button st-button--primary" type="button" @click="mode = 'receive'">新增入库</button>
-          <button v-if="selected" type="button" @click="sheet = 'consume'">消耗</button>
-          <button v-if="selected" type="button" @click="sheet = 'transfer'">调拨</button>
-          <button v-if="selected" type="button" @click="sheet = 'adjust'">调整</button>
+          <button v-if="selected" class="st-button" type="button" @click="sheet = 'consume'">消耗</button>
+          <button v-if="selected" class="st-button" type="button" @click="sheet = 'transfer'">调拨</button>
+          <button v-if="selected" class="st-button" type="button" @click="sheet = 'adjust'">调整</button>
         </template>
       </template>
     </StPageHeader>
-    <p v-if="error" role="alert">{{ error }}</p>
-    <p v-else-if="loading">正在加载库存…</p>
+    <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
+    <p v-else-if="loading" class="st-feedback">正在加载库存…</p>
     <InventoryReceiveView v-else-if="mode === 'receive'" :role="role" @saved="saved" />
     <StEmptyState v-else-if="entries.length === 0" title="暂无库存" description="完成首次入库后，库存条目会显示在这里。" />
     <div v-else class="inventory-workspace">

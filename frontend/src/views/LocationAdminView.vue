@@ -44,35 +44,30 @@ async function copy() {
 </script>
 
 <template>
-  <section>
+  <section class="st-page">
     <StPageHeader title="位置管理" description="位置用于记录物品存放处；创建位置时系统会自动生成唯一、稳定的位置码。">
       <template #actions>
-        <button type="button" @click="startCreating">{{ selected ? '添加子位置' : '创建位置' }}</button>
+        <button class="st-button st-button--primary" type="button" @click="startCreating">{{ selected ? '添加子位置' : '创建位置' }}</button>
       </template>
     </StPageHeader>
-    <p v-if="error" role="alert">{{ error }}</p>
+    <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
     <LocationEditor v-if="editing && !nodes.length" @save="save" />
     <StEmptyState v-else-if="!nodes.length" title="还没有位置" description="先创建第一个顶级位置，例如“家”或“仓库”。">
-      <button type="button" @click="startCreating">创建第一个位置</button>
+      <button class="st-button st-button--primary" type="button" @click="startCreating">创建第一个位置</button>
     </StEmptyState>
     <div v-else class="admin-grid">
       <LocationTree :nodes="nodes" :selected-id="selected?.id" @select="selected = $event" />
       <LocationEditor v-if="editing" :parent="selected" @save="save" />
-      <article v-else-if="selected">
+      <article v-else-if="selected" class="admin-detail">
         <h2>{{ selected.name }}</h2>
         <p>{{ selected.fullPath }}</p>
         <h3>位置码</h3>
         <p>系统在创建位置时自动生成。它不会随位置改名而改变，可复制后制作成二维码贴在实物位置上。</p>
         <code>stocket:location:{{ selected.publicCode }}</code>
-        <button type="button" @click="copy">复制位置码</button>
+        <button class="st-button" type="button" @click="copy">复制位置码</button>
       </article>
     </div>
   </section>
 </template>
 
-<style scoped>
-.admin-grid { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(300px, 2fr); gap: var(--st-space-6); }
-article button { display: block; margin-top: var(--st-space-4); }
-code { overflow-wrap: anywhere; }
-@media (max-width: 720px) { .admin-grid { grid-template-columns: 1fr; } }
-</style>
+<style scoped>.admin-detail button { margin-top: var(--st-space-4); }</style>

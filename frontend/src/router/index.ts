@@ -31,7 +31,7 @@ export function createStocketRouter(authState: Ref<AuthState>, history: RouterHi
       { path: '/receive', name: 'receive', component: ReceiveWizardView, meta: { requiresAuth: true, roles: ['ADMIN', 'MEMBER'] } },
       { path: '/reminders', name: 'reminders', component: RemindersView, meta: { requiresAuth: true } },
       { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
-      { path: '/inventory/:id?', name: 'inventory', component: InventoryEntryView, meta: { requiresAuth: true, roles: ['ADMIN', 'MEMBER', 'VIEWER'] } },
+      { path: '/inventory/:entryId?', name: 'inventory', component: InventoryEntryView, props: true, meta: { requiresAuth: true, roles: ['ADMIN', 'MEMBER', 'VIEWER'] } },
       { path: '/notification-settings', name: 'notification-settings', component: NotificationSettingsView, meta: { requiresAuth: true } },
       { path: '/admin/members', name: 'members', component: AdminMembersView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
       { path: '/admin/invites', name: 'invites', component: AdminInvitesView, meta: { requiresAuth: true, roles: ['ADMIN'] } },

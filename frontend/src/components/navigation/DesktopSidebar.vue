@@ -39,6 +39,6 @@ const adminItems = [
         <component :is="item.icon" aria-hidden="true" /><span>{{ item.label }}</span>
       </RouterLink>
     </nav>
-    <button class="desktop-sidebar__logout" type="button" @click="emit('logout')">退出登录</button>
+    <button class="desktop-sidebar__logout st-button" type="button" @click="emit('logout')">退出登录</button>
   </aside>
 </template>
