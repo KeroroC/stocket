@@ -17,7 +17,7 @@ function handleCommand(command: string) {
 </script>
 
 <template>
-  <el-header class="desktop-topbar" aria-label="桌面顶栏">
+  <el-header class="desktop-topbar" tag="header" role="banner" aria-label="桌面顶栏">
     <div class="desktop-topbar__search">
       <GlobalSearch compact />
     </div>

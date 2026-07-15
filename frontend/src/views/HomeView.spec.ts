@@ -13,6 +13,7 @@ function renderHome() {
     routes: [
       { path: '/', component: HomeView },
       { path: '/receive', component: { template: '<div>入库</div>' } },
+      { path: '/reminders', component: { template: '<div>提醒</div>' } },
     ],
   })
 
@@ -31,6 +32,8 @@ describe('HomeView', () => {
     expect(screen.getByRole('link', { name: '快捷入库' })).toBeInTheDocument()
     const labels = screen.getAllByRole('heading', { level: 3 }).map((node) => node.textContent)
     expect(labels).toEqual(['30 天内到期', '已过期', '低库存', '待处理项目'])
+    expect(screen.getAllByRole('link', { name: /查看提醒/ })).toHaveLength(4)
+    expect(await screen.findByRole('link', { name: '6 项待处理' })).toHaveAttribute('href', '/reminders')
   })
 
   it('搜索结果显示库存、位置、最近批次和最早过期', async () => {

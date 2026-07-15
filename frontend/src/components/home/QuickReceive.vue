@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus } from '@element-plus/icons-vue'
+import { ArrowRight, Plus } from '@element-plus/icons-vue'
 </script>
 <template>
   <RouterLink class="quick-receive" to="/receive" aria-label="快捷入库">
@@ -8,6 +8,6 @@ import { Plus } from '@element-plus/icons-vue'
       <strong>快捷入库</strong>
       <small>扫描条码或手动添加物品</small>
     </span>
-    <span class="quick-receive__action">开始入库</span>
+    <span class="quick-receive__action">开始入库<ArrowRight aria-hidden="true" /></span>
   </RouterLink>
 </template>
