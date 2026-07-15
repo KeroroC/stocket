@@ -1,17 +1,26 @@
 <script setup lang="ts">
 import { Search } from '@element-plus/icons-vue'
 import { useGlobalSearch } from '../../dashboard/useGlobalSearch'
+
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 const search = useGlobalSearch()
 </script>
 <template>
-  <section class="global-search" aria-label="全局搜索">
+  <section class="global-search" :class="{ 'global-search--compact': compact }" aria-label="全局搜索">
     <label class="global-search__field">
       <Search aria-hidden="true" />
       <span class="sr-only">全局搜索</span>
-      <input v-model="search.query.value" type="search" aria-label="全局搜索" placeholder="搜索名称、条码或位置" />
+      <input
+        v-model="search.query.value"
+        type="search"
+        aria-label="全局搜索"
+        placeholder="搜索名称、条码或位置"
+      />
     </label>
     <p v-if="search.loading.value" class="global-search__status">搜索中…</p>
-    <p v-if="search.error.value" class="global-search__status global-search__status--error" role="alert">{{ search.error.value }}</p>
+    <p v-if="search.error.value" class="global-search__status global-search__status--error" role="alert">
+      {{ search.error.value }}
+    </p>
     <ul v-if="search.results.value.length" class="global-search__results">
       <li v-for="item in search.results.value" :key="item.id">
         <strong>{{ item.name }}</strong>

@@ -6,6 +6,7 @@ import type { AuthState } from './auth/AuthState'
 import { createStocketRouter } from './router'
 import MobileTabBar from './components/navigation/MobileTabBar.vue'
 import DesktopSidebar from './components/navigation/DesktopSidebar.vue'
+import PwaAppShell from './components/PwaAppShell.vue'
 
 afterEach(cleanup)
 
@@ -161,4 +162,27 @@ describe('移动 PWA 应用壳', () => {
     await router.push('/login')
     expect(router.currentRoute.value.path).toBe('/change-password')
   })
+  it('PwaAppShell 在路由模式下渲染桌面侧栏、顶栏和主内容地标', async () => {
+    const account = {
+      id: 'account-1',
+      username: 'member',
+      displayName: '家庭成员',
+      role: 'MEMBER',
+    }
+    const authState = ref<AuthState>({ kind: 'authenticated', account })
+    const router = createStocketRouter(authState, createMemoryHistory())
+    await router.push('/')
+    await router.isReady()
+
+    render(PwaAppShell, {
+      props: { account },
+      global: { plugins: [router] },
+    })
+
+    expect(screen.getByRole('navigation', { name: '桌面主导航' })).toBeInTheDocument()
+    expect(screen.getByRole('banner', { name: '桌面顶栏' })).toBeInTheDocument()
+    expect(document.getElementById('main-content')).not.toBeNull()
+    expect(screen.getByRole('navigation', { name: '移动主导航' })).toBeInTheDocument()
+  })
+
 })

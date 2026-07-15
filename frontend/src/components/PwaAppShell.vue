@@ -3,6 +3,7 @@ import { inject } from 'vue'
 import { routerKey } from 'vue-router'
 import type { CurrentAccount } from '../auth/AuthState'
 import DesktopSidebar from './navigation/DesktopSidebar.vue'
+import DesktopTopBar from './navigation/DesktopTopBar.vue'
 import MobileTabBar from './navigation/MobileTabBar.vue'
 import LegacyAppShell from './AppShell.vue'
 
@@ -24,8 +25,10 @@ const hasRouter = Boolean(inject(routerKey, null))
     @force-password-change="emit('forcePasswordChange')"
   />
   <div v-else class="pwa-shell">
+    <a class="skip-link" href="#main-content">跳到主内容</a>
     <DesktopSidebar :account="account" />
-    <main class="pwa-shell__content">
+    <DesktopTopBar :account="account" @logout="emit('logout')" />
+    <main id="main-content" class="pwa-shell__content" tabindex="-1">
       <RouterView v-slot="{ Component }">
         <component
           :is="Component"
