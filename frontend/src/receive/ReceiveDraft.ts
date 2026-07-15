@@ -1,5 +1,6 @@
 import type { DraftValue } from '../offline/DraftRepository'
 import type { ScanResult } from '../scanner/Scanner'
+import { createReceiveId } from './createReceiveId'
 
 export interface ReceiveItemSelection {
   id: string
@@ -33,7 +34,7 @@ export interface ReceiveDraft extends DraftValue {
 export function newReceiveDraft(now = new Date()): ReceiveDraft {
   const timestamp = now.toISOString()
   return {
-    id: crypto.randomUUID(),
+    id: createReceiveId(),
     createdAt: timestamp,
     updatedAt: timestamp,
     inventoryType: 'BATCH',
@@ -43,6 +44,6 @@ export function newReceiveDraft(now = new Date()): ReceiveDraft {
     serialNumber: '',
     productionDate: '',
     expirationDate: '',
-    idempotencyKey: crypto.randomUUID(),
+    idempotencyKey: createReceiveId(),
   }
 }

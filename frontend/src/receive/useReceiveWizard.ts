@@ -4,6 +4,7 @@ import type { ReceiveInventoryInput } from '../inventory/inventoryModels'
 import { trackDraftWrite } from '../pwa/updateCoordinator'
 import type { ScanResult } from '../scanner/Scanner'
 import { newReceiveDraft, type ReceiveDraft, type ReceiveItemSelection, type ReceiveLocationSelection } from './ReceiveDraft'
+import { createReceiveId } from './createReceiveId'
 import type { ReceiveWizardState } from './ReceiveWizardState'
 
 export interface ReceiveWizardServices {
@@ -45,7 +46,7 @@ export function createReceiveWizard(
 
   function touch(regenerateIntent = true) {
     draft.value.updatedAt = new Date().toISOString()
-    if (regenerateIntent) draft.value.idempotencyKey = crypto.randomUUID()
+    if (regenerateIntent) draft.value.idempotencyKey = createReceiveId()
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => void flush(), 300)
   }
