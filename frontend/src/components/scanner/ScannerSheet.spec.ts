@@ -31,4 +31,16 @@ describe('ScannerSheet', () => {
 
     expect(emitted().result?.[0]).toEqual([{ kind: 'PRODUCT_BARCODE', value: 'ABC-1' }])
   })
+
+  it('在非安全连接中说明摄像头无法请求权限的原因', async () => {
+    const scanner = {
+      availabilityError: () => 'CAMERA_INSECURE_CONTEXT' as const,
+      start: vi.fn(),
+      stop: vi.fn(),
+    }
+    render(ScannerSheet, { props: { modelValue: true, scanner } })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('HTTPS')
+    expect(scanner.start).not.toHaveBeenCalled()
+  })
 })

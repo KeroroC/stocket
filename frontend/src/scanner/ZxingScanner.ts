@@ -1,5 +1,5 @@
 import { BrowserMultiFormatReader } from '@zxing/browser'
-import type { Scanner, ScanResult } from './Scanner'
+import type { Scanner, ScannerAvailabilityError, ScanResult } from './Scanner'
 import { parseScanPayload } from './scanPayload'
 
 interface ReaderResult { getText(): string }
@@ -13,7 +13,7 @@ interface ReaderAdapter {
 }
 
 export class ScannerError extends Error {
-  constructor(public readonly code: 'CAMERA_PERMISSION_DENIED' | 'CAMERA_NOT_FOUND' | 'CAMERA_UNAVAILABLE') {
+  constructor(public readonly code: ScannerAvailabilityError) {
     super(code)
   }
 }
@@ -27,6 +27,16 @@ export class ZxingScanner implements Scanner {
   private lastAt = Number.NEGATIVE_INFINITY
 
   constructor(private readonly reader: ReaderAdapter = new BrowserMultiFormatReader() as ReaderAdapter) {}
+
+  availabilityError(): ScannerAvailabilityError | undefined {
+    if (typeof window !== 'undefined' && window.isSecureContext === false) {
+      return 'CAMERA_INSECURE_CONTEXT'
+    }
+    if (typeof navigator !== 'undefined' && !navigator.mediaDevices?.getUserMedia) {
+      return 'CAMERA_UNSUPPORTED'
+    }
+    return undefined
+  }
 
   async start(video: HTMLVideoElement, onResult: (result: ScanResult) => void): Promise<void> {
     await this.stop()

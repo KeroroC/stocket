@@ -16,20 +16,29 @@ const manualValue = ref('')
 const facingMode = ref<'environment' | 'user'>('environment')
 const torchEnabled = ref(false)
 
+function errorMessage(code?: string): string {
+  if (code === 'CAMERA_PERMISSION_DENIED') return '摄像头权限被拒绝，请授权或使用手工输入。'
+  if (code === 'CAMERA_NOT_FOUND') return '未找到可用摄像头，请使用手工输入。'
+  if (code === 'CAMERA_INSECURE_CONTEXT') return '摄像头仅能在安全连接中使用。请通过 HTTPS 地址打开此页面，手机不能通过 http://局域网 IP 授权。'
+  if (code === 'CAMERA_UNSUPPORTED') return '当前浏览器不支持摄像头访问，请使用最新版 Safari、Chrome 或手工输入。'
+  return '摄像头暂不可用，请稍后重试。'
+}
+
 async function start() {
   if (!props.modelValue) return
   await nextTick()
   if (!video.value) return
   error.value = ''
+  const availabilityError = props.scanner.availabilityError?.()
+  if (availabilityError) {
+    error.value = errorMessage(availabilityError)
+    return
+  }
   try {
     await props.scanner.start(video.value, (result) => emit('result', result))
   } catch (cause) {
     const code = (cause as { code?: string }).code
-    error.value = code === 'CAMERA_PERMISSION_DENIED'
-      ? '摄像头权限被拒绝，请授权或使用手工输入。'
-      : code === 'CAMERA_NOT_FOUND'
-        ? '未找到可用摄像头，请使用手工输入。'
-        : '摄像头暂不可用，请稍后重试。'
+    error.value = errorMessage(code)
   }
 }
 
