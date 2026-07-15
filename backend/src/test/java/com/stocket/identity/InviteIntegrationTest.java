@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -262,7 +263,7 @@ class InviteIntegrationTest {
                 com.jayway.jsonpath.JsonPath.read(createResponse, "$.id").toString());
 
         // Extend invite
-        Instant newExpiry = Instant.now().plus(Duration.ofDays(7));
+        Instant newExpiry = Instant.now().plus(Duration.ofDays(7)).truncatedTo(ChronoUnit.MICROS);
         mockMvc.perform(patch("/api/v1/admin/invites/{inviteId}/extend", inviteId)
                         .with(csrf())
                         .cookie(new jakarta.servlet.http.Cookie("STOCKET_SESSION", adminCookie))
