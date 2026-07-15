@@ -28,7 +28,6 @@ import com.stocket.reminder.internal.lifecycle.ReminderRecalculator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 
 @Testcontainers
@@ -100,7 +99,6 @@ class EventPublicationRecoveryTest {
                 BigDecimal.class, entryId)).isEqualByComparingTo("4");
         assertThat(reminderCount()).isZero();
 
-        doCallRealMethod().when(recalculator).recalculate(any(), any(), any(), any());
         incompletePublications.resubmitIncompletePublications(event -> true);
 
         await(() -> completedPublicationCount() == 1 && reminderCount() == 1);
