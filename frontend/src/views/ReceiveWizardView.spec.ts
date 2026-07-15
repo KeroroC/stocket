@@ -50,6 +50,31 @@ describe('ReceiveWizardView', () => {
     expect(await screen.findByText('位置：冰箱')).toBeInTheDocument()
   })
 
+  it('无需扫码即可从有效位置列表选择存放位置', async () => {
+    const services = {
+      findByBarcode: vi.fn(), resolveLocation: vi.fn(), getAvailability: vi.fn(),
+      refreshItem: vi.fn(), refreshLocation: vi.fn(), receive: vi.fn(),
+    }
+    const wizard = createReceiveWizard('account-1', new MemoryDraftRepository(), services)
+    wizard.selectItem({ id: 'item-1', name: '牛奶', version: 1, categoryId: 'cat', defaultInventoryType: 'BATCH' })
+    wizard.next()
+    wizard.next()
+
+    render(ReceiveWizardView, {
+      props: {
+        wizard,
+        locations: [
+          { id: 'loc-1', name: '冰箱', fullPath: '家 > 厨房 > 冰箱', version: 1 },
+          { id: 'loc-2', name: '储物柜', fullPath: '家 > 储物间 > 储物柜', version: 2 },
+        ],
+      },
+    })
+
+    await fireEvent.update(screen.getByLabelText('存放位置'), 'loc-2')
+    expect(wizard.draft.value.location).toEqual(expect.objectContaining({ id: 'loc-2', name: '储物柜' }))
+    expect(screen.getByText('位置：家 > 储物间 > 储物柜')).toBeInTheDocument()
+  })
+
   it('重新进入页面时恢复当前账号最近草稿', async () => {
     const repository = new MemoryDraftRepository<any>()
     const services = {

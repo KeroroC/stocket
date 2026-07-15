@@ -13,6 +13,8 @@ const items = [
   { to: '/profile', label: '我的', icon: User },
 ]
 const adminItems = [
+  { to: '/admin/categories', label: '分类管理', icon: Box },
+  { to: '/admin/locations', label: '位置管理', icon: HomeFilled },
   { to: '/admin/audit-logs', label: '审计日志', icon: DocumentChecked },
   { to: '/admin/diagnostics', label: '系统诊断', icon: FirstAidKit },
 ]

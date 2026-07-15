@@ -24,4 +24,23 @@ describe('ProfileView', () => {
     await fireEvent.click(screen.getByRole('button', { name: '退出登录' }))
     expect(emitted().logout).toBeTruthy()
   })
+
+  it('管理员可以从我的页面进入分类和位置管理', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: ProfileView },
+        { path: '/notification-settings', component: { template: '<div />' } },
+        { path: '/admin/categories', component: { template: '<div />' } },
+        { path: '/admin/locations', component: { template: '<div />' } },
+      ],
+    })
+    render(ProfileView, {
+      props: { account: { id: 'a1', username: 'admin', displayName: '管理员', role: 'ADMIN' } },
+      global: { plugins: [router] },
+    })
+
+    expect(screen.getByRole('link', { name: '分类管理' })).toHaveAttribute('href', '/admin/categories')
+    expect(screen.getByRole('link', { name: '位置管理' })).toHaveAttribute('href', '/admin/locations')
+  })
 })

@@ -1,3 +1,78 @@
-<script setup lang="ts">import { onMounted, ref } from 'vue'; import { createLocation, listLocations, type LocationNode } from '../api/location'; import StPageHeader from '../components/StPageHeader.vue'; import StEmptyState from '../components/StEmptyState.vue'; import LocationTree from '../components/location/LocationTree.vue'; import LocationEditor from '../components/location/LocationEditor.vue'; const nodes=ref<LocationNode[]>([]),selected=ref<LocationNode>(),editing=ref(false); onMounted(async()=>{nodes.value=await listLocations();selected.value=nodes.value[0]}); async function save(data:Parameters<typeof createLocation>[0]){nodes.value.push(await createLocation(data));editing.value=false} async function copy(){if(selected.value)await navigator.clipboard.writeText(`stocket:location:${selected.value.publicCode}`)}</script>
-<template><section><StPageHeader title="位置管理" description="维护位置树与稳定位置码"><template #actions><button @click="editing=true">添加子位置</button></template></StPageHeader><StEmptyState v-if="!nodes.length" title="还没有位置"/><div v-else class="admin-grid"><LocationTree :nodes="nodes" :selected-id="selected?.id" @select="selected=$event"/><LocationEditor v-if="editing" :parent="selected" @save="save"/><article v-else-if="selected"><h2>{{ selected.name }}</h2><p>{{ selected.fullPath }}</p><code>stocket:location:{{ selected.publicCode }}</code><button @click="copy">复制位置码</button></article></div></section></template>
-<style scoped>.admin-grid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(300px,2fr);gap:var(--st-space-6)}article button{display:block;margin-top:var(--st-space-4)}@media(max-width:720px){.admin-grid{grid-template-columns:1fr}}</style>
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { createLocation, listLocations, type LocationNode } from '../api/location'
+import StPageHeader from '../components/StPageHeader.vue'
+import StEmptyState from '../components/StEmptyState.vue'
+import LocationTree from '../components/location/LocationTree.vue'
+import LocationEditor from '../components/location/LocationEditor.vue'
+
+const nodes = ref<LocationNode[]>([])
+const selected = ref<LocationNode>()
+const editing = ref(false)
+const error = ref('')
+
+onMounted(load)
+
+async function load() {
+  try {
+    nodes.value = await listLocations()
+    selected.value = nodes.value[0]
+  } catch (cause) {
+    error.value = (cause as { detail?: string }).detail ?? '位置加载失败'
+  }
+}
+
+function startCreating() {
+  editing.value = true
+}
+
+async function save(data: Parameters<typeof createLocation>[0]) {
+  try {
+    const node = await createLocation(data)
+    nodes.value.push(node)
+    selected.value = node
+    editing.value = false
+    error.value = ''
+  } catch (cause) {
+    error.value = (cause as { detail?: string }).detail ?? '保存失败'
+  }
+}
+
+async function copy() {
+  if (selected.value) await navigator.clipboard.writeText(`stocket:location:${selected.value.publicCode}`)
+}
+</script>
+
+<template>
+  <section>
+    <StPageHeader title="位置管理" description="位置用于记录物品存放处；创建位置时系统会自动生成唯一、稳定的位置码。">
+      <template #actions>
+        <button type="button" @click="startCreating">{{ selected ? '添加子位置' : '创建位置' }}</button>
+      </template>
+    </StPageHeader>
+    <p v-if="error" role="alert">{{ error }}</p>
+    <LocationEditor v-if="editing && !nodes.length" @save="save" />
+    <StEmptyState v-else-if="!nodes.length" title="还没有位置" description="先创建第一个顶级位置，例如“家”或“仓库”。">
+      <button type="button" @click="startCreating">创建第一个位置</button>
+    </StEmptyState>
+    <div v-else class="admin-grid">
+      <LocationTree :nodes="nodes" :selected-id="selected?.id" @select="selected = $event" />
+      <LocationEditor v-if="editing" :parent="selected" @save="save" />
+      <article v-else-if="selected">
+        <h2>{{ selected.name }}</h2>
+        <p>{{ selected.fullPath }}</p>
+        <h3>位置码</h3>
+        <p>系统在创建位置时自动生成。它不会随位置改名而改变，可复制后制作成二维码贴在实物位置上。</p>
+        <code>stocket:location:{{ selected.publicCode }}</code>
+        <button type="button" @click="copy">复制位置码</button>
+      </article>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.admin-grid { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(300px, 2fr); gap: var(--st-space-6); }
+article button { display: block; margin-top: var(--st-space-4); }
+code { overflow-wrap: anywhere; }
+@media (max-width: 720px) { .admin-grid { grid-template-columns: 1fr; } }
+</style>

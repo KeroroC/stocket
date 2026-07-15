@@ -13,6 +13,7 @@ export interface ReceiveItemSelection {
 export interface ReceiveLocationSelection {
   id: string
   name: string
+  fullPath?: string
   version: number
 }
 

@@ -50,6 +50,19 @@ describe('移动 PWA 应用壳', () => {
     expect(screen.getByText('家庭成员')).toBeInTheDocument()
   })
 
+  it('管理员桌面侧栏提供分类和位置管理入口', async () => {
+    const adminAccount = { ...account, role: 'ADMIN' }
+    const authState = ref<AuthState>({ kind: 'authenticated', account: adminAccount })
+    const router = createStocketRouter(authState, createMemoryHistory())
+    await router.push('/')
+    await router.isReady()
+
+    render(DesktopSidebar, { props: { account: adminAccount }, global: { plugins: [router] } })
+
+    expect(screen.getByRole('link', { name: '分类管理' })).toHaveAttribute('href', '/admin/categories')
+    expect(screen.getByRole('link', { name: '位置管理' })).toHaveAttribute('href', '/admin/locations')
+  })
+
   it('未登录时阻止进入认证路由并重定向登录', async () => {
     const authState = ref<AuthState>({ kind: 'anonymous' })
     const router = createStocketRouter(authState, createMemoryHistory())

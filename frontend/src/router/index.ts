@@ -16,6 +16,8 @@ import PasswordChangeView from '../views/PasswordChangeView.vue'
 import HomeView from '../views/HomeView.vue'
 import AuditLogView from '../views/AuditLogView.vue'
 import DiagnosticsView from '../views/DiagnosticsView.vue'
+import CategoryAdminView from '../views/CategoryAdminView.vue'
+import LocationAdminView from '../views/LocationAdminView.vue'
 
 export function createStocketRouter(authState: Ref<AuthState>, history: RouterHistory = createWebHistory()) {
   const router = createRouter({
@@ -30,6 +32,8 @@ export function createStocketRouter(authState: Ref<AuthState>, history: RouterHi
       { path: '/notification-settings', name: 'notification-settings', component: NotificationSettingsView, meta: { requiresAuth: true } },
       { path: '/admin/audit-logs', name: 'audit-logs', component: AuditLogView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
       { path: '/admin/diagnostics', name: 'diagnostics', component: DiagnosticsView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
+      { path: '/admin/categories', name: 'categories', component: CategoryAdminView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
+      { path: '/admin/locations', name: 'locations', component: LocationAdminView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
       { path: '/login', name: 'login', component: LoginView },
       { path: '/change-password', name: 'change-password', component: PasswordChangeView },
     ],
