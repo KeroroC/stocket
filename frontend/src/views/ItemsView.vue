@@ -38,18 +38,26 @@ async function save(data: ItemInput) {
 <template>
   <section class="st-page catalog-page">
     <StPageHeader title="物品目录" description="按名称或条码快速查找">
-      <template v-if="canWrite" #actions><button class="st-button st-button--primary" @click="creating = true">创建物品</button></template>
+      <template v-if="canWrite" #actions><button class="st-button st-button--primary" type="button" @click="creating = true">创建物品</button></template>
     </StPageHeader>
-    <div class="browse-switch" role="group" aria-label="浏览方式">
-      <button type="button" :aria-pressed="browseMode === 'category'" @click="browseMode = 'category'">按分类</button>
-      <button type="button" :aria-pressed="browseMode === 'location'" @click="browseMode = 'location'">按位置</button>
+    <div class="catalog-page__toolbar st-toolbar">
+      <div class="browse-switch" role="group" aria-label="浏览方式">
+        <button type="button" :aria-pressed="browseMode === 'category'" @click="browseMode = 'category'">按分类</button>
+        <button type="button" :aria-pressed="browseMode === 'location'" @click="browseMode = 'location'">按位置</button>
+      </div>
+      <label class="search-label">搜索物品<input v-model="search.query.value" type="search" aria-label="搜索物品" /></label>
     </div>
-    <ul v-if="browseMode === 'category'" class="browse-list" aria-label="分类浏览"><li v-for="category in categories" :key="category.id">{{ category.name }}</li></ul>
-    <ul v-else class="browse-list" aria-label="位置浏览"><li v-for="location in locations" :key="location.id">{{ location.fullPath }}</li></ul>
-    <label class="search-label">搜索物品<input v-model="search.query.value" type="search" aria-label="搜索物品" /></label>
     <p v-if="search.error.value || error" class="st-feedback st-feedback--error" role="alert">{{ search.error.value || error }}</p>
-    <ItemForm v-if="creating" :categories="categories" @save="save" />
-    <ItemDetailView v-else-if="selectedId" :item-id="selectedId" :role="role" />
-    <ItemSearchResults v-else :items="search.results.value" :searched="Boolean(search.query.value.trim())" :loading="search.loading.value" @select="selectedId = $event.id" />
+    <div class="catalog-page__workspace">
+      <aside class="catalog-page__tree">
+        <ul v-if="browseMode === 'category'" class="browse-list" aria-label="分类浏览"><li v-for="category in categories" :key="category.id">{{ category.name }}</li></ul>
+        <ul v-else class="browse-list" aria-label="位置浏览"><li v-for="location in locations" :key="location.id">{{ location.fullPath }}</li></ul>
+      </aside>
+      <div class="catalog-page__main">
+        <ItemForm v-if="creating" :categories="categories" @save="save" />
+        <ItemDetailView v-else-if="selectedId" :item-id="selectedId" :role="role" />
+        <ItemSearchResults v-else :items="search.results.value" :searched="Boolean(search.query.value.trim())" :loading="search.loading.value" @select="selectedId = $event.id" />
+      </div>
+    </div>
   </section>
 </template>

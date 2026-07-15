@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import type { InviteListItem } from '../api/identity'
+import StPageHeader from '../components/StPageHeader.vue'
+import { useDesktopLayout } from '../composables/useDesktopLayout'
 import {
   getInvites as apiGetInvites,
   createInvite as apiCreateInvite,
@@ -12,6 +14,8 @@ const emit = defineEmits<{
   logout: []
   forcePasswordChange: []
 }>()
+
+const { isDesktop } = useDesktopLayout()
 
 // Invites state
 const invites = ref<InviteListItem[]>([])
@@ -187,13 +191,12 @@ function formatStatusType(status: string): string {
 </script>
 
 <template>
-  <div class="admin-invites-view">
-    <div class="section-header">
-      <h2 class="section-title">邀请管理</h2>
-      <button class="auth-submit" style="width: auto; font-size: 0.875rem;" @click="openCreateDialog">
-        创建邀请
-      </button>
-    </div>
+  <section class="st-page admin-invites-view">
+    <StPageHeader title="邀请管理" description="创建和管理一次性邀请链接">
+      <template #actions>
+        <button class="st-button st-button--primary" type="button" @click="openCreateDialog">创建邀请</button>
+      </template>
+    </StPageHeader>
 
     <div v-if="error" role="alert" class="auth-error">
       {{ error }}
@@ -201,7 +204,43 @@ function formatStatusType(status: string): string {
 
     <div v-if="loading" class="auth-loading">加载中...</div>
 
-    <ul v-if="invites.length > 0" class="invite-list">
+    <div v-if="isDesktop && invites.length > 0" class="st-table-wrapper admin-table-fallback">
+      <table class="st-table">
+        <thead>
+          <tr>
+            <th>状态</th>
+            <th>角色</th>
+            <th>有效期</th>
+            <th>使用次数</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="invite in invites" :key="`table-${invite.id}`">
+            <td>{{ formatStatus(invite.status) }}</td>
+            <td>{{ formatRole(invite.role) }}</td>
+            <td>{{ new Date(invite.expiresAt).toLocaleString() }}</td>
+            <td>{{ invite.useCount }}/{{ invite.maxUses }}</td>
+            <td class="st-table__actions">
+              <button
+                v-if="canExtend(invite)"
+                class="st-button st-button--text"
+                type="button"
+                @click="openExtendDialog(invite.id, invite.expiresAt)"
+              >延长</button>
+              <button
+                v-if="invite.status === 'PENDING'"
+                class="st-button st-button--text"
+                type="button"
+                @click="handleRevokeInvite(invite.id)"
+              >撤销</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ul v-if="!isDesktop && invites.length > 0" class="invite-list">
       <li v-for="invite in invites" :key="invite.id" class="invite-item">
         <div class="invite-item-info">
           <el-tag :type="formatStatusType(invite.status) as any" size="small">
@@ -345,7 +384,7 @@ function formatStatusType(status: string): string {
         </button>
       </template>
     </el-dialog>
-  </div>
+  </section>
 </template>
 
 <style scoped>

@@ -29,6 +29,8 @@ test('320/390/768/1440 宽度无横向滚动且导航不遮挡正文', async ({ 
     } else {
       expect(layout.mobileVisible).toBe(false)
       await expect(page.getByRole('navigation', { name: '桌面主导航' })).toBeVisible()
+      await expect(page.getByRole('banner', { name: '桌面顶栏' })).toBeVisible()
+      await expect(page.getByRole('searchbox', { name: '全局搜索' })).toBeVisible()
     }
   }
 

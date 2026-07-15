@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import type { MemberInfo } from '../api/identity'
+import StPageHeader from '../components/StPageHeader.vue'
+import { useDesktopLayout } from '../composables/useDesktopLayout'
 import {
   getMembers as apiGetMembers,
   createMember as apiCreateMember,
@@ -14,6 +16,8 @@ const emit = defineEmits<{
   logout: []
   forcePasswordChange: []
 }>()
+
+const { isDesktop } = useDesktopLayout()
 
 // Members state
 const members = ref<MemberInfo[]>([])
@@ -202,13 +206,12 @@ function formatRole(role: string): string {
 </script>
 
 <template>
-  <div class="admin-members-view">
-    <div class="section-header">
-      <h2 class="section-title">成员管理</h2>
-      <button class="auth-submit" style="width: auto; font-size: 0.875rem;" @click="openCreateDialog">
-        创建成员
-      </button>
-    </div>
+  <section class="st-page admin-members-view">
+    <StPageHeader title="成员管理" description="管理家庭成员角色与访问状态">
+      <template #actions>
+        <button class="st-button st-button--primary" type="button" @click="openCreateDialog">创建成员</button>
+      </template>
+    </StPageHeader>
 
     <div v-if="error" role="alert" class="auth-error">
       {{ error }}
@@ -216,7 +219,36 @@ function formatRole(role: string): string {
 
     <div v-if="loading" class="auth-loading">加载中...</div>
 
-    <ul v-if="members.length > 0" class="member-list">
+    <div v-if="isDesktop && members.length > 0" class="st-table-wrapper admin-table-fallback">
+      <table class="st-table">
+        <thead>
+          <tr>
+            <th>显示名</th>
+            <th>用户名</th>
+            <th>角色</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="member in members" :key="`table-${member.id}`">
+            <td>{{ member.displayName }}</td>
+            <td>@{{ member.username }}</td>
+            <td>{{ formatRole(member.role) }}</td>
+            <td>{{ member.enabled ? '启用' : '停用' }}</td>
+            <td class="st-table__actions">
+              <button class="st-button st-button--text" type="button" @click="openEditRoleDialog(member)">修改角色</button>
+              <button class="st-button st-button--text" type="button" @click="handleToggleEnabled(member)">
+                {{ member.enabled ? '禁用' : '启用' }}
+              </button>
+              <button class="st-button st-button--text" type="button" @click="handleResetPassword(member)">重置密码</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ul v-if="!isDesktop && members.length > 0" class="member-list">
       <li v-for="member in members" :key="member.id" class="member-item">
         <div class="member-info">
           <span class="member-name">{{ member.displayName }}</span>
@@ -367,5 +399,5 @@ function formatRole(role: string): string {
         </button>
       </template>
     </el-dialog>
-  </div>
+  </section>
 </template>

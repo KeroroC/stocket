@@ -19,12 +19,16 @@ onMounted(async () => {
       <div>
         <p class="home-view__eyebrow">家庭库存概览</p>
         <h1>今天需要关注什么？</h1>
+        <p>快速找到物品、完成入库，并及时处理库存提醒。</p>
       </div>
-      <p>快速找到物品、完成入库，并及时处理库存提醒。</p>
+      <div class="home-view__actions">
+        <QuickReceive />
+      </div>
     </header>
 
-    <GlobalSearch />
-    <QuickReceive />
+    <div class="home-view__search">
+      <GlobalSearch />
+    </div>
     <p v-if="error" class="home-view__error" role="alert">{{ error }}</p>
     <AttentionList :summary="summary" />
   </section>

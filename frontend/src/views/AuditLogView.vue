@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue'
 import { listAuditLogs, type AuditEntry } from '../api/audit'
 import StPageHeader from '../components/StPageHeader.vue'
+import { useDesktopLayout } from '../composables/useDesktopLayout'
+const { isDesktop } = useDesktopLayout()
 const items=ref<AuditEntry[]>([]);const nextCursor=ref<string>();const loading=ref(false);const error=ref('');const copied=ref('')
 const filters=reactive({eventType:'',outcome:'',requestId:''})
 onMounted(()=>load(false))
@@ -19,7 +21,36 @@ const detailLabel:Record<string,string>={ownerType:'对象类型',ownerId:'对�
       <button type="submit">筛选</button>
     </form>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
-    <ul class="audit-list">
+    <div v-if="isDesktop && items.length" class="st-table-wrapper audit-table">
+      <table class="st-table">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>事件</th>
+            <th>结果</th>
+            <th>操作人</th>
+            <th>对象</th>
+            <th>Request ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in items" :key="`table-${item.id}`">
+            <td><time :datetime="item.occurredAt">{{ new Date(item.occurredAt).toLocaleString() }}</time></td>
+            <td>{{ item.eventType }}</td>
+            <td>{{ item.outcome }}</td>
+            <td>{{ item.actorDisplayName ?? '系统' }}</td>
+            <td>{{ item.subjectType }} {{ item.subjectId ?? '' }}</td>
+            <td>
+              <template v-if="item.requestId">
+                <code>{{ item.requestId }}</code>
+                <button class="st-button st-button--text" type="button" :aria-label="`复制 request ID ${item.requestId}`" @click="copy(item.requestId)">复制</button>
+              </template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ul v-if="!isDesktop" class="audit-list">
       <li v-for="item in items" :key="item.id">
         <header>
           <strong>{{ item.eventType }}</strong>

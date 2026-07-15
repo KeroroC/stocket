@@ -23,6 +23,10 @@
   gap: var(--st-space-4);
 }
 
+.home-view__actions {
+  display: grid;
+}
+
 .home-view__header {
   display: grid;
   gap: var(--st-space-2);
@@ -594,9 +598,17 @@
   }
 
   .home-view__header,
-  .global-search,
+  .home-view__search,
   .home-view__error {
     grid-column: 1 / -1;
+  }
+
+  .home-view__search {
+    display: none;
+  }
+
+  .home-view__actions {
+    display: block;
   }
 
   .home-view__header {
