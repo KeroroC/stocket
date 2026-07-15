@@ -34,3 +34,6 @@ logs/
 
 # Local WorkBuddy state
 .workbuddy
+
+# Temporary certificate file
+frontend/*.pem
