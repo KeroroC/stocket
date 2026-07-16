@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import type { CurrentAccount } from '../auth/AuthState'
 import type { SessionInfo } from '../api/identity'
+import { useDesktopLayout } from '../composables/useDesktopLayout'
 import {
   getCurrentAccount,
   updateProfile as apiUpdateProfile,
@@ -14,6 +15,8 @@ import {
 const props = defineProps<{
   account: CurrentAccount
 }>()
+
+const { isDesktop } = useDesktopLayout()
 
 const emit = defineEmits<{
   logout: []
@@ -198,11 +201,21 @@ async function handleRevokeOtherSessions() {
       <el-tab-pane label="活跃会话">
         <el-alert v-if="sessionError" :title="sessionError" type="error" show-icon :closable="false" />
         <el-skeleton v-if="sessionsLoading" :rows="3" animated />
-        <el-table v-else-if="sessions.length" :data="sessions" row-key="id">
+        <el-table v-else-if="isDesktop && sessions.length" :data="sessions" row-key="id">
           <el-table-column label="设备" min-width="220"><template #default="{ row }">{{ row.userAgent ?? '未知设备' }} <el-tag v-if="row.current" size="small" type="success">当前会话</el-tag></template></el-table-column>
           <el-table-column label="最后活跃" min-width="180"><template #default="{ row }">{{ new Date(row.lastSeenAt).toLocaleString() }}</template></el-table-column>
           <el-table-column label="操作" width="100"><template #default="{ row }"><el-button v-if="!row.current" link type="danger" @click="handleRevokeSession(row.id)">撤销</el-button></template></el-table-column>
         </el-table>
+        <ul v-else-if="sessions.length" class="session-list">
+          <li v-for="session in sessions" :key="session.id" :class="['session-item', { current: session.current }]">
+            <div class="session-info">
+              <strong class="session-agent">{{ session.userAgent ?? '未知设备' }}</strong>
+              <span v-if="session.current" class="session-current-badge">当前会话</span>
+              <time class="session-time" :datetime="session.lastSeenAt">最后活跃：{{ new Date(session.lastSeenAt).toLocaleString() }}</time>
+            </div>
+            <button v-if="!session.current" type="button" class="session-revoke-btn" @click="handleRevokeSession(session.id)">撤销</button>
+          </li>
+        </ul>
         <el-empty v-else description="暂无活跃会话" />
         <el-button v-if="sessions.length > 1" type="danger" plain @click="handleRevokeOtherSessions">撤销其他全部会话</el-button>
       </el-tab-pane>

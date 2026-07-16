@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import type { MemberInfo } from '../api/identity'
 import StPageHeader from '../components/StPageHeader.vue'
+import StEmptyState from '../components/StEmptyState.vue'
 import { useDesktopLayout } from '../composables/useDesktopLayout'
 import {
   getMembers as apiGetMembers,
@@ -244,7 +245,7 @@ function formatRole(role: string): string {
       </li>
     </ul>
 
-    <p v-else-if="!loading" class="auth-loading">暂无成员</p>
+    <StEmptyState v-if="!loading && !error && members.length === 0" title="还没有家庭成员" description="创建成员后，可以在这里维护角色、状态和临时密码。" />
 
     <!-- Create member dialog -->
     <el-dialog

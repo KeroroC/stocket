@@ -170,7 +170,7 @@ describe('AppShell', () => {
 
     await waitFor(() => {
       const content = screen.getByRole('main')
-      expect(within(content).getByText(/创建成员/)).toBeInTheDocument()
+      expect(within(content).getByRole('heading', { name: '成员管理' })).toBeInTheDocument()
     })
   })
 
@@ -182,7 +182,7 @@ describe('AppShell', () => {
 
     await waitFor(() => {
       const content = screen.getByRole('main')
-      expect(within(content).getByText(/创建邀请/)).toBeInTheDocument()
+      expect(within(content).getByRole('heading', { name: '邀请管理' })).toBeInTheDocument()
     })
   })
 

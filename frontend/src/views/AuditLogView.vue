@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { listAuditLogs, type AuditEntry } from '../api/audit'
 import StPageHeader from '../components/StPageHeader.vue'
+import StEmptyState from '../components/StEmptyState.vue'
 import { useDesktopLayout } from '../composables/useDesktopLayout'
 const { isDesktop } = useDesktopLayout()
 const items=ref<AuditEntry[]>([]);const nextCursor=ref<string>();const loading=ref(false);const error=ref('');const copied=ref('')
@@ -14,8 +15,9 @@ const detailLabel:Record<string,string>={ownerType:'对象类型',ownerId:'对�
 <template>
   <section class="st-page audit-page">
     <StPageHeader title="审计日志" description="按请求、操作者和事件追踪关键变更" />
-    <el-form class="audit-filters" inline @submit.prevent="load(false)"><el-form-item label="事件类型"><el-input v-model="filters.eventType" /></el-form-item><el-form-item label="结果"><el-select v-model="filters.outcome"><el-option label="全部" value="" /><el-option label="SUCCESS" value="SUCCESS" /><el-option label="FAILURE" value="FAILURE" /></el-select></el-form-item><el-form-item label="Request ID"><el-input v-model="filters.requestId" /></el-form-item><el-button native-type="submit" type="primary">筛选</el-button></el-form>
+    <el-form class="audit-filters" inline @submit.prevent="load(false)"><el-form-item label="事件类型"><el-input v-model="filters.eventType" placeholder="例如 InventoryReceived" clearable /></el-form-item><el-form-item label="结果"><el-select v-model="filters.outcome" placeholder="全部结果" clearable><el-option label="全部" value="" /><el-option label="SUCCESS" value="SUCCESS" /><el-option label="FAILURE" value="FAILURE" /></el-select></el-form-item><el-form-item label="Request ID"><el-input v-model="filters.requestId" placeholder="输入 Request ID" clearable /></el-form-item><el-button native-type="submit" type="primary">筛选</el-button></el-form>
     <p v-if="error" class="st-feedback st-feedback--error" role="alert">{{ error }}</p>
+    <el-skeleton v-if="loading && !items.length" :rows="5" animated />
     <el-table v-if="isDesktop && items.length" :data="items" row-key="id" class="audit-table"><el-table-column label="时间" min-width="180"><template #default="{ row }">{{ new Date(row.occurredAt).toLocaleString() }}</template></el-table-column><el-table-column prop="eventType" label="事件" min-width="170" /><el-table-column label="结果" width="100"><template #default="{ row }"><el-tag :type="row.outcome === 'FAILURE' ? 'danger' : 'success'">{{ row.outcome }}</el-tag></template></el-table-column><el-table-column label="操作人" min-width="120"><template #default="{ row }">{{ row.actorDisplayName ?? '系统' }}</template></el-table-column><el-table-column label="对象" min-width="180"><template #default="{ row }">{{ row.subjectType }} {{ row.subjectId ?? '' }}</template></el-table-column><el-table-column label="Request ID" min-width="200"><template #default="{ row }"><template v-if="row.requestId"><code>{{ row.requestId }}</code><el-button link type="primary" :aria-label="`复制 request ID ${row.requestId}`" @click="copy(row.requestId)">复制</el-button></template></template></el-table-column></el-table>
     <ul v-if="!isDesktop" class="audit-list">
       <li v-for="item in items" :key="item.id">
@@ -33,7 +35,7 @@ const detailLabel:Record<string,string>={ownerType:'对象类型',ownerId:'对�
         <dl v-if="Object.keys(item.details).length"><template v-for="(value,key) in item.details" :key="key"><dt>{{ detailLabel[key] ?? key }}</dt><dd>{{ value }}</dd></template></dl>
       </li>
     </ul>
-    <el-empty v-if="!loading && !items.length" description="没有匹配的审计记录" />
+    <StEmptyState v-if="!loading && !error && !items.length" title="没有匹配的审计记录" description="调整筛选条件后再试，或等待新的关键操作产生记录。" />
     <el-button v-if="nextCursor" :loading="loading" @click="load(true)">加载更多</el-button>
   </section>
 </template>

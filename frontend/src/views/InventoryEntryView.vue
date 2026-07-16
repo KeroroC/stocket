@@ -161,7 +161,7 @@ async function completed() {
             </div>
             <div>
               <dt>物品可用量</dt>
-              <dd>{{ availability?.totalAvailable ?? selected.quantity }}</dd>
+              <dd><span class="sr-only">可用量：</span>{{ availability?.totalAvailable ?? selected.quantity }}</dd>
             </div>
             <div>
               <dt>最早到期</dt>

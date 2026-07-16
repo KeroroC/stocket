@@ -35,5 +35,5 @@ function date(value: string) {
       >确认</el-button>
     </li>
   </ul>
-  <p v-else>暂无提醒</p>
+  <p v-else class="reminder-empty">暂无提醒</p>
 </template>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import type { UploadFile } from 'element-plus'
 import { uploadAttachment, type AttachmentSummary } from '../../api/attachment'
 
 const props = withDefaults(defineProps<{ ownerType:string; ownerId:string; purpose:string; label?:string }>(), { label:'上传附件' })
@@ -19,11 +18,6 @@ function choose(event: Event) {
   if (!accept.value.split(',').includes(file.type)) { error.value = '请选择 JPEG、PNG、WebP 或 PDF 文件'; return }
   revoke(); selected.value = file
   if (file.type.startsWith('image/')) previewUrl.value = URL.createObjectURL(file)
-}
-
-function chooseUpload(file: UploadFile) {
-  if (!file.raw) return
-  choose({ target: { files: [file.raw] } } as unknown as Event)
 }
 
 async function upload() {
@@ -50,7 +44,10 @@ onBeforeUnmount(revoke)
 
 <template>
   <div class="attachment-uploader">
-    <el-upload :auto-upload="false" :show-file-list="false" :accept="accept" :on-change="chooseUpload"><el-button>{{ label }}</el-button></el-upload>
+    <label class="attachment-uploader__trigger">
+      <span class="el-button">{{ label }}</span>
+      <input type="file" :aria-label="label" :accept="accept" @change="choose" />
+    </label>
     <p class="attachment-hint">服务端会再次验证文件内容，最大 20 MiB。</p>
     <img v-if="previewUrl" :src="previewUrl" alt="待上传预览" class="attachment-preview" />
     <p v-if="selected">{{ selected.name }}</p>

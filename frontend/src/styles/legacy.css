@@ -17,15 +17,57 @@ body {
 
 .app-shell {
   display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 24px;
+  min-height: 100dvh;
+  align-content: center;
+  justify-items: center;
+  gap: var(--st-space-6);
+  padding: var(--st-space-6);
+  background:
+    radial-gradient(circle at 12% 12%, color-mix(in srgb, var(--st-color-primary-soft) 64%, transparent) 0 12rem, transparent 12.1rem),
+    radial-gradient(circle at 88% 88%, color-mix(in srgb, var(--st-color-accent) 9%, transparent) 0 10rem, transparent 10.1rem),
+    var(--st-color-bg);
 }
 
 .app-shell--authenticated {
   display: block;
   width: 100%;
   padding: 0;
+  background: var(--st-color-bg);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-3);
+  color: var(--st-color-primary);
+}
+
+.auth-brand__mark {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: var(--st-radius-control);
+  background: var(--st-color-primary);
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgb(22 122 99 / 18%);
+}
+
+.auth-brand__copy {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.auth-brand__copy strong {
+  font-size: 1.2rem;
+  letter-spacing: -0.015em;
+}
+
+.auth-brand__copy small {
+  color: var(--st-color-text-muted);
+  font-size: 0.8125rem;
 }
 
 /* Shell layout (sidebar + content) */
@@ -140,8 +182,9 @@ body {
 /* Auth card */
 .auth-card {
   width: 100%;
-  max-width: 480px;
-  padding: 32px 24px;
+  max-width: 30rem;
+  padding: 0;
+  overflow: hidden;
   background: var(--st-color-surface);
   border: 1px solid var(--st-color-border);
   border-radius: 20px;
@@ -153,12 +196,18 @@ body {
 }
 
 .auth-card.el-card > .el-card__body {
-  padding: 32px 24px;
+  padding: var(--st-space-8) var(--st-space-6);
 }
 
 @media (min-width: 480px) {
-  .auth-card {
-    padding: 40px 32px;
+  .auth-card.el-card > .el-card__body {
+    padding: 2.25rem 2rem;
+  }
+}
+
+@media (max-height: 720px) {
+  .app-shell:not(.app-shell--authenticated) {
+    align-content: start;
   }
 }
 

@@ -36,6 +36,8 @@ describe('ProfileView', () => {
         { path: '/admin/categories', component: { template: '<div />' } },
         { path: '/admin/locations', component: { template: '<div />' } },
         { path: '/admin/delivery-failures', component: { template: '<div />' } },
+        { path: '/admin/audit-logs', component: { template: '<div />' } },
+        { path: '/admin/diagnostics', component: { template: '<div />' } },
       ],
     })
     render(ProfileView, {
@@ -49,6 +51,8 @@ describe('ProfileView', () => {
       ['分类管理', '/admin/categories'],
       ['位置管理', '/admin/locations'],
       ['通知失败', '/admin/delivery-failures'],
+      ['审计日志', '/admin/audit-logs'],
+      ['系统诊断', '/admin/diagnostics'],
     ]) {
       expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', href)
     }

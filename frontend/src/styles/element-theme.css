@@ -25,10 +25,33 @@
   min-height: var(--st-control-min-size);
 }
 
+.pwa-shell__content .el-input__inner {
+  height: var(--st-control-min-size);
+  min-height: var(--st-control-min-size);
+  line-height: var(--st-control-min-size);
+}
+
+.pwa-shell__content .el-select__input {
+  height: var(--st-control-min-size) !important;
+  min-height: var(--st-control-min-size) !important;
+  line-height: var(--st-control-min-size) !important;
+}
+
 .el-card,
 .el-dialog {
   --el-card-border-radius: var(--st-radius-card);
   --el-dialog-border-radius: var(--st-radius-card);
+}
+
+.el-dialog,
+.el-message-box {
+  max-width: calc(100vw - 2rem);
+}
+
+.el-card__header h2,
+.el-card__header h3 {
+  margin: 0;
+  color: var(--st-color-text);
 }
 
 .el-table {

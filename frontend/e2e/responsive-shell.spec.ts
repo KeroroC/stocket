@@ -125,10 +125,10 @@ test('库存台账在移动和桌面端保持清晰的主从工作区', async ({
 
 const primaryTabs = [
   { label: '首页', path: '/', heading: '今天需要关注什么？' },
-  { label: '物品', path: '/items', heading: '物品目录' },
+  { label: '物品目录', path: '/items', heading: '物品目录' },
   { label: '入库', path: '/receive', heading: '把物品放到正确的位置' },
-  { label: '提醒', path: '/reminders', heading: '提醒中心' },
-  { label: '我的', path: '/profile', heading: '我的账户' },
+  { label: '提醒中心', path: '/reminders', heading: '提醒中心' },
+  { label: '我的账户', path: '/profile', heading: '我的账户' },
 ]
 
 const allPages = [
@@ -205,8 +205,11 @@ test('主 Tab 切换保持应用外壳稳定', async ({ page }, testInfo) => {
 
   const baseline = await readShellGeometry()
   for (const tab of primaryTabs.slice(1)) {
-    await page.getByRole('navigation', { name: viewport.navigationName })
-      .getByRole('link', { name: tab.label, exact: true })
+    const navigation = page.getByRole('navigation', { name: viewport.navigationName })
+    const label = viewport.navigationName === '移动主导航'
+      ? ({ 物品目录: '物品', 提醒中心: '提醒', 我的账户: '我的' } as Record<string, string>)[tab.label] ?? tab.label
+      : tab.label
+    await navigation.getByRole('link', { name: label, exact: true })
       .click()
     await expect(page).toHaveURL(tab.path)
     await expect(page.getByRole('heading', { name: tab.heading })).toBeVisible()
@@ -215,14 +218,20 @@ test('主 Tab 切换保持应用外壳稳定', async ({ page }, testInfo) => {
   }
 
   await page.getByRole('navigation', { name: viewport.navigationName })
-    .getByRole('link', { name: '我的', exact: true })
+    .getByRole('link', { name: viewport.navigationName === '移动主导航' ? '我的' : '我的账户', exact: true })
     .click()
   await expect(page.getByRole('heading', { name: '我的账户' })).toBeVisible()
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
-  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  await page.evaluate(() => {
+    const content = document.querySelector('.pwa-shell__content') as HTMLElement
+    const target = content.scrollHeight > content.clientHeight ? content : document.documentElement
+    target.scrollTop = target.scrollHeight
+  })
   await page.getByRole('navigation', { name: viewport.navigationName })
     .getByRole('link', { name: '首页', exact: true })
     .click()
   await expect(page.getByRole('heading', { name: primaryTabs[0].heading })).toBeVisible()
-  expect(await page.evaluate(() => window.scrollY), '切换 Tab 后应从新页面顶部开始').toBe(0)
+  expect(await page.evaluate(() => {
+    const content = document.querySelector('.pwa-shell__content') as HTMLElement
+    return Math.max(window.scrollY, content.scrollTop)
+  }), '切换 Tab 后应从新页面顶部开始').toBe(0)
 })

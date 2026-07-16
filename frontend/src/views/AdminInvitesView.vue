@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import type { InviteListItem } from '../api/identity'
 import StPageHeader from '../components/StPageHeader.vue'
+import StEmptyState from '../components/StEmptyState.vue'
 import { useDesktopLayout } from '../composables/useDesktopLayout'
 import {
   getInvites as apiGetInvites,
@@ -241,7 +242,7 @@ function formatStatusType(status: string): string {
       </li>
     </ul>
 
-    <p v-else-if="!loading" class="auth-loading">暂无邀请</p>
+    <StEmptyState v-if="!loading && !error && invites.length === 0" title="还没有邀请" description="创建邀请后，可以在这里查看状态、延长期限或撤销链接。" />
 
     <!-- Create invite dialog -->
     <el-dialog
@@ -294,13 +295,13 @@ function formatStatusType(status: string): string {
 <style scoped>
 .invite-uses {
   font-size: 0.875rem;
-  color: var(--color-text-secondary);
+  color: var(--st-color-text-muted);
   margin-left: 0.5rem;
 }
 
 .invite-accepted-by {
   font-size: 0.875rem;
-  color: var(--color-text-secondary);
+  color: var(--st-color-text-muted);
   margin-left: 0.5rem;
 }
 

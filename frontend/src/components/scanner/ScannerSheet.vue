@@ -89,7 +89,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <el-drawer :model-value="modelValue" title="扫描条码或位置码" direction="btt" size="min(85dvh, 42rem)" class="scanner-sheet" :teleported="false" :destroy-on-close="false" @close="close">
+  <el-drawer :model-value="modelValue" title="扫描条码或位置码" direction="btt" size="min(78dvh, 42rem)" class="scanner-sheet" :teleported="false" :destroy-on-close="false" :show-close="false" @close="close">
+      <template #header>
+        <div class="scanner-sheet__header">
+          <strong>扫描条码或位置码</strong>
+          <el-button text aria-label="关闭扫描器" @click="close">关闭</el-button>
+        </div>
+      </template>
       <section aria-label="扫描条码或位置码">
         <video ref="video" muted playsinline aria-label="摄像头预览" />
         <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" />
@@ -105,6 +111,14 @@ onBeforeUnmount(() => {
 <style scoped>
 .scanner-sheet section {
   display: grid;
+  gap: var(--st-space-4);
+}
+
+.scanner-sheet__header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--st-space-4);
 }
 

@@ -53,6 +53,14 @@ function handleForcePasswordChange() {
 
 <template>
   <main v-loading="state.kind === 'checking-setup'" :class="['app-shell', { 'app-shell--authenticated': state.kind === 'authenticated' }]">
+    <div v-if="state.kind !== 'authenticated'" class="auth-brand" aria-label="Stocket 家庭库存">
+      <span class="auth-brand__mark" aria-hidden="true">S</span>
+      <span class="auth-brand__copy">
+        <strong>Stocket</strong>
+        <small>把家里的物品安稳放在心里</small>
+      </span>
+    </div>
+
     <!-- invite view takes priority when URL matches /invite/{token} -->
     <InviteAcceptView
       v-if="showInviteView && inviteToken"

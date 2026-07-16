@@ -124,10 +124,11 @@
 }
 
 .global-search__field {
-  display: flex;
+  width: 100%;
+}
+
+.global-search__field .el-input__wrapper {
   min-height: 3.5rem;
-  align-items: center;
-  gap: var(--st-space-3);
   padding: 0 var(--st-space-4);
   border: 1px solid var(--st-color-border);
   border-radius: var(--st-radius-card);
@@ -136,28 +137,17 @@
   transition: border-color var(--st-motion-fast), box-shadow var(--st-motion-fast);
 }
 
-.global-search__field:focus-within {
+.global-search__field .el-input__wrapper.is-focus {
   border-color: var(--st-color-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-color-primary) 14%, transparent);
 }
 
-.global-search__field > svg {
-  width: 1.35rem;
-  height: 1.35rem;
-  flex: 0 0 auto;
+.global-search__field .el-input__prefix {
   color: var(--st-color-primary);
 }
 
-.global-search__field input {
-  width: 100%;
-  min-width: 0;
+.global-search__field .el-input__inner {
   min-height: 3.4rem;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--st-color-text);
-  font: inherit;
 }
 
 .global-search__field input::placeholder {
@@ -175,20 +165,30 @@
 }
 
 .global-search__results {
-  display: grid;
-  margin: var(--st-space-2) 0 0;
-  padding: var(--st-space-2);
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + var(--st-space-2));
+  right: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
   gap: var(--st-space-2);
   border: 1px solid var(--st-color-border);
   border-radius: var(--st-radius-card);
   background: var(--st-color-surface);
   box-shadow: var(--st-shadow-card);
-  list-style: none;
 }
 
-.global-search__results li {
+.global-search__results > .el-card__body {
   display: grid;
-  gap: var(--st-space-1);
+  gap: var(--st-space-2);
+  padding: var(--st-space-2);
+}
+
+.global-search__result {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--st-space-1) var(--st-space-3);
   padding: var(--st-space-3);
   border-radius: var(--st-radius-control);
   background: var(--st-color-bg);
@@ -196,7 +196,8 @@
   font-size: 0.875rem;
 }
 
-.global-search__results strong {
+.global-search__result strong {
+  grid-column: 1 / -1;
   color: var(--st-color-text);
   font-size: 1rem;
 }
@@ -448,9 +449,16 @@
   text-decoration: none;
 }
 
-.mobile-tab-bar__item svg {
+.mobile-tab-bar__item .el-icon {
   width: 1.35rem;
   height: 1.35rem;
+  overflow: visible;
+  font-size: 1.35rem;
+}
+
+.mobile-tab-bar__item .el-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .mobile-tab-bar__item[aria-current='page'] {
@@ -463,14 +471,20 @@
   font-weight: 650;
 }
 
-.mobile-tab-bar__item--primary svg {
+.mobile-tab-bar__item--primary .el-icon {
   width: 2.5rem;
   height: 2.5rem;
   padding: 0.65rem;
   border-radius: 999px;
   background: var(--st-color-primary);
   color: white;
+  font-size: 1.2rem;
   box-shadow: var(--st-shadow-card);
+}
+
+.mobile-tab-bar__item--primary .el-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .desktop-sidebar {
@@ -495,6 +509,43 @@
 .skip-link:focus {
   left: var(--st-space-4);
   top: var(--st-space-4);
+}
+
+.scanner-sheet.el-drawer {
+  position: fixed !important;
+  inset: auto 0 0 !important;
+  width: 100% !important;
+  height: min(78dvh, 42rem) !important;
+  max-height: calc(100dvh - env(safe-area-inset-top) - 1rem) !important;
+  overflow: hidden;
+  transform: none !important;
+}
+
+.scanner-sheet .el-drawer__body {
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: calc(var(--st-space-4) + env(safe-area-inset-bottom));
+}
+
+.scanner-sheet button {
+  min-height: var(--st-control-min-size);
+}
+
+.scanner-sheet .el-drawer__close-btn {
+  width: var(--st-control-min-size);
+  height: var(--st-control-min-size);
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .scanner-sheet.el-drawer {
+    left: 50% !important;
+    right: auto !important;
+    width: min(42rem, calc(100vw - 2rem)) !important;
+    transform: translateX(-50%) !important;
+    border-radius: var(--st-radius-feature) var(--st-radius-feature) 0 0;
+  }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
@@ -526,7 +577,7 @@
     height: 100dvh;
     padding: var(--st-space-4) var(--st-space-3);
     flex-direction: column;
-    gap: var(--st-space-4);
+    gap: var(--st-space-2);
     overflow: auto;
     border-right: 1px solid var(--st-color-border);
     background: var(--st-color-surface);
@@ -625,12 +676,16 @@
     color: var(--st-color-primary);
   }
 
-  .global-search--compact .global-search__field {
+  .global-search--compact .global-search__field .el-input__wrapper {
     min-height: var(--st-control-min-size);
     box-shadow: none;
   }
 
-  .global-search--compact .global-search__field input {
+  .global-search--compact .global-search__field .el-input__wrapper.is-focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-color-primary) 14%, transparent);
+  }
+
+  .global-search--compact .global-search__field .el-input__inner {
     min-height: var(--st-control-min-size);
   }
 
@@ -638,7 +693,7 @@
     display: flex;
     align-items: center;
     gap: var(--st-space-3);
-    padding: var(--st-space-2) var(--st-space-3) var(--st-space-4);
+    padding: var(--st-space-1) var(--st-space-3) var(--st-space-3);
     color: var(--st-color-primary);
     font-size: 1.25rem;
     font-weight: 750;
@@ -667,8 +722,8 @@
 
   .desktop-sidebar nav > .el-scrollbar { height: 100%; }
   .desktop-sidebar .el-menu { border-right: 0; background: transparent; }
-  .desktop-sidebar .el-menu-item-group__title { padding: var(--st-space-3) var(--st-space-3) var(--st-space-1); font-size: .75rem; font-weight: 700; }
-  .desktop-sidebar .el-menu-item { min-height: 2.75rem; height: auto; padding: 0 !important; border-radius: var(--st-radius-control); }
+  .desktop-sidebar .el-menu-item-group__title { padding: var(--st-space-2) var(--st-space-3) var(--st-space-1); line-height: 1.2; font-size: .75rem; font-weight: 700; }
+  .desktop-sidebar .el-menu-item { min-height: 2.5rem; height: auto; padding: 0 !important; border-radius: var(--st-radius-control); }
   .desktop-sidebar .el-menu-item.is-active { background: var(--st-color-primary-soft); }
 
   .desktop-sidebar__group {
@@ -694,7 +749,7 @@
 
   .desktop-sidebar__link {
     display: flex;
-    min-height: 2.75rem;
+    min-height: 2.5rem;
     align-items: center;
     gap: var(--st-space-3);
     width: 100%;
