@@ -109,7 +109,7 @@ jobs:
           cosign attest --yes --type slsaprovenance --predicate release/provenance.json \
             "$IMAGE_REPOSITORY@$digest"
       - name: Attest image provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ env.IMAGE_REPOSITORY }}
           subject-digest: ${{ steps.image.outputs.digest }}
