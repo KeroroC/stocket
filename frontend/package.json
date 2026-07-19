@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "2.3.2",
-    "@zxing/browser": "0.1.5",
+    "@zxing/browser": "0.2.1",
     "element-plus": "2.14.3",
     "idb": "8.0.3",
     "vue": "3.5.39",
